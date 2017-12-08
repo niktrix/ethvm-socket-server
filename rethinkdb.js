@@ -27,7 +27,16 @@ class RethinkDB {
     }
 
     onNewBlock(_block) {
-    	this.socketIO.to('blocks').emit('newBlock', _block.new_val)
+    	let _this = this
+    	let txs = _block.new_val.transactions.slice(0)
+        _block.new_val.transactions = []
+        this.socketIO.to('blocks').emit('newBlock', _block.new_val)
+        txs.forEach((tx,idx)=>{
+        	_this.onNewTx(tx)
+        })
+    }
+    onNewTx(_tx) {
+    	this.socketIO.to('txs').emit('newTx', _tx)
     }
 }
 
