@@ -1,0 +1,36 @@
+{
+  "name": "ethvm-socket-server",
+  "version": "0.0.1",
+  "description": "backend socket server for ethvm",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "babel-watch --presets node6 ./index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enKryptIO/ethvm-socket-server.git"
+  },
+  "keywords": [
+    "ethvm",
+    "socketio",
+    "node",
+    "socket",
+    "ethereum"
+  ],
+  "author": "kvhnuke",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/enKryptIO/ethvm-socket-server/issues"
+  },
+  "homepage": "https://github.com/enKryptIO/ethvm-socket-server#readme",
+  "dependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-node6": "^11.0.0",
+    "socket.io": "^2.0.4"
+  },
+  "devDependencies": {
+    "babel-watch": "^2.0.7",
+    "rethinkdb": "^2.3.3"
+  }
+}
