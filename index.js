@@ -5,7 +5,7 @@ import RethinkDB from './rethinkdb'
 const server = http.createServer();
 
 const io = require('socket.io')(server, socketConf);
-server.listen(socketConf.port, () => {
+server.listen(socketConf.port, socketConf.ip, () => {
     console.log("Listening on", socketConf.port)
 });
 io.on('connection', addEvents);
