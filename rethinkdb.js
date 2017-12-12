@@ -1,6 +1,9 @@
 import * as r from 'rethinkdb'
 import rethinkdbConf from './configs/rethinkdb.json'
-
+import {
+    addTx,
+    addBlock
+} from './dataStore'
 class RethinkDB {
     constructor(_socketIO) {
         this.socketIO = _socketIO
@@ -27,16 +30,20 @@ class RethinkDB {
     }
 
     onNewBlock(_block) {
-    	let _this = this
-    	let txs = _block.new_val.transactions.slice(0)
-        _block.new_val.transactions = []
+        let _this = this
+        let txs = _block.new_val.transactions.slice(0)
+        _block.new_val.transactions = _block.new_val.transactions.map(function(element) {
+            return element.hash
+        });
         this.socketIO.to('blocks').emit('newBlock', _block.new_val)
-        txs.forEach((tx,idx)=>{
-        	_this.onNewTx(tx)
+        txs.forEach((tx, idx) => {
+            _this.onNewTx(tx)
         })
+        addBlock(_block.new_val.hash, _block.new_val)
     }
     onNewTx(_tx) {
-    	this.socketIO.to('txs').emit('newTx', _tx)
+        this.socketIO.to('txs').emit('newTx', _tx)
+        addTx(_tx.hash, _tx)
     }
 }
 
