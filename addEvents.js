@@ -10,7 +10,6 @@ import {
     smallBlock,
     smallTx
 } from './libs'
-import snappy from 'snappy'
 let events = [{
     name: "join",
     onEvent: (_socket, _msg) => {
