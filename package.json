@@ -33,6 +33,7 @@
     "babel-watch": "^2.0.7",
     "lowdb": "^1.0.0",
     "lru_map": "^0.3.3",
-    "rethinkdb": "^2.3.3"
+    "rethinkdb": "^2.3.3",
+    "snappy": "^6.0.1"
   }
 }

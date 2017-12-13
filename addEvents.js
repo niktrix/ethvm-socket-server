@@ -6,6 +6,11 @@ import {
     getBlocks,
     getTxs
 } from './dataStore'
+import {
+    smallBlock,
+    smallTx
+} from './libs'
+import snappy from 'snappy'
 let events = [{
     name: "join",
     onEvent: (_socket, _msg) => {
@@ -19,16 +24,20 @@ let events = [{
 }, {
     name: "pastBlocks",
     onEvent: (_socket, _msg) => {
+        let arr = []
         getBlocks().forEach((_block) => {
-            _socket.emit('newBlock', _block)
+            arr.push(smallBlock(_block))
         });
+        _socket.emit('newBlock', arr)
     }
 }, {
     name: "pastTxs",
     onEvent: (_socket, _msg) => {
+        let arr = []
         getTxs().forEach((_tx) => {
-            _socket.emit('newTx', _tx)
+            arr.push(smallTx(_tx))
         });
+        _socket.emit('newTx', arr)
     }
 }]
 let onConnection = (_socket) => {

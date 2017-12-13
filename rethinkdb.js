@@ -4,6 +4,10 @@ import {
     addTx,
     addBlock
 } from './dataStore'
+import {
+    smallBlock,
+    smallTx
+} from './libs'
 class RethinkDB {
     constructor(_socketIO) {
         this.socketIO = _socketIO
@@ -35,14 +39,14 @@ class RethinkDB {
         _block.new_val.transactions = _block.new_val.transactions.map(function(element) {
             return element.hash
         });
-        this.socketIO.to('blocks').emit('newBlock', _block.new_val)
+        this.socketIO.to('blocks').emit('newBlock', smallBlock(_block.new_val))
         txs.forEach((tx, idx) => {
             _this.onNewTx(tx)
         })
         addBlock(_block.new_val.hash, _block.new_val)
     }
     onNewTx(_tx) {
-        this.socketIO.to('txs').emit('newTx', _tx)
+        this.socketIO.to('txs').emit('newTx', smallTx(_tx))
         addTx(_tx.hash, _tx)
     }
 }
