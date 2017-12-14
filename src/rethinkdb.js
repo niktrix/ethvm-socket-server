@@ -37,20 +37,25 @@ class RethinkDB {
                 }
             })
         }
-        if (argv.remoteRDB) {
+        let connectWithCert = (_cert) => {
+            let url = new URL(process.env[rethinkdbConf.env_url])
+            tempConfig = {
+                host: url.hostname,
+                port: url.port,
+                authKey: url.password,
+                ssl: {
+                    ca: _cert
+                },
+                db: rethinkdbConf.db
+            }
+            connect(tempConfig)
+        }
+        if (argv.remoteRDB && !argv.rawCert) {
             fs.readFile(process.env[rethinkdbConf.env_cert], (err, caCert) => {
-                let url = new URL(process.env[rethinkdbConf.env_url])
-                tempConfig = {
-                    host: url.hostname,
-                    port: url.port,
-                    authKey: url.password,
-                    ssl: {
-                        ca: caCert
-                    },
-                    db: rethinkdbConf.db
-                }
-                connect(tempConfig)
+                connectWithCert(caCert)
             })
+        } else if (argv.remoteRDB && argv.rawCert) {
+            connectWithCert(process.env[rethinkdbConf.env_cert_raw])
         } else {
             connect(tempConfig)
         }

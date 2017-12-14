@@ -8,9 +8,9 @@
         "build": "babel src/ -d dist/ --copy-files",
         "serve": "babel -w src/ -d dist/ --copy-files | nodemon --watch dist",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "start": "node dist/index.js --remoteRDB",
+        "start": "node dist/index.js --remoteRDB --rawCert",
         "debug": "nodemon --watch src --exec babel-node --presets node6 src/index.js",
-        "compose": "nodemon --watch src --exec babel-node --presets node6 -- src/index.js --remoteRDB"
+        "compose": "nodemon --watch src --exec babel-node --presets node6 -- src/index.js --remoteRDB --rawCert"
     },
     "repository": {
         "type": "git",
