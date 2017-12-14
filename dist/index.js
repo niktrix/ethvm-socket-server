@@ -23,7 +23,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 const server = _http2.default.createServer();
 
 const io = require('socket.io')(server, _socketio2.default);
-server.listen(_socketio2.default.port, _socketio2.default.ip, () => {
+server.listen(process.env.PORT || _socketio2.default.port, _socketio2.default.ip, () => {
     console.log("Listening on", _socketio2.default.port);
 });
 (0, _dataStore.loadLRUFromFile)();

@@ -8,7 +8,7 @@ import {
 const server = http.createServer();
 
 const io = require('socket.io')(server, socketConf);
-server.listen(socketConf.port, socketConf.ip, () => {
+server.listen(process.env.PORT || socketConf.port, socketConf.ip, () => {
     console.log("Listening on", socketConf.port)
 });
 loadLRUFromFile()
