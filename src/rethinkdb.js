@@ -1,5 +1,12 @@
 import * as r from 'rethinkdb'
 import rethinkdbConf from './configs/rethinkdb.json'
+import fs from 'fs'
+import {
+    URL
+} from 'url'
+import {
+    argv
+} from 'yargs'
 import {
     addTx,
     addBlock
@@ -15,14 +22,39 @@ class RethinkDB {
     }
     start() {
         let _this = this
-        r.connect(rethinkdbConf, (err, conn) => {
-            if (!err) {
-                _this.dbConn = conn
-                _this.setAllEvents()
-            } else {
-                console.log(err)
-            }
-        })
+        let tempConfig = {
+            host: rethinkdbConf.host,
+            port: rethinkdbConf.port,
+            db: rethinkdbConf.db
+        }
+        let connect = (_config) => {
+            r.connect(_config, (err, conn) => {
+                if (!err) {
+                    _this.dbConn = conn
+                    _this.setAllEvents()
+                } else {
+                    console.log(err)
+                }
+            })
+        }
+        if (argv.remoteRDB) {
+            fs.readFile(process.env[rethinkdbConf.env_cert], (err, caCert) => {
+                let url = new URL(process.env[rethinkdbConf.env_url])
+                tempConfig = {
+                    host: url.hostname,
+                    port: url.port,
+                    authKey: url.password,
+                    ssl: {
+                        ca: caCert
+                    },
+                    db: rethinkdbConf.db
+                }
+                connect(tempConfig)
+            })
+        } else {
+            connect(tempConfig)
+        }
+
     }
     setAllEvents() {
         let _this = this

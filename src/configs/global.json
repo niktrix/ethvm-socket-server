@@ -1,0 +1,7 @@
+{
+    "lru": {
+        "maxTxs": 100,
+        "maxBlocks": 100
+    },
+    "dbName": "db.json"
+}

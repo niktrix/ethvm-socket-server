@@ -1,38 +1,45 @@
 {
-  "name": "ethvm-socket-server",
-  "version": "0.0.1",
-  "description": "backend socket server for ethvm",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "babel-watch --presets node6 ./index.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/enKryptIO/ethvm-socket-server.git"
-  },
-  "keywords": [
-    "ethvm",
-    "socketio",
-    "node",
-    "socket",
-    "ethereum"
-  ],
-  "author": "kvhnuke",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/enKryptIO/ethvm-socket-server/issues"
-  },
-  "homepage": "https://github.com/enKryptIO/ethvm-socket-server#readme",
-  "dependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-preset-node6": "^11.0.0",
-    "socket.io": "^2.0.4"
-  },
-  "devDependencies": {
-    "babel-watch": "^2.0.7",
-    "lowdb": "^1.0.0",
-    "lru_map": "^0.3.3",
-    "rethinkdb": "^2.3.3"
-  }
+    "name": "ethvm-socket-server",
+    "version": "0.0.1",
+    "description": "backend socket server for ethvm",
+    "main": "src/index.js",
+    "scripts": {
+        "watch": "babel -w src/ -d dist/ --copy-files",
+        "build": "babel src/ -d dist/ --copy-files",
+        "serve": "babel -w src/ -d dist/ --copy-files | nodemon --watch dist",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "npm run build && node dist/index.js --remoteRDB",
+        "debug": "nodemon --watch src --exec babel-node --presets node6 src/index.js",
+        "compose": "nodemon --watch src --exec babel-node --presets node6 -- src/index.js --remoteRDB"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/enKryptIO/ethvm-socket-server.git"
+    },
+    "keywords": [
+        "ethvm",
+        "socketio",
+        "node",
+        "socket",
+        "ethereum"
+    ],
+    "author": "kvhnuke",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/enKryptIO/ethvm-socket-server/issues"
+    },
+    "homepage": "https://github.com/enKryptIO/ethvm-socket-server#readme",
+    "dependencies": {
+        "socket.io": "^2.0.4"
+    },
+    "devDependencies": {
+        "babel": "^6.23.0",
+        "babel-cli": "^6.26.0",
+        "babel-preset-node6": "^11.0.0",
+        "lowdb": "^1.0.0",
+        "lru_map": "^0.3.3",
+        "nodemon": "^1.12.7",
+        "rethinkdb": "^2.3.3",
+        "yargs": "^10.0.3"
+    }
 }
