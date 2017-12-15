@@ -1,8 +1,15 @@
-"use strict";
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
+
+var _global = require('../configs/global');
+
+var _global2 = _interopRequireDefault(_global);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 let smallBlock = function (_block) {
     return {
         number: _block.number,
@@ -15,14 +22,15 @@ let smallBlock = function (_block) {
         gasLimit: _block.gasLimit,
         gasUsed: _block.gasUsed,
         timestamp: _block.timestamp,
-        transactions: _block.transactions.map(tx => {
-            return {
+        transactions: _block.transactions.map((tx, idx) => {
+            if (idx < _global2.default.smallBlock.maxTxs) return {
                 hash: tx.hash
             };
         }),
-        uncles: _block.uncles,
+        uncleHashes: _block.uncleHashes,
         isUncle: _block.isUncle,
         txFees: _block.txFees,
+        uncles: [],
         blockReward: _block.blockReward
     };
 };

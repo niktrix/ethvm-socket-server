@@ -29,3 +29,4 @@ server.listen(process.env.PORT || _socketio2.default.port, _socketio2.default.ip
 (0, _dataStore.loadLRUFromFile)();
 io.on('connection', _addEvents2.default);
 let rdb = new _rethinkdb2.default(io);
+setInterval(_dataStore.saveLRUToFile, 10000);

@@ -35,11 +35,9 @@ let test = "abc";
 
 let addTx = (hash, tx) => {
     txs.set(hash, tx);
-    saveTxs();
 };
 let addBlock = (hash, block) => {
     blocks.set(hash, block);
-    saveBlocks();
 };
 let getBlocks = () => {
     return blocks;

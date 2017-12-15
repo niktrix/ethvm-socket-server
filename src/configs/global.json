@@ -3,5 +3,9 @@
         "maxTxs": 100,
         "maxBlocks": 100
     },
-    "dbName": "db.json"
+    "dbName": "db.json",
+    "smallBlock": {
+        "maxTxs": 30,
+        "maxTraces": 5
+    }
 }

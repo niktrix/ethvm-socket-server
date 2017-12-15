@@ -3,7 +3,8 @@ import http from 'http'
 import addEvents from './addEvents'
 import RethinkDB from './rethinkdb'
 import {
-    loadLRUFromFile
+    loadLRUFromFile,
+    saveLRUToFile
 } from './dataStore'
 const server = http.createServer();
 
@@ -14,3 +15,4 @@ server.listen(process.env.PORT || socketConf.port, socketConf.ip, () => {
 loadLRUFromFile()
 io.on('connection', addEvents);
 let rdb = new RethinkDB(io)
+setInterval(saveLRUToFile, 10000)

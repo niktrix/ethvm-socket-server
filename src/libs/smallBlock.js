@@ -1,3 +1,4 @@
+import configs from '../configs/global'
 let smallBlock = function(_block) {
     return {
         number: _block.number,
@@ -10,14 +11,16 @@ let smallBlock = function(_block) {
         gasLimit: _block.gasLimit,
         gasUsed: _block.gasUsed,
         timestamp: _block.timestamp,
-        transactions: _block.transactions.map((tx) => {
-            return {
-                hash: tx.hash
-            }
+        transactions: _block.transactions.map((tx, idx) => {
+            if (idx < configs.smallBlock.maxTxs)
+                return {
+                    hash: tx.hash
+                }
         }),
-        uncles: _block.uncles,
+        uncleHashes: _block.uncleHashes,
         isUncle: _block.isUncle,
         txFees: _block.txFees,
+        uncles: [],
         blockReward: _block.blockReward
     }
 }

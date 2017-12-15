@@ -1,4 +1,13 @@
+import configs from '../configs/global'
 let smallTx = (_tx) => {
+    var trace = {
+        isError: _tx.trace.isError,
+        msg: _tx.trace.msg,
+        transfers: _tx.trace.transfers.map((transfer) => {
+            if (transfer.value != '0x') return transfer
+        })
+    }
+    trace.transfers = trace.transfers.slice(0, configs.smallBlock.maxTraces)
     return {
         blockHash: _tx.blockHash,
         blockNumber: _tx.blockNumber,
@@ -14,6 +23,7 @@ let smallTx = (_tx) => {
         input: _tx.input,
         nonce: _tx.nonce,
         value: _tx.value,
+        trace: trace,
         status: _tx.status
     }
 }
