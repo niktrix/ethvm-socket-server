@@ -5,6 +5,8 @@ let smallTx = (_tx) => {
         msg: _tx.trace.msg,
         transfers: _tx.trace.transfers.map((transfer) => {
             if (transfer.value != '0x') return transfer
+        }).filter((n) => {
+            return n != undefined
         })
     }
     trace.transfers = trace.transfers.slice(0, configs.smallBlock.maxTraces)
