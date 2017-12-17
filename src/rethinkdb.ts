@@ -1,44 +1,38 @@
 import * as r from 'rethinkdb'
-import rethinkdbConf from './configs/rethinkdb.json'
-import fs from 'fs'
-import {
-    URL
-} from 'url'
-import {
-    argv
-} from 'yargs'
-import {
-    addTx,
-    addBlock
-} from './dataStore'
-import {
-    smallBlock,
-    smallTx
-} from './libs'
+import configs from '@/configs'
+import * as fs from 'fs'
+import { URL } from 'url'
+import { argv } from 'yargs'
+import { addTransaction, addBlock } from './dataStore'
+import { ConnectionOptions as TLSConnectionOptions } from "tls";
+
 class RethinkDB {
-    constructor(_socketIO) {
+    socketIO: any
+    dbConn: ConnectionOptions
+    constructor(_socketIO: any) {
         this.socketIO = _socketIO
         this.start()
     }
-    start() {
+    start():void  {
         let _this = this
-        let tempConfig = {
-            host: rethinkdbConf.host,
-            port: rethinkdbConf.port,
-            db: rethinkdbConf.db
+        let conf = configs.global.RETHINK_DB
+        let tempConfig: r.ConnectOptions = {
+            host: conf.host,
+            port: conf.port,
+            db: conf.db
         }
-        let connect = (_config) => {
-            r.connect(_config, (err, conn) => {
-                if (!err) {
+        let connect = (_config: r.ConnectOptions):void => {
+            r.connect(_config, (err: Error, conn: r.Connection):void => {
+                if (err) {
                     _this.dbConn = conn
-                    _this.setAllEvents()
+                  //  _this.setAllEvents()
                 } else {
                     console.log(err)
                 }
             })
         }
-        let connectWithCert = (_cert) => {
-            let url = new URL(process.env[rethinkdbConf.env_url])
+    /*    let connectWithCert = (_cert) => {
+            let url = new URL(process.env[conf.env_url])
             tempConfig = {
                 host: url.hostname,
                 port: url.port,
@@ -58,10 +52,10 @@ class RethinkDB {
             connectWithCert(process.env[rethinkdbConf.env_cert_raw])
         } else {
             connect(tempConfig)
-        }
+        } */
 
     }
-    setAllEvents() {
+  /*  setAllEvents() {
         let _this = this
         r.table('blocks').changes().run(_this.dbConn, function(err, cursor) {
             cursor.each((err, row) => {
@@ -85,7 +79,7 @@ class RethinkDB {
     onNewTx(_tx) {
         this.socketIO.to('txs').emit('newTx', smallTx(_tx))
         addTx(_tx.hash, _tx)
-    }
+    } */
 }
 
 export default RethinkDB

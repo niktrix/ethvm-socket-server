@@ -9,8 +9,9 @@
         "serve": "babel -w src/ -d dist/ --copy-files | nodemon --watch dist",
         "test": "echo \"Error: no test specified\" && exit 1",
         "start": "node dist/index.js --remoteRDB --rawCert",
-        "debug": "nodemon --watch src --exec babel-node --presets node6 src/index.js",
-        "compose": "nodemon --watch src --exec babel-node --presets node6 -- src/index.js --remoteRDB --rawCert"
+        "debug": "nodemon --watch src --exec babel-node --presets typescript src/index.ts",
+        "compose": "nodemon --watch src --exec babel-node --presets node6 -- src/index.js --remoteRDB --rawCert",
+        "wp": "webpack --progress --watch & nodemon --watch dist dist/index.js"
     },
     "repository": {
         "type": "git",
@@ -30,16 +31,26 @@
     },
     "homepage": "https://github.com/enKryptIO/ethvm-socket-server#readme",
     "dependencies": {
-        "socket.io": "^2.0.4",
-        "lowdb": "^1.0.0",
-        "lru_map": "^0.3.3",
-        "nodemon": "^1.12.7",
+        "@types/lokijs": "^1.5.0",
+        "@types/rethinkdb": "^2.3.8",
+        "@types/yargs": "^10.0.0",
+        "lodash": "^4.17.4",
+        "lokijs": "^1.5.1",
         "rethinkdb": "^2.3.3",
+        "socket.io": "^2.0.4",
         "yargs": "^10.0.3"
     },
     "devDependencies": {
+        "@types/lowdb": "^0.15.0",
+        "@types/node": "^8.5.1",
         "babel": "^6.23.0",
         "babel-cli": "^6.26.0",
-        "babel-preset-node6": "^11.0.0"
+        "babel-loader": "^7.1.2",
+        "babel-preset-node6": "^11.0.0",
+        "nodemon": "^1.13.3",
+        "tls": "0.0.1",
+        "ts-loader": "^3.2.0",
+        "typescript": "^2.6.2",
+        "webpack": "^3.10.0"
     }
 }

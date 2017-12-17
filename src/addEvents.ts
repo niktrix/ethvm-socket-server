@@ -1,12 +1,9 @@
 import {
     isValidRoom,
     log
-} from './globalFuncs'
-import {
-    getBlocks,
-    getTxs
-} from './dataStore'
-import {
+} from '@/globalFuncs'
+import abc from '@/dataStore'
+/*import {
     smallBlock,
     smallTx
 } from './libs'
@@ -47,4 +44,6 @@ let onConnection = (_socket) => {
     })
 }
 
-export default onConnection
+export default onConnection*/
+
+export default {}
