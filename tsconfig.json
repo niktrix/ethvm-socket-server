@@ -6,7 +6,9 @@
         "allowSyntheticDefaultImports": true,
         "sourceMap": true,
         "outDir": "dist",
-        "target": "es2015"
+        "target": "es2015",
+        "types": ["node"],
+        "typeRoots": ["node_modules/@types"]
     },
     "include": [
         "node_modules/@types/**/*.d.ts",

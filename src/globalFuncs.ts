@@ -1,8 +1,7 @@
-
-import validRooms from '@/configs/validRooms.json'
+import configs from '@/configs'
 
 let isValidRoom = (_rName: string): boolean => {
-	return validRooms.indexOf(_rName) > -1
+	return configs.validRooms.indexOf(_rName) > -1
 }
 let log = {
 	error: (..._msg: Array<any>): void => {

@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 0);
+/******/ 	return __webpack_require__(__webpack_require__.s = 2);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -71,7 +71,331 @@
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-console.log("dfsdfsdf");
+const global_1 = __webpack_require__(3);
+const validRooms_1 = __webpack_require__(4);
+exports.default = {
+    global: global_1.default,
+    validRooms: validRooms_1.default
+};
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const loki = __webpack_require__(11);
+const configs_1 = __webpack_require__(0);
+let lokiDB = new loki(configs_1.default.global.LOKI.dbName, { autosave: true, autosaveInterval: 5000, autoload: true });
+let tables = configs_1.default.global.LOKI.tableNames;
+let setCollections = () => {
+    tables.forEach((item, idx) => {
+        if (!lokiDB.getCollection(item)) lokiDB.addCollection(item).setTTL(configs_1.default.global.LOKI.ttl.age, configs_1.default.global.LOKI.ttl.interval);
+    });
+};
+setCollections();
+let addTransaction = tx => {
+    lokiDB.getCollection('transactions').insert(tx);
+};
+exports.addTransaction = addTransaction;
+let addBlock = block => {
+    lokiDB.getCollection('blocks').insert(block);
+};
+exports.addBlock = addBlock;
+let getBlocks = () => {
+    return lokiDB.getCollection('blocks').chain().simplesort('blockNumber').data();
+};
+exports.getBlocks = getBlocks;
+let getTransactions = () => {
+    return lokiDB.getCollection('transactions').chain().simplesort('blockNumber').data();
+};
+exports.getTransactions = getTransactions;
+let thisReturnsANumber = (id, name) => {
+    return 0;
+};
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const configs_1 = __webpack_require__(0);
+const http = __webpack_require__(5);
+const rethinkConn_1 = __webpack_require__(6);
+const addEvents_1 = __webpack_require__(12);
+const server = http.createServer();
+const io = __webpack_require__(14)(server, configs_1.default.global.SOCKET_IO);
+server.listen(configs_1.default.global.SOCKET_IO.port, configs_1.default.global.SOCKET_IO.ip, () => {
+    console.log("Listening on", configs_1.default.global.SOCKET_IO.port);
+});
+io.on('connection', addEvents_1.default);
+let rdb = new rethinkConn_1.default(io);
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = {
+    LOKI: {
+        dbName: "loki.json",
+        tableNames: ["blocks", "transactions"],
+        ttl: {
+            interval: 5000,
+            age: 5 * 60 * 1000
+        }
+    },
+    SOCKET_IO: {
+        port: parseInt(process.env.PORT) || 3000,
+        serveClient: false,
+        pingInterval: 10000,
+        pingTimeout: 5000,
+        cookie: true,
+        ip: "0.0.0.0"
+    },
+    RETHINK_DB: {
+        host: "localhost",
+        port: 28015,
+        db: "eth_mainnet",
+        env_cert: "RETHINKDB_CERT",
+        env_cert_raw: "RETHINKDB_CERT_RAW",
+        env_url: "RETHINKDB_URL"
+    },
+    MAX: {
+        socketRows: 100
+    }
+};
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = ["blocks", "minedtxs", "pendingTxs", "txs", "uncles"];
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports) {
+
+module.exports = require("http");
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const r = __webpack_require__(7);
+const configs_1 = __webpack_require__(0);
+const fs = __webpack_require__(8);
+const url_1 = __webpack_require__(9);
+const yargs_1 = __webpack_require__(10);
+const dataStore_1 = __webpack_require__(1);
+class RethinkDB {
+    constructor(_socketIO) {
+        this.socketIO = _socketIO;
+        this.start();
+    }
+    start() {
+        let _this = this;
+        let conf = configs_1.default.global.RETHINK_DB;
+        let tempConfig = {
+            host: conf.host,
+            port: conf.port,
+            db: conf.db
+        };
+        let connect = _config => {
+            r.connect(_config, (err, conn) => {
+                if (!err) {
+                    _this.dbConn = conn;
+                    _this.setAllEvents();
+                } else {
+                    console.log(err);
+                }
+            });
+        };
+        let connectWithCert = _cert => {
+            let url = new url_1.URL(process.env[conf.env_url]);
+            tempConfig = {
+                host: url.hostname,
+                port: parseInt(url.port),
+                password: url.password,
+                ssl: {
+                    ca: _cert
+                },
+                db: conf.db
+            };
+            connect(tempConfig);
+        };
+        if (yargs_1.argv.remoteRDB && !yargs_1.argv.rawCert) {
+            fs.readFile(process.env[conf.env_cert], (err, caCert) => {
+                connectWithCert(caCert);
+            });
+        } else if (yargs_1.argv.remoteRDB && yargs_1.argv.rawCert) {
+            connectWithCert(process.env[conf.env_cert_raw]);
+        } else {
+            connect(tempConfig);
+        }
+    }
+    setAllEvents() {
+        let _this = this;
+        r.table('blocks').changes().run(_this.dbConn, function (err, cursor) {
+            cursor.each((err, row) => {
+                if (!err) _this.onNewBlock(row.new_val);
+            });
+        });
+    }
+    onNewBlock(_block) {
+        let _this = this;
+        let txs = _block.transactions.slice(0);
+        this.socketIO.to('blocks').emit('newBlock', _block);
+        console.log(_block.hash);
+        _block.transactions.forEach((tx, idx) => {
+            _this.onNewTx(tx);
+        });
+        dataStore_1.addBlock(_block);
+    }
+    onNewTx(_tx) {
+        dataStore_1.addTransaction(_tx);
+    }
+}
+exports.default = RethinkDB;
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports) {
+
+module.exports = require("rethinkdb");
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports) {
+
+module.exports = require("fs");
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports) {
+
+module.exports = require("url");
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports) {
+
+module.exports = require("yargs");
+
+/***/ }),
+/* 11 */
+/***/ (function(module, exports) {
+
+module.exports = require("lokijs");
+
+/***/ }),
+/* 12 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const globalFuncs_1 = __webpack_require__(13);
+const dataStore_1 = __webpack_require__(1);
+const configs_1 = __webpack_require__(0);
+let events = [{
+    name: "join",
+    onEvent: (_socket, _msg) => {
+        if (globalFuncs_1.isValidRoom(_msg)) {
+            _socket.join(_msg);
+            globalFuncs_1.log.info(_socket.id, "joined", _msg);
+        } else {
+            globalFuncs_1.log.error(_socket.id, 'tried to join invalid room', _msg);
+        }
+    }
+}, {
+    name: "pastBlocks",
+    onEvent: (_socket, _msg) => {
+        let arr = [];
+        dataStore_1.getBlocks().forEach(_block => {
+            arr.push(_block);
+        });
+        _socket.emit('newBlock', arr.slice(0, configs_1.default.global.MAX.socketRows));
+    }
+}, {
+    name: "pastTxs",
+    onEvent: (_socket, _msg) => {
+        let arr = [];
+        dataStore_1.getTransactions().forEach(_tx => {
+            arr.push(_tx);
+        });
+        _socket.emit('newTx', arr.slice(0, configs_1.default.global.MAX.socketRows));
+    }
+}, {
+    name: "pastData",
+    onEvent: (_socket, _msg) => {
+        let txs = [];
+        let blocks = [];
+        txs = dataStore_1.getTransactions().slice(0, configs_1.default.global.MAX.socketRows);
+        dataStore_1.getBlocks().forEach((_block, idx) => {
+            _block.transactions = _block.transactions.map((item, idx) => {
+                if (item) return item.hash;
+            });
+            blocks.push(_block);
+        });
+        _socket.emit('newBlock', blocks);
+        _socket.emit('newTx', txs);
+    }
+}];
+let onConnection = _socket => {
+    events.forEach((event, idx) => {
+        _socket.on(event.name, msg => {
+            event.onEvent(_socket, msg);
+        });
+    });
+};
+exports.default = onConnection;
+
+/***/ }),
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const configs_1 = __webpack_require__(0);
+let isValidRoom = _rName => {
+    return configs_1.default.validRooms.indexOf(_rName) > -1;
+};
+exports.isValidRoom = isValidRoom;
+let log = {
+    error: (..._msg) => {
+        console.error(_msg.join(' '));
+    },
+    info: (..._msg) => {
+        console.info(_msg.join(' '));
+    }
+};
+exports.log = log;
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports) {
+
+module.exports = require("socket.io");
 
 /***/ })
 /******/ ]);
