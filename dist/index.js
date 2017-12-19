@@ -129,12 +129,14 @@ const http = __webpack_require__(5);
 const rethinkConn_1 = __webpack_require__(6);
 const addEvents_1 = __webpack_require__(12);
 const server = http.createServer();
-const io = __webpack_require__(14)(server, configs_1.default.global.SOCKET_IO);
+const io = __webpack_require__(17)(server, configs_1.default.global.SOCKET_IO);
 server.listen(configs_1.default.global.SOCKET_IO.port, configs_1.default.global.SOCKET_IO.ip, () => {
     console.log("Listening on", configs_1.default.global.SOCKET_IO.port);
 });
-io.on('connection', addEvents_1.default);
 let rdb = new rethinkConn_1.default(io);
+io.on('connection', _socket => {
+    addEvents_1.default(_socket, rdb);
+});
 
 /***/ }),
 /* 3 */
@@ -258,6 +260,11 @@ class RethinkDB {
             });
         });
     }
+    getBlock(hash, cb) {
+        r.table('blocks').get(hash).run(this.dbConn, function (err, result) {
+            if (err) cb(err);else cb(result);
+        });
+    }
     onNewBlock(_block) {
         let _this = this;
         let txs = _block.transactions.slice(0);
@@ -314,6 +321,7 @@ module.exports = require("lokijs");
 Object.defineProperty(exports, "__esModule", { value: true });
 const globalFuncs_1 = __webpack_require__(13);
 const dataStore_1 = __webpack_require__(1);
+const libs_1 = __webpack_require__(14);
 const configs_1 = __webpack_require__(0);
 let events = [{
     name: "join",
@@ -350,20 +358,20 @@ let events = [{
         let blocks = [];
         txs = dataStore_1.getTransactions().slice(0, configs_1.default.global.MAX.socketRows);
         dataStore_1.getBlocks().forEach((_block, idx) => {
-            _block.transactions = _block.transactions.map((item, idx) => {
-                if (item) return item.hash;
-            });
-            blocks.push(_block);
+            blocks.unshift(new libs_1.SmallBlock(_block).smallify());
         });
         _socket.emit('newBlock', blocks);
         _socket.emit('newTx', txs);
     }
 }];
-let onConnection = _socket => {
+let onConnection = (_socket, rdb) => {
     events.forEach((event, idx) => {
         _socket.on(event.name, msg => {
             event.onEvent(_socket, msg);
         });
+    });
+    _socket.on('getBlock', (msg, cb) => {
+        rdb.getBlock(msg, cb);
     });
 };
 exports.default = onConnection;
@@ -393,6 +401,54 @@ exports.log = log;
 
 /***/ }),
 /* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const SmallBlock_1 = __webpack_require__(15);
+exports.SmallBlock = SmallBlock_1.default;
+
+/***/ }),
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const bignumber_js_1 = __webpack_require__(16);
+class SmallBlock {
+    constructor(_block) {
+        this.block = _block;
+    }
+    smallify() {
+        let _block = this.block;
+        return {
+            number: _block.number,
+            intNumber: _block.intNumber,
+            hash: _block.hash,
+            miner: _block.miner,
+            timestamp: _block.timestamp,
+            transactionCount: _block.transactions.length,
+            uncleHashes: _block.uncleHashes,
+            uncles: _block.uncles ? _block.uncles : [],
+            isUncle: _block.isUncle,
+            totalBlockReward: '0x' + new bignumber_js_1.default(_block.blockReward).plus(new bignumber_js_1.default(_block.txFees)).toString(16)
+        };
+    }
+}
+exports.default = SmallBlock;
+
+/***/ }),
+/* 16 */
+/***/ (function(module, exports) {
+
+module.exports = require("bignumber.js");
+
+/***/ }),
+/* 17 */
 /***/ (function(module, exports) {
 
 module.exports = require("socket.io");

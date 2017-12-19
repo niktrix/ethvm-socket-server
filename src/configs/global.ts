@@ -7,7 +7,7 @@ export default {
 		],
 		ttl:{
 			interval: 5000, //5 seconds
-			age: 5*60*1000, //one hr
+			age: 5*60*1000, //5 mins
 		}
 	},
 	SOCKET_IO: {

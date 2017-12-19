@@ -1,8 +1,10 @@
 import { isValidRoom, log } from '@/globalFuncs'
 import { getTransactions, getBlocks } from '@/dataStore'
 import { txLayout, blockLayout } from '@/typeLayouts'
+import { SmallBlock } from '@/libs'
 import configs from '@/configs'
 import * as SocketIO from 'socket.io'
+import RethinkDB from '@/rethinkConn'
 interface _event {
     name: string,
     onEvent: (_socket: SocketIO.Socket, _msg: string) => void;
@@ -41,22 +43,21 @@ let events = [{
         let txs: Array<txLayout> = []
         let blocks: Array<blockLayout> = []
         txs = getTransactions().slice(0, configs.global.MAX.socketRows)
-        getBlocks().forEach((_block: blockLayout, idx: number):void => {
-            _block.transactions = _block.transactions.map((item: txLayout, idx: number): string => {
-                //if (!item) console.log(_block)
-                if(item) return item.hash
-            })
-            blocks.push(_block)
+        getBlocks().forEach((_block: blockLayout, idx: number): void => {
+            blocks.unshift(new SmallBlock(_block).smallify())
         })
         _socket.emit('newBlock', blocks)
         _socket.emit('newTx', txs)
     }
 }]
-let onConnection = (_socket: SocketIO.Socket) => {
+let onConnection = (_socket: SocketIO.Socket, rdb: RethinkDB) => {
     events.forEach((event: _event, idx: number) => {
         _socket.on(event.name, (msg: any) => {
             event.onEvent(_socket, msg)
         })
+    })
+    _socket.on('getBlock', (msg: string, cb: any) => {
+        rdb.getBlock(msg, cb)
     })
 }
 

@@ -27,8 +27,7 @@
     },
     "homepage": "https://github.com/enKryptIO/ethvm-socket-server#readme",
     "dependencies": {
-        "@types/lokijs": "^1.5.0",
-        "@types/yargs": "^10.0.0",
+        "bignumber.js": "^5.0.0",
         "lodash": "^4.17.4",
         "lokijs": "^1.5.1",
         "rethinkdb": "^2.3.3",
@@ -36,10 +35,13 @@
         "yargs": "^10.0.3"
     },
     "devDependencies": {
+        "@types/bignumber.js": "^4.0.3",
+        "@types/lokijs": "^1.5.0",
         "@types/lowdb": "^0.15.0",
         "@types/node": "^8.5.1",
         "@types/rethinkdb": "^2.3.8",
         "@types/socket.io": "^1.4.31",
+        "@types/yargs": "^10.0.0",
         "babel": "^6.23.0",
         "babel-cli": "^6.26.0",
         "babel-loader": "^7.1.2",

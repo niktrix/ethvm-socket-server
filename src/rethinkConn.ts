@@ -6,7 +6,6 @@ import { argv } from 'yargs'
 import { addTransaction, addBlock } from './dataStore'
 import { txLayout, blockLayout } from '@/typeLayouts'
 
-
 class RethinkDB {
     socketIO: any
     dbConn: r.Connection
@@ -14,7 +13,7 @@ class RethinkDB {
         this.socketIO = _socketIO
         this.start()
     }
-    start():void  {
+    start(): void {
         let _this = this
         let conf = configs.global.RETHINK_DB
         let tempConfig: r.ConnectionOptions = {
@@ -22,7 +21,7 @@ class RethinkDB {
             port: conf.port,
             db: conf.db
         }
-        let connect = (_config: r.ConnectionOptions):void => {
+        let connect = (_config: r.ConnectionOptions): void => {
             r.connect(_config, (err: Error, conn: r.Connection): void => {
                 if (!err) {
                     _this.dbConn = conn
@@ -32,7 +31,7 @@ class RethinkDB {
                 }
             })
         }
-       let connectWithCert = (_cert: any) => {
+        let connectWithCert = (_cert: any) => {
             let url = new URL(process.env[conf.env_url])
             tempConfig = {
                 host: url.hostname,
@@ -53,10 +52,10 @@ class RethinkDB {
             connectWithCert(process.env[conf.env_cert_raw])
         } else {
             connect(tempConfig)
-        } 
+        }
 
     }
-    setAllEvents():void  {
+    setAllEvents(): void {
         let _this = this
         r.table('blocks').changes().run(_this.dbConn, function(err, cursor) {
             cursor.each((err: Error, row: any) => {
@@ -65,19 +64,26 @@ class RethinkDB {
         });
     }
 
+    getBlock(hash: string, cb: any): void {
+        r.table('blocks').get(hash).run(this.dbConn, function(err, result) {
+            if (err) cb(err);
+            else cb(result);
+        })
+    }
+
     onNewBlock(_block: blockLayout) {
         let _this = this
         let txs = _block.transactions.slice(0)
         this.socketIO.to('blocks').emit('newBlock', _block)
         console.log(_block.hash)
-        _block.transactions.forEach((tx: txLayout, idx: number):void => {
+        _block.transactions.forEach((tx: txLayout, idx: number): void => {
             _this.onNewTx(tx)
         })
         addBlock(_block)
     }
-    onNewTx(_tx:txLayout) {
+    onNewTx(_tx: txLayout) {
         addTransaction(_tx)
-    } 
+    }
 }
 
 export default RethinkDB
