@@ -92,11 +92,6 @@ class RethinkDB {
         addBlock(_block)
     }
     onNewTx(_tx: txLayout) {
-      /*  if (this.tempTxs.length > configs.global.MAX.socketRows) {
-            this.socketIO.to('txs').emit('newTx', this.tempTxs)
-            this.tempTxs = []
-        }
-        this.tempTxs.unshift(_tx)*/
         this.socketIO.to('txs').emit('newTx', _tx)
         addTransaction(_tx)
     }
