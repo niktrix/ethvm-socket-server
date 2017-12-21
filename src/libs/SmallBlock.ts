@@ -1,4 +1,5 @@
 import { blockLayout, txLayout } from '@/typeLayouts'
+import { common } from '@/libs'
 import bn from 'bignumber.js'
 
 class SmallBlock {
@@ -14,11 +15,10 @@ class SmallBlock {
 			hash: _block.hash,
 			miner: _block.miner,
 			timestamp: _block.timestamp,
-			transactionCount: _block.transactions.length,
+			transactionCount: _block.transactionHashes.length,
 			uncleHashes: _block.uncleHashes,
-			uncles: _block.uncles ? _block.uncles : [],
 			isUncle: _block.isUncle,
-			totalBlockReward: '0x' + new bn(_block.blockReward).plus(new bn(_block.txFees)).toString(16)
+			totalBlockReward: Buffer.from(new bn(common.bufferToHex(_block.blockReward)).plus(new bn(common.bufferToHex(_block.txFees))).toString(16), 'hex')
 		}
 	}
 }

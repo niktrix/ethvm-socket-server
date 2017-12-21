@@ -59,6 +59,9 @@ let onConnection = (_socket: SocketIO.Socket, rdb: RethinkDB) => {
     _socket.on('getBlock', (msg: string, cb: any) => {
         rdb.getBlock(msg, cb)
     })
+    _socket.on('getTx', (msg: string, cb: any)=>{
+        rdb.getTx(msg, cb)
+    })
 }
 
 export default onConnection

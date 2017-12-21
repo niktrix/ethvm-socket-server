@@ -1,32 +1,32 @@
 import { txLayout } from '@/typeLayouts'
 export default interface blockLayout {
-	id?: string;
-	number: string;
+	number: Buffer;
 	intNumber: number;
-	hash: string,
-	parentHash?: string;
-	nonce?: string;
-	mixHash?: string;
-	sha3Uncles?: string;
-	logsBloom?: string;
-	stateRoot?: string;
-	miner: string;
-	minerBalance?: string;
-	difficulty?: string;
-	totalDifficulty?: string;
-	extraData?: string;
-	size?: string;
-	gasLimit?: string;
-	gasUsed?: string;
-	timestamp: string;
-	transactionsRoot?: string;
-	receiptsRoot?: string;
+	hash: Buffer,
+	parentHash?: Buffer;
+	nonce?: Buffer;
+	mixHash?: Buffer;
+	sha3Uncles?: Buffer;
+	logsBloom?: Buffer;
+	stateRoot?: Buffer;
+	miner: Buffer;
+	minerBalance?: Buffer;
+	difficulty?: Buffer;
+	totalDifficulty?: Buffer;
+	extraData?: Buffer;
+	size?: Buffer;
+	gasLimit?: Buffer;
+	gasUsed?: Buffer;
+	timestamp: Buffer;
+	transactionsRoot?: Buffer;
+	receiptsRoot?: Buffer;
 	transactions?: Array<txLayout>;
+	transactionHashes?: Array<Buffer>
 	transactionCount?: number;
-	uncleHashes?: Array<string>;
-	uncles: Array<blockLayout>;
+	uncleHashes?: Array<Buffer>;
+	uncles?: Array<blockLayout>;
 	isUncle: boolean;
-	txFees?: string;
-	blockReward?: string;
-	totalBlockReward?: string;
+	txFees?: Buffer;
+	blockReward?: Buffer;
+	totalBlockReward?: Buffer;
 }

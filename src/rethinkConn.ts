@@ -57,31 +57,40 @@ class RethinkDB {
     }
     setAllEvents(): void {
         let _this = this
-        r.table('blocks').changes().run(_this.dbConn, function(err, cursor) {
+        r.table('blocks').changes().run(_this.dbConn, (err, cursor) => {
             cursor.each((err: Error, row: any) => {
                 if (!err) _this.onNewBlock(row.new_val)
+            });
+        });
+
+        r.table('transactions').changes().run(_this.dbConn, (err, cursor) => {
+            cursor.each((err: Error, row: any) => {
+                if (!err) _this.onNewTx(row.new_val)
             });
         });
     }
 
     getBlock(hash: string, cb: any): void {
-        r.table('blocks').get(hash).run(this.dbConn, function(err, result) {
+        r.table('blocks').get(hash).run(this.dbConn, (err, result) => {
             if (err) cb(err);
             else cb(result);
+        })
+    }
+    getTx(hash: string, cb:any):void {
+        r.table("blocks").getAll(hash, {index:"transactions.hash"}).limit(1).run(this.dbConn, (err, result)=>{
+            if(err) cb(err)
+            else cb(result)
         })
     }
 
     onNewBlock(_block: blockLayout) {
         let _this = this
-        let txs = _block.transactions.slice(0)
         this.socketIO.to('blocks').emit('newBlock', _block)
         console.log(_block.hash)
-        _block.transactions.forEach((tx: txLayout, idx: number): void => {
-            _this.onNewTx(tx)
-        })
         addBlock(_block)
     }
     onNewTx(_tx: txLayout) {
+        //this.socketIO.to('txs').emit('newTx', _tx)
         addTransaction(_tx)
     }
 }

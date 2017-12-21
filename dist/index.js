@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 2);
+/******/ 	return __webpack_require__(__webpack_require__.s = 3);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -71,8 +71,8 @@
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const global_1 = __webpack_require__(3);
-const validRooms_1 = __webpack_require__(4);
+const global_1 = __webpack_require__(4);
+const validRooms_1 = __webpack_require__(5);
 exports.default = {
     global: global_1.default,
     validRooms: validRooms_1.default
@@ -86,7 +86,7 @@ exports.default = {
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const loki = __webpack_require__(11);
+const loki = __webpack_require__(12);
 const configs_1 = __webpack_require__(0);
 let lokiDB = new loki(configs_1.default.global.LOKI.dbName, { autosave: true, autosaveInterval: 5000, autoload: true });
 let tables = configs_1.default.global.LOKI.tableNames;
@@ -95,21 +95,43 @@ let setCollections = () => {
         if (!lokiDB.getCollection(item)) lokiDB.addCollection(item).setTTL(configs_1.default.global.LOKI.ttl.age, configs_1.default.global.LOKI.ttl.interval);
     });
 };
+let hexify = obj => {
+    let _obj = Object.assign({}, obj);
+    for (var key in _obj) {
+        if (_obj.hasOwnProperty(key)) {
+            if (Buffer.isBuffer(_obj[key])) _obj[key] = '0x' + _obj[key].toString('hex');
+        }
+    }
+    return _obj;
+};
+let bufferify = obj => {
+    let _obj = Object.assign({}, obj);
+    for (var key in _obj) {
+        if (_obj.hasOwnProperty(key)) {
+            if ((typeof _obj[key] === 'string' || _obj[key] instanceof String) && _obj[key].substring(0, 2) == '0x') _obj[key] = new Buffer(_obj[key].substring(2).toUpperCase(), 'hex');
+        }
+    }
+    return _obj;
+};
 setCollections();
 let addTransaction = tx => {
-    lokiDB.getCollection('transactions').insert(tx);
+    lokiDB.getCollection('transactions').insert(hexify(tx));
 };
 exports.addTransaction = addTransaction;
 let addBlock = block => {
-    lokiDB.getCollection('blocks').insert(block);
+    lokiDB.getCollection('blocks').insert(hexify(block));
 };
 exports.addBlock = addBlock;
 let getBlocks = () => {
-    return lokiDB.getCollection('blocks').chain().simplesort('blockNumber').data();
+    return lokiDB.getCollection('blocks').chain().simplesort('blockNumber').data().map(_block => {
+        return bufferify(_block);
+    });
 };
 exports.getBlocks = getBlocks;
 let getTransactions = () => {
-    return lokiDB.getCollection('transactions').chain().simplesort('blockNumber').data();
+    return lokiDB.getCollection('transactions').chain().simplesort('blockNumber').data().map(_tx => {
+        return bufferify(_tx);
+    });
 };
 exports.getTransactions = getTransactions;
 let thisReturnsANumber = (id, name) => {
@@ -124,12 +146,25 @@ let thisReturnsANumber = (id, name) => {
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
+const SmallBlock_1 = __webpack_require__(15);
+exports.SmallBlock = SmallBlock_1.default;
+const common = __webpack_require__(17);
+exports.common = common;
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
 const configs_1 = __webpack_require__(0);
-const http = __webpack_require__(5);
-const rethinkConn_1 = __webpack_require__(6);
-const addEvents_1 = __webpack_require__(12);
+const http = __webpack_require__(6);
+const rethinkConn_1 = __webpack_require__(7);
+const addEvents_1 = __webpack_require__(13);
 const server = http.createServer();
-const io = __webpack_require__(17)(server, configs_1.default.global.SOCKET_IO);
+const io = __webpack_require__(18)(server, configs_1.default.global.SOCKET_IO);
 server.listen(configs_1.default.global.SOCKET_IO.port, configs_1.default.global.SOCKET_IO.ip, () => {
     console.log("Listening on", configs_1.default.global.SOCKET_IO.port);
 });
@@ -139,7 +174,7 @@ io.on('connection', _socket => {
 });
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -177,7 +212,7 @@ exports.default = {
 };
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -187,24 +222,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = ["blocks", "minedtxs", "pendingTxs", "txs", "uncles"];
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports) {
 
 module.exports = require("http");
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const r = __webpack_require__(7);
+const r = __webpack_require__(8);
 const configs_1 = __webpack_require__(0);
-const fs = __webpack_require__(8);
-const url_1 = __webpack_require__(9);
-const yargs_1 = __webpack_require__(10);
+const fs = __webpack_require__(9);
+const url_1 = __webpack_require__(10);
+const yargs_1 = __webpack_require__(11);
 const dataStore_1 = __webpack_require__(1);
 class RethinkDB {
     constructor(_socketIO) {
@@ -254,25 +289,31 @@ class RethinkDB {
     }
     setAllEvents() {
         let _this = this;
-        r.table('blocks').changes().run(_this.dbConn, function (err, cursor) {
+        r.table('blocks').changes().run(_this.dbConn, (err, cursor) => {
             cursor.each((err, row) => {
                 if (!err) _this.onNewBlock(row.new_val);
             });
         });
+        r.table('transactions').changes().run(_this.dbConn, (err, cursor) => {
+            cursor.each((err, row) => {
+                if (!err) _this.onNewTx(row.new_val);
+            });
+        });
     }
     getBlock(hash, cb) {
-        r.table('blocks').get(hash).run(this.dbConn, function (err, result) {
+        r.table('blocks').get(hash).run(this.dbConn, (err, result) => {
+            if (err) cb(err);else cb(result);
+        });
+    }
+    getTx(hash, cb) {
+        r.table("blocks").getAll(hash, { index: "transactions.hash" }).limit(1).run(this.dbConn, (err, result) => {
             if (err) cb(err);else cb(result);
         });
     }
     onNewBlock(_block) {
         let _this = this;
-        let txs = _block.transactions.slice(0);
         this.socketIO.to('blocks').emit('newBlock', _block);
         console.log(_block.hash);
-        _block.transactions.forEach((tx, idx) => {
-            _this.onNewTx(tx);
-        });
         dataStore_1.addBlock(_block);
     }
     onNewTx(_tx) {
@@ -282,46 +323,46 @@ class RethinkDB {
 exports.default = RethinkDB;
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports) {
 
 module.exports = require("rethinkdb");
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports) {
 
 module.exports = require("fs");
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports) {
 
 module.exports = require("url");
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports) {
 
 module.exports = require("yargs");
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports) {
 
 module.exports = require("lokijs");
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const globalFuncs_1 = __webpack_require__(13);
+const globalFuncs_1 = __webpack_require__(14);
 const dataStore_1 = __webpack_require__(1);
-const libs_1 = __webpack_require__(14);
+const libs_1 = __webpack_require__(2);
 const configs_1 = __webpack_require__(0);
 let events = [{
     name: "join",
@@ -373,11 +414,14 @@ let onConnection = (_socket, rdb) => {
     _socket.on('getBlock', (msg, cb) => {
         rdb.getBlock(msg, cb);
     });
+    _socket.on('getTx', (msg, cb) => {
+        rdb.getTx(msg, cb);
+    });
 };
 exports.default = onConnection;
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -400,17 +444,6 @@ let log = {
 exports.log = log;
 
 /***/ }),
-/* 14 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const SmallBlock_1 = __webpack_require__(15);
-exports.SmallBlock = SmallBlock_1.default;
-
-/***/ }),
 /* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -418,6 +451,7 @@ exports.SmallBlock = SmallBlock_1.default;
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
+const libs_1 = __webpack_require__(2);
 const bignumber_js_1 = __webpack_require__(16);
 class SmallBlock {
     constructor(_block) {
@@ -431,11 +465,10 @@ class SmallBlock {
             hash: _block.hash,
             miner: _block.miner,
             timestamp: _block.timestamp,
-            transactionCount: _block.transactions.length,
+            transactionCount: _block.transactionHashes.length,
             uncleHashes: _block.uncleHashes,
-            uncles: _block.uncles ? _block.uncles : [],
             isUncle: _block.isUncle,
-            totalBlockReward: '0x' + new bignumber_js_1.default(_block.blockReward).plus(new bignumber_js_1.default(_block.txFees)).toString(16)
+            totalBlockReward: Buffer.from(new bignumber_js_1.default(libs_1.common.bufferToHex(_block.blockReward)).plus(new bignumber_js_1.default(libs_1.common.bufferToHex(_block.txFees))).toString(16), 'hex')
         };
     }
 }
@@ -449,6 +482,21 @@ module.exports = require("bignumber.js");
 
 /***/ }),
 /* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+let bufferToHex = _buf => {
+    let r = '0x' + new Buffer(_buf).toString('hex');
+    if (r == '0x') r = "0x0";
+    return r;
+};
+exports.bufferToHex = bufferToHex;
+
+/***/ }),
+/* 18 */
 /***/ (function(module, exports) {
 
 module.exports = require("socket.io");
