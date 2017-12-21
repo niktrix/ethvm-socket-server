@@ -9,12 +9,14 @@ import { txLayout, blockLayout } from '@/typeLayouts'
 class RethinkDB {
     socketIO: any
     dbConn: r.Connection
+    tempTxs: Array<txLayout>
     constructor(_socketIO: any) {
         this.socketIO = _socketIO
         this.start()
     }
     start(): void {
         let _this = this
+        this.tempTxs = []
         let conf = configs.global.RETHINK_DB
         let tempConfig: r.ConnectionOptions = {
             host: conf.host,
@@ -71,13 +73,13 @@ class RethinkDB {
     }
 
     getBlock(hash: string, cb: any): void {
-        r.table('blocks').get(hash).run(this.dbConn, (err, result) => {
+        r.table('blocks').get(r.binary(new Buffer(hash))).run(this.dbConn, (err, result) => {
             if (err) cb(err);
             else cb(result);
         })
     }
     getTx(hash: string, cb:any):void {
-        r.table("blocks").getAll(hash, {index:"transactions.hash"}).limit(1).run(this.dbConn, (err, result)=>{
+        r.table("transactions").get(r.binary(new Buffer(hash))).run(this.dbConn, (err, result) => {
             if(err) cb(err)
             else cb(result)
         })
@@ -90,7 +92,11 @@ class RethinkDB {
         addBlock(_block)
     }
     onNewTx(_tx: txLayout) {
-        //this.socketIO.to('txs').emit('newTx', _tx)
+        if (this.tempTxs.length > configs.global.MAX.socketRows) {
+            this.socketIO.to('txs').emit('newTx', this.tempTxs)
+            this.tempTxs = []
+        }
+        this.tempTxs.unshift(_tx)
         addTransaction(_tx)
     }
 }

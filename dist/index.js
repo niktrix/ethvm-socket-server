@@ -248,6 +248,7 @@ class RethinkDB {
     }
     start() {
         let _this = this;
+        this.tempTxs = [];
         let conf = configs_1.default.global.RETHINK_DB;
         let tempConfig = {
             host: conf.host,
@@ -301,12 +302,12 @@ class RethinkDB {
         });
     }
     getBlock(hash, cb) {
-        r.table('blocks').get(hash).run(this.dbConn, (err, result) => {
+        r.table('blocks').get(r.binary(new Buffer(hash))).run(this.dbConn, (err, result) => {
             if (err) cb(err);else cb(result);
         });
     }
     getTx(hash, cb) {
-        r.table("blocks").getAll(hash, { index: "transactions.hash" }).limit(1).run(this.dbConn, (err, result) => {
+        r.table("transactions").get(r.binary(new Buffer(hash))).run(this.dbConn, (err, result) => {
             if (err) cb(err);else cb(result);
         });
     }
@@ -317,6 +318,11 @@ class RethinkDB {
         dataStore_1.addBlock(_block);
     }
     onNewTx(_tx) {
+        if (this.tempTxs.length > configs_1.default.global.MAX.socketRows) {
+            this.socketIO.to('txs').emit('newTx', this.tempTxs);
+            this.tempTxs = [];
+        }
+        this.tempTxs.unshift(_tx);
         dataStore_1.addTransaction(_tx);
     }
 }
@@ -465,6 +471,7 @@ class SmallBlock {
             hash: _block.hash,
             miner: _block.miner,
             timestamp: _block.timestamp,
+            transactionHashes: _block.transactionHashes,
             transactionCount: _block.transactionHashes.length,
             uncleHashes: _block.uncleHashes,
             isUncle: _block.isUncle,
