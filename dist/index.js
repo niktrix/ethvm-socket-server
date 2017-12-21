@@ -318,11 +318,7 @@ class RethinkDB {
         dataStore_1.addBlock(_block);
     }
     onNewTx(_tx) {
-        if (this.tempTxs.length > configs_1.default.global.MAX.socketRows) {
-            this.socketIO.to('txs').emit('newTx', this.tempTxs);
-            this.tempTxs = [];
-        }
-        this.tempTxs.unshift(_tx);
+        this.socketIO.to('txs').emit('newTx', _tx);
         dataStore_1.addTransaction(_tx);
     }
 }
