@@ -92,7 +92,7 @@ let lokiDB = new loki(configs_1.default.global.LOKI.dbName, { autosave: true, au
 let tables = configs_1.default.global.LOKI.tableNames;
 let setCollections = () => {
     tables.forEach((item, idx) => {
-        if (!lokiDB.getCollection(item)) lokiDB.addCollection(item).setTTL(configs_1.default.global.LOKI.ttl.age, configs_1.default.global.LOKI.ttl.interval);
+        if (!lokiDB.getCollection(item)) lokiDB.addCollection(item, { unique: ['hash'] }).setTTL(configs_1.default.global.LOKI.ttl.age, configs_1.default.global.LOKI.ttl.interval);
     });
 };
 let hexify = obj => {
@@ -115,11 +115,23 @@ let bufferify = obj => {
 };
 setCollections();
 let addTransaction = tx => {
-    lokiDB.getCollection('transactions').insert(hexify(tx));
+    let hexed = hexify(tx);
+    let col = lokiDB.getCollection('transactions');
+    var obj = col.by('hash', hexed.hash);
+    if (obj) {
+        col.remove(obj);
+    }
+    lokiDB.getCollection('transactions').insert(hexed);
 };
 exports.addTransaction = addTransaction;
 let addBlock = block => {
-    lokiDB.getCollection('blocks').insert(hexify(block));
+    let hexed = hexify(block);
+    let col = lokiDB.getCollection('blocks');
+    var obj = col.by('hash', hexed.hash);
+    if (obj) {
+        col.remove(obj);
+    }
+    lokiDB.getCollection('blocks').insert(hexed);
 };
 exports.addBlock = addBlock;
 let getBlocks = () => {
@@ -292,12 +304,17 @@ class RethinkDB {
         let _this = this;
         r.table('blocks').changes().run(_this.dbConn, (err, cursor) => {
             cursor.each((err, row) => {
-                if (!err) _this.onNewBlock(row.new_val);
-            });
-        });
-        r.table('transactions').changes().run(_this.dbConn, (err, cursor) => {
-            cursor.each((err, row) => {
-                if (!err) _this.onNewTx(row.new_val);
+                if (!err) {
+                    _this.onNewBlock(row.new_val);
+                    let hashes = row.new_val.transactionHashes.map(_hash => {
+                        return r.binary(_hash);
+                    });
+                    r.table('transactions').getAll(r.args(hashes)).run(_this.dbConn, (err, cursor) => {
+                        cursor.toArray(function (err, results) {
+                            if (!err) _this.onNewTx(results);
+                        });
+                    });
+                }
             });
         });
     }
@@ -319,7 +336,13 @@ class RethinkDB {
     }
     onNewTx(_tx) {
         this.socketIO.to('txs').emit('newTx', _tx);
-        dataStore_1.addTransaction(_tx);
+        if (Array.isArray(_tx)) {
+            _tx.forEach(__tx => {
+                dataStore_1.addTransaction(__tx);
+            });
+        } else {
+            dataStore_1.addTransaction(_tx);
+        }
     }
 }
 exports.default = RethinkDB;

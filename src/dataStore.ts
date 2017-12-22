@@ -5,7 +5,7 @@ let lokiDB = new loki(configs.global.LOKI.dbName, { autosave: true, autosaveInte
 let tables = configs.global.LOKI.tableNames
 let setCollections = (): void => {
     tables.forEach((item: string, idx: number): void => {
-        if (!lokiDB.getCollection(item)) lokiDB.addCollection(item).setTTL(configs.global.LOKI.ttl.age, configs.global.LOKI.ttl.interval)
+        if (!lokiDB.getCollection(item)) lokiDB.addCollection(item, { unique: ['hash'] }).setTTL(configs.global.LOKI.ttl.age, configs.global.LOKI.ttl.interval)
     })
 }
 let hexify  = (obj: any) => {
@@ -28,10 +28,22 @@ let bufferify = (obj: any) => {
 }
 setCollections()
 let addTransaction = (tx: txLayout): void => {
-    lokiDB.getCollection('transactions').insert(hexify(tx))
+    let hexed = hexify(tx)
+    let col = lokiDB.getCollection('transactions')
+    var obj = col.by('hash', hexed.hash);
+    if (obj) {
+        col.remove(obj);
+    }
+    lokiDB.getCollection('transactions').insert(hexed)
 }
 let addBlock = (block: blockLayout) => {
-    lokiDB.getCollection('blocks').insert(hexify(block))
+    let hexed = hexify(block)
+    let col = lokiDB.getCollection('blocks')
+    var obj = col.by('hash', hexed.hash);
+    if (obj) {
+        col.remove(obj);
+    }
+    lokiDB.getCollection('blocks').insert(hexed)
 }
 let getBlocks = (): Array<blockLayout> => {
     return lokiDB.getCollection('blocks').chain().simplesort('blockNumber').data().map((_block)=>{

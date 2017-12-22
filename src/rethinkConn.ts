@@ -6,6 +6,10 @@ import { argv } from 'yargs'
 import { addTransaction, addBlock } from './dataStore'
 import { txLayout, blockLayout } from '@/typeLayouts'
 
+declare module 'rethinkdb' {
+    let binary: any;
+    let args: any;
+}
 class RethinkDB {
     socketIO: any
     dbConn: r.Connection
@@ -61,13 +65,17 @@ class RethinkDB {
         let _this = this
         r.table('blocks').changes().run(_this.dbConn, (err, cursor) => {
             cursor.each((err: Error, row: any) => {
-                if (!err) _this.onNewBlock(row.new_val)
-            });
-        });
-
-        r.table('transactions').changes().run(_this.dbConn, (err, cursor) => {
-            cursor.each((err: Error, row: any) => {
-                if (!err) _this.onNewTx(row.new_val)
+                if (!err) {
+                    _this.onNewBlock(row.new_val)
+                    let hashes = row.new_val.transactionHashes.map((_hash: Buffer)=>{
+                        return r.binary(_hash)
+                    })
+                    r.table('transactions').getAll(r.args(hashes)).run(_this.dbConn, (err, cursor)=>{
+                        cursor.toArray(function(err, results) {
+                            if (!err) _this.onNewTx(results)
+                        });
+                    })
+                }
             });
         });
     }
@@ -91,9 +99,16 @@ class RethinkDB {
         console.log(_block.hash)
         addBlock(_block)
     }
-    onNewTx(_tx: txLayout) {
+    onNewTx(_tx: txLayout | Array<txLayout>) {
         this.socketIO.to('txs').emit('newTx', _tx)
-        addTransaction(_tx)
+        if(Array.isArray(_tx)) {
+            _tx.forEach((__tx)=>{
+                addTransaction(__tx)
+            })
+        } else {
+            addTransaction(_tx)
+        }
+
     }
 }
 
