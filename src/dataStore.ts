@@ -3,6 +3,7 @@ import configs from '@/configs'
 import { txLayout, blockLayout } from '@/typeLayouts'
 let lokiDB = new loki(configs.global.LOKI.dbName, { autosave: true, autosaveInterval: 5000, autoload: true })
 let tables = configs.global.LOKI.tableNames
+type CallbackFunction = (data: Array<any>) => void;
 let setCollections = (): void => {
     tables.forEach((item: string, idx: number): void => {
         if (!lokiDB.getCollection(item)) lokiDB.addCollection(item, { unique: ['hash'] }).setTTL(configs.global.LOKI.ttl.age, configs.global.LOKI.ttl.interval)
@@ -27,14 +28,23 @@ let bufferify = (obj: any) => {
     return _obj
 }
 setCollections()
-let addTransaction = (tx: txLayout): void => {
-    let hexed = hexify(tx)
+let processTx = (tx: txLayout): void => {
+     let hexed = hexify(tx)
     let col = lokiDB.getCollection('transactions')
     var obj = col.by('hash', hexed.hash);
     if (obj) {
         col.remove(obj);
     }
     lokiDB.getCollection('transactions').insert(hexed)
+}
+let addTransaction = (tx: txLayout | Array<txLayout>): void => {
+    if (Array.isArray(tx)) {
+        tx.forEach((tTx)=>{
+            processTx(tTx)
+        })
+    } else {
+        processTx(tx)
+    }
 }
 let addBlock = (block: blockLayout) => {
     let hexed = hexify(block)
@@ -45,15 +55,15 @@ let addBlock = (block: blockLayout) => {
     }
     lokiDB.getCollection('blocks').insert(hexed)
 }
-let getBlocks = (): Array<blockLayout> => {
-    return lokiDB.getCollection('blocks').chain().simplesort('blockNumber').data().map((_block)=>{
+let getBlocks = (cb: CallbackFunction) => {
+    cb(lokiDB.getCollection('blocks').chain().simplesort('blockNumber').data().map((_block)=>{
         return bufferify(_block)
-    })
+    }))
 }
-let getTransactions = () => {
-    return lokiDB.getCollection('transactions').chain().simplesort('blockNumber').data().map((_tx)=>{
+let getTransactions = (cb: CallbackFunction) => {
+    cb(lokiDB.getCollection('transactions').chain().simplesort('blockNumber').data().map((_tx)=>{
         return bufferify(_tx)
-    })
+    }))
 }
 
 let thisReturnsANumber =(id: number, name: string): number => {

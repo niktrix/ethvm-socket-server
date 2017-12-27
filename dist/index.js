@@ -86,64 +86,46 @@ exports.default = {
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const loki = __webpack_require__(12);
+const Redis = __webpack_require__(12);
 const configs_1 = __webpack_require__(0);
-let lokiDB = new loki(configs_1.default.global.LOKI.dbName, { autosave: true, autosaveInterval: 5000, autoload: true });
-let tables = configs_1.default.global.LOKI.tableNames;
-let setCollections = () => {
-    tables.forEach((item, idx) => {
-        if (!lokiDB.getCollection(item)) lokiDB.addCollection(item, { unique: ['hash'] }).setTTL(configs_1.default.global.LOKI.ttl.age, configs_1.default.global.LOKI.ttl.interval);
+let redis = new Redis(configs_1.default.global.REDIS.URL);
+let tables = {
+    transactions: 'transactions',
+    blocks: 'blocks'
+};
+let getArray = (tbName, cb) => {
+    let vals = redis.get(tbName, (err, result) => {
+        if (!err && result) cb(JSON.parse(result));else cb([]);
     });
 };
-let hexify = obj => {
-    let _obj = Object.assign({}, obj);
-    for (var key in _obj) {
-        if (_obj.hasOwnProperty(key)) {
-            if (Buffer.isBuffer(_obj[key])) _obj[key] = '0x' + _obj[key].toString('hex');
-        }
-    }
-    return _obj;
-};
-let bufferify = obj => {
-    let _obj = Object.assign({}, obj);
-    for (var key in _obj) {
-        if (_obj.hasOwnProperty(key)) {
-            if ((typeof _obj[key] === 'string' || _obj[key] instanceof String) && _obj[key].substring(0, 2) == '0x') _obj[key] = new Buffer(_obj[key].substring(2).toUpperCase(), 'hex');
-        }
-    }
-    return _obj;
-};
-setCollections();
 let addTransaction = tx => {
-    let hexed = hexify(tx);
-    let col = lokiDB.getCollection('transactions');
-    var obj = col.by('hash', hexed.hash);
-    if (obj) {
-        col.remove(obj);
-    }
-    lokiDB.getCollection('transactions').insert(hexed);
+    getArray(tables.transactions, pTxs => {
+        if (Array.isArray(tx)) {
+            tx.forEach(tTx => {
+                pTxs.unshift(tTx);
+            });
+        } else {
+            pTxs.unshift(tx);
+        }
+        if (pTxs.length > configs_1.default.global.MAX.socketRows) pTxs = pTxs.slice(0, configs_1.default.global.MAX.socketRows);
+        redis.set(tables.transactions, JSON.stringify(pTxs));
+    });
 };
 exports.addTransaction = addTransaction;
 let addBlock = block => {
-    let hexed = hexify(block);
-    let col = lokiDB.getCollection('blocks');
-    var obj = col.by('hash', hexed.hash);
-    if (obj) {
-        col.remove(obj);
-    }
-    lokiDB.getCollection('blocks').insert(hexed);
+    getArray(tables.blocks, pBlocks => {
+        pBlocks.unshift(block);
+        if (pBlocks.length > configs_1.default.global.MAX.socketRows) pBlocks = pBlocks.slice(0, configs_1.default.global.MAX.socketRows);
+        redis.set(tables.blocks, JSON.stringify(pBlocks));
+    });
 };
 exports.addBlock = addBlock;
-let getBlocks = () => {
-    return lokiDB.getCollection('blocks').chain().simplesort('blockNumber').data().map(_block => {
-        return bufferify(_block);
-    });
+let getBlocks = cb => {
+    getArray(tables.blocks, cb);
 };
 exports.getBlocks = getBlocks;
-let getTransactions = () => {
-    return lokiDB.getCollection('transactions').chain().simplesort('blockNumber').data().map(_tx => {
-        return bufferify(_tx);
-    });
+let getTransactions = cb => {
+    getArray(tables.transactions, cb);
 };
 exports.getTransactions = getTransactions;
 let thisReturnsANumber = (id, name) => {
@@ -202,6 +184,9 @@ exports.default = {
             age: 5 * 60 * 1000
         }
     },
+    REDIS: {
+        URL: process.env.REDIS_URL
+    },
     SOCKET_IO: {
         port: parseInt(process.env.PORT) || 3000,
         serveClient: false,
@@ -252,7 +237,7 @@ const configs_1 = __webpack_require__(0);
 const fs = __webpack_require__(9);
 const url_1 = __webpack_require__(10);
 const yargs_1 = __webpack_require__(11);
-const dataStore_1 = __webpack_require__(1);
+const datastore_redis_1 = __webpack_require__(1);
 class RethinkDB {
     constructor(_socketIO) {
         this.socketIO = _socketIO;
@@ -332,17 +317,11 @@ class RethinkDB {
         let _this = this;
         this.socketIO.to('blocks').emit('newBlock', _block);
         console.log(_block.hash);
-        dataStore_1.addBlock(_block);
+        datastore_redis_1.addBlock(_block);
     }
     onNewTx(_tx) {
         this.socketIO.to('txs').emit('newTx', _tx);
-        if (Array.isArray(_tx)) {
-            _tx.forEach(__tx => {
-                dataStore_1.addTransaction(__tx);
-            });
-        } else {
-            dataStore_1.addTransaction(_tx);
-        }
+        datastore_redis_1.addTransaction(_tx);
     }
 }
 exports.default = RethinkDB;
@@ -375,7 +354,7 @@ module.exports = require("yargs");
 /* 12 */
 /***/ (function(module, exports) {
 
-module.exports = require("lokijs");
+module.exports = require("ioredis");
 
 /***/ }),
 /* 13 */
@@ -386,9 +365,8 @@ module.exports = require("lokijs");
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const globalFuncs_1 = __webpack_require__(14);
-const dataStore_1 = __webpack_require__(1);
+const datastore_redis_1 = __webpack_require__(1);
 const libs_1 = __webpack_require__(2);
-const configs_1 = __webpack_require__(0);
 let events = [{
     name: "join",
     onEvent: (_socket, _msg) => {
@@ -402,32 +380,30 @@ let events = [{
 }, {
     name: "pastBlocks",
     onEvent: (_socket, _msg) => {
-        let arr = [];
-        dataStore_1.getBlocks().forEach(_block => {
-            arr.push(_block);
+        datastore_redis_1.getBlocks(_blocks => {
+            _socket.emit('newBlock', _blocks);
         });
-        _socket.emit('newBlock', arr.slice(0, configs_1.default.global.MAX.socketRows));
     }
 }, {
     name: "pastTxs",
     onEvent: (_socket, _msg) => {
-        let arr = [];
-        dataStore_1.getTransactions().forEach(_tx => {
-            arr.push(_tx);
+        datastore_redis_1.getTransactions(_txs => {
+            _socket.emit('newTx', _txs);
         });
-        _socket.emit('newTx', arr.slice(0, configs_1.default.global.MAX.socketRows));
     }
 }, {
     name: "pastData",
     onEvent: (_socket, _msg) => {
-        let txs = [];
-        let blocks = [];
-        txs = dataStore_1.getTransactions().slice(0, configs_1.default.global.MAX.socketRows);
-        dataStore_1.getBlocks().forEach((_block, idx) => {
-            blocks.unshift(new libs_1.SmallBlock(_block).smallify());
+        datastore_redis_1.getTransactions(_txs => {
+            datastore_redis_1.getBlocks(_blocks => {
+                let blocks = [];
+                _blocks.forEach((_block, idx) => {
+                    blocks.unshift(new libs_1.SmallBlock(_block).smallify());
+                });
+                _socket.emit('newBlock', blocks);
+                _socket.emit('newTx', _txs);
+            });
         });
-        _socket.emit('newBlock', blocks);
-        _socket.emit('newTx', txs);
     }
 }];
 let onConnection = (_socket, rdb) => {

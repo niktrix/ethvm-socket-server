@@ -1,5 +1,5 @@
 import { isValidRoom, log } from '@/globalFuncs'
-import { getTransactions, getBlocks } from '@/dataStore'
+import { getTransactions, getBlocks } from '@/datastore-redis'
 import { txLayout, blockLayout } from '@/typeLayouts'
 import { SmallBlock } from '@/libs'
 import configs from '@/configs'
@@ -22,32 +22,30 @@ let events = [{
 }, {
     name: "pastBlocks",
     onEvent: (_socket: SocketIO.Socket, _msg: string): void => {
-        let arr: Array<blockLayout> = []
-        getBlocks().forEach((_block: blockLayout): void => {
-            arr.push(_block)
+        getBlocks((_blocks: Array<blockLayout>)=>{
+            _socket.emit('newBlock', _blocks)
         });
-        _socket.emit('newBlock', arr.slice(0, configs.global.MAX.socketRows))
     }
 }, {
     name: "pastTxs",
     onEvent: (_socket: SocketIO.Socket, _msg: string) => {
-        let arr: Array<txLayout> = []
-        getTransactions().forEach((_tx: txLayout) => {
-            arr.push(_tx)
-        });
-        _socket.emit('newTx', arr.slice(0, configs.global.MAX.socketRows))
+        getTransactions((_txs: Array<txLayout>)=>{
+            _socket.emit('newTx', _txs)
+        })
     }
 }, {
     name: "pastData",
     onEvent: (_socket: SocketIO.Socket, _msg: string) => {
-        let txs: Array<txLayout> = []
-        let blocks: Array<blockLayout> = []
-        txs = getTransactions().slice(0, configs.global.MAX.socketRows)
-        getBlocks().forEach((_block: blockLayout, idx: number): void => {
-            blocks.unshift(new SmallBlock(_block).smallify())
+        getTransactions((_txs: Array<txLayout>)=>{
+            getBlocks((_blocks:Array<blockLayout>)=>{
+                let blocks: Array<blockLayout> = []
+                _blocks.forEach((_block: blockLayout, idx: number): void => {
+                    blocks.unshift(new SmallBlock(_block).smallify())
+                })
+                _socket.emit('newBlock', blocks)
+                _socket.emit('newTx', _txs)
+            })
         })
-        _socket.emit('newBlock', blocks)
-        _socket.emit('newTx', txs)
     }
 }]
 let onConnection = (_socket: SocketIO.Socket, rdb: RethinkDB) => {

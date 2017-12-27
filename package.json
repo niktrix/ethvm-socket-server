@@ -28,6 +28,7 @@
     "homepage": "https://github.com/enKryptIO/ethvm-socket-server#readme",
     "dependencies": {
         "bignumber.js": "^5.0.0",
+        "ioredis": "^3.2.2",
         "lodash": "^4.17.4",
         "lokijs": "^1.5.1",
         "rethinkdb": "^2.3.3",
@@ -36,6 +37,7 @@
     },
     "devDependencies": {
         "@types/bignumber.js": "^4.0.3",
+        "@types/ioredis": "^3.2.4",
         "@types/lokijs": "^1.5.0",
         "@types/lowdb": "^0.15.0",
         "@types/node": "^8.5.1",

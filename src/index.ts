@@ -1,6 +1,5 @@
 import configs from '@/configs'
 import * as http from 'http'
-import { addTransaction } from '@/dataStore'
 import RethinkDB from '@/rethinkConn'
 import addEvents from '@/addEvents'
 import * as SocketIO from 'socket.io'

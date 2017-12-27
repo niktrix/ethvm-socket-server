@@ -10,6 +10,9 @@ export default {
 			age: 5*60*1000, //5 mins
 		}
 	},
+	REDIS: {
+		URL: process.env.REDIS_URL
+	},
 	SOCKET_IO: {
 		port: parseInt(process.env.PORT) || 3000,
 		serveClient: false,

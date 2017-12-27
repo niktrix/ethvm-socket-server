@@ -3,7 +3,7 @@ import configs from '@/configs'
 import * as fs from 'fs'
 import { URL } from 'url'
 import { argv } from 'yargs'
-import { addTransaction, addBlock } from './dataStore'
+import { addTransaction, addBlock } from './datastore-redis'
 import { txLayout, blockLayout } from '@/typeLayouts'
 
 declare module 'rethinkdb' {
@@ -96,19 +96,12 @@ class RethinkDB {
     onNewBlock(_block: blockLayout) {
         let _this = this
         this.socketIO.to('blocks').emit('newBlock', _block)
-        console.log(_block.hash)
+        console.log(_block.hash)    
         addBlock(_block)
     }
     onNewTx(_tx: txLayout | Array<txLayout>) {
         this.socketIO.to('txs').emit('newTx', _tx)
-        if(Array.isArray(_tx)) {
-            _tx.forEach((__tx)=>{
-                addTransaction(__tx)
-            })
-        } else {
-            addTransaction(_tx)
-        }
-
+        addTransaction(_tx)
     }
 }
 
