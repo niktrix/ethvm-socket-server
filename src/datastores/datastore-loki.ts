@@ -27,7 +27,6 @@ let bufferify = (obj: any) => {
     }
     return _obj
 }
-setCollections()
 let processTx = (tx: txLayout): void => {
      let hexed = hexify(tx)
     let col = lokiDB.getCollection('transactions')
@@ -69,10 +68,16 @@ let getTransactions = (cb: CallbackFunction) => {
 let thisReturnsANumber =(id: number, name: string): number => {
     return 0
 }
+let initialize = (): void => {
+    setCollections()
+    lokiDB.getCollection('transactions').clear()
+    lokiDB.getCollection('blocks').clear()
+}
 
-export {
+export default {
     addTransaction,
     addBlock,
     getBlocks,
-    getTransactions
+    getTransactions,
+    initialize
 }

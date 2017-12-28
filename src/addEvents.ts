@@ -1,7 +1,7 @@
 import { isValidRoom, log } from '@/globalFuncs'
-import { getTransactions, getBlocks } from '@/datastore-redis'
+import ds from '@/datastores'
 import { txLayout, blockLayout } from '@/typeLayouts'
-import { SmallBlock } from '@/libs'
+import { SmallBlock, SmallTx } from '@/libs'
 import configs from '@/configs'
 import * as SocketIO from 'socket.io'
 import RethinkDB from '@/rethinkConn'
@@ -22,28 +22,32 @@ let events = [{
 }, {
     name: "pastBlocks",
     onEvent: (_socket: SocketIO.Socket, _msg: string): void => {
-        getBlocks((_blocks: Array<blockLayout>)=>{
+        ds.getBlocks((_blocks: Array<blockLayout>)=>{
             _socket.emit('newBlock', _blocks)
         });
     }
 }, {
     name: "pastTxs",
     onEvent: (_socket: SocketIO.Socket, _msg: string) => {
-        getTransactions((_txs: Array<txLayout>)=>{
+        ds.getTransactions((_txs: Array<txLayout>)=>{
             _socket.emit('newTx', _txs)
         })
     }
 }, {
     name: "pastData",
     onEvent: (_socket: SocketIO.Socket, _msg: string) => {
-        getTransactions((_txs: Array<txLayout>)=>{
-            getBlocks((_blocks:Array<blockLayout>)=>{
+        ds.getTransactions((_txs: Array<txLayout>)=>{
+            let txs: Array<txLayout> = []
+            _txs.forEach((_tx)=>{
+                txs.unshift(new SmallTx(_tx).smallify())
+            })
+            ds.getBlocks((_blocks:Array<blockLayout>)=>{
                 let blocks: Array<blockLayout> = []
                 _blocks.forEach((_block: blockLayout, idx: number): void => {
                     blocks.unshift(new SmallBlock(_block).smallify())
                 })
                 _socket.emit('newBlock', blocks)
-                _socket.emit('newTx', _txs)
+                _socket.emit('newTx', txs)
             })
         })
     }

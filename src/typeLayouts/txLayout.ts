@@ -1,24 +1,24 @@
 export default interface txLayout {
-	root: Buffer;
+	root?: Buffer;
 	blockHash: Buffer;
-	blockNumber: Buffer;
-	transactionIndex: Buffer;
+	blockNumber?: Buffer;
+	transactionIndex?: Buffer;
 	from: Buffer;
-	fromBalance: Buffer;
+	fromBalance?: Buffer;
 	to: Buffer;
-	toBalance: Buffer;
+	toBalance?: Buffer;
 	gasUsed: Buffer;
-	cumulativeGasUsed: Buffer;
+	cumulativeGasUsed?: Buffer;
 	contractAddress: Buffer;
-	logsBloom: Buffer;
+	logsBloom?: Buffer;
 	gas: Buffer;
 	gasPrice: Buffer;
 	hash: Buffer;
 	input: Buffer;
-	nonce: Buffer;
+	nonce?: Buffer;
 	value: Buffer;
-	v: Buffer;
-	r: Buffer;
-	s: Buffer;
+	v?: Buffer;
+	r?: Buffer;
+	s?: Buffer;
 	status: boolean;
 }

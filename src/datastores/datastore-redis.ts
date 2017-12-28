@@ -47,10 +47,15 @@ let getTransactions = (cb: CallbackFunction) => {
 let thisReturnsANumber = (id: number, name: string): number => {
     return 0
 }
+let initialize = ():void => {
+    redis.set(tables.transactions, JSON.stringify([]))
+    redis.set(tables.blocks, JSON.stringify([]))
+}
 
-export {
+export default {
     addTransaction,
     addBlock,
     getBlocks,
-    getTransactions
+    getTransactions,
+    initialize
 }

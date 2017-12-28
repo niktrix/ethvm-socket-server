@@ -21,6 +21,7 @@ export default {
 		cookie: true,
 		ip: "0.0.0.0"
 	},
+	DATASTORE: 'Redis',  //LokiJS, Redis
 	RETHINK_DB:{
 		host: "localhost",
 		port: 28015,

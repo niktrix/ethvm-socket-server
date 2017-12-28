@@ -3,9 +3,9 @@ import configs from '@/configs'
 import * as fs from 'fs'
 import { URL } from 'url'
 import { argv } from 'yargs'
-import { addTransaction, addBlock } from './datastore-redis'
+import ds from '@/datastores'
 import { txLayout, blockLayout } from '@/typeLayouts'
-
+import { SmallBlock, SmallTx } from '@/libs'
 declare module 'rethinkdb' {
     let binary: any;
     let args: any;
@@ -66,13 +66,17 @@ class RethinkDB {
         r.table('blocks').changes().run(_this.dbConn, (err, cursor) => {
             cursor.each((err: Error, row: any) => {
                 if (!err) {
-                    _this.onNewBlock(row.new_val)
-                    let hashes = row.new_val.transactionHashes.map((_hash: Buffer)=>{
+                    _this.onNewBlock(new SmallBlock(row.new_val).smallify())
+                    let hashes = row.new_val.transactionHashes.map((_hash: Buffer) => {
                         return r.binary(_hash)
                     })
-                    r.table('transactions').getAll(r.args(hashes)).run(_this.dbConn, (err, cursor)=>{
+                    r.table('transactions').getAll(r.args(hashes)).run(_this.dbConn, (err, cursor) => {
                         cursor.toArray(function(err, results) {
-                            if (!err) _this.onNewTx(results)
+                            if (!err && results) {
+                                _this.onNewTx(results.map((_tx)=>{
+                                    return new SmallTx(_tx).smallify()
+                                }))
+                            }
                         });
                     })
                 }
@@ -86,9 +90,9 @@ class RethinkDB {
             else cb(result);
         })
     }
-    getTx(hash: string, cb:any):void {
+    getTx(hash: string, cb: any): void {
         r.table("transactions").get(r.binary(new Buffer(hash))).run(this.dbConn, (err, result) => {
-            if(err) cb(err)
+            if (err) cb(err)
             else cb(result)
         })
     }
@@ -96,12 +100,12 @@ class RethinkDB {
     onNewBlock(_block: blockLayout) {
         let _this = this
         this.socketIO.to('blocks').emit('newBlock', _block)
-        console.log(_block.hash)    
-        addBlock(_block)
+        console.log(_block.hash)
+        ds.addBlock(_block)
     }
     onNewTx(_tx: txLayout | Array<txLayout>) {
         this.socketIO.to('txs').emit('newTx', _tx)
-        addTransaction(_tx)
+        ds.addTransaction(_tx)
     }
 }
 

@@ -3,7 +3,10 @@ import * as http from 'http'
 import RethinkDB from '@/rethinkConn'
 import addEvents from '@/addEvents'
 import * as SocketIO from 'socket.io'
+import ds from '@/datastores'
+import { argv } from 'yargs'
 
+if(argv.resetDS) ds.initialize()
 const server:http.Server = http.createServer();
 
 const io = require('socket.io')(server, configs.global.SOCKET_IO);
