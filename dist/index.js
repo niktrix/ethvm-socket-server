@@ -262,15 +262,19 @@ class RethinkDB {
         r.table('blocks').changes().run(_this.dbConn, (err, cursor) => {
             cursor.each((err, row) => {
                 if (!err) {
-                    _this.onNewBlock(new libs_1.SmallBlock(row.new_val).smallify());
+                    let sBlock = new libs_1.SmallBlock(row.new_val).smallify();
+                    _this.socketIO.to('blocks').emit('latestBlock', sBlock);
+                    _this.onNewBlock(sBlock);
                     let hashes = row.new_val.transactionHashes.map(_hash => {
                         return r.binary(_hash);
                     });
                     r.table('transactions').getAll(r.args(hashes)).run(_this.dbConn, (err, cursor) => {
                         cursor.toArray(function (err, results) {
                             if (!err && results) {
-                                _this.onNewTx(results.map(_tx => {
-                                    return new libs_1.SmallTx(_tx).smallify();
+                                _this.onNewTx(results.map((_tx, idx) => {
+                                    let sTx = new libs_1.SmallTx(_tx).smallify();
+                                    if (idx === results.length - 1) _this.socketIO.to('txs').emit('latestTx', sTx);
+                                    return sTx;
                                 }));
                             }
                         });
@@ -597,7 +601,7 @@ let events = [{
             _blocks.forEach((_block, idx) => {
                 blocks.unshift(new libs_1.SmallBlock(_block).smallify());
             });
-            _socket.emit('latestBlock', blocks[0]);
+            _socket.emit('latestBlock', blocks[blocks.length - 1]);
             _cb(blocks);
         });
     }
@@ -609,7 +613,7 @@ let events = [{
             _txs.forEach(_tx => {
                 txs.unshift(new libs_1.SmallTx(_tx).smallify());
             });
-            _socket.emit('latestTx', txs[0]);
+            _socket.emit('latestTx', txs[txs.length - 1]);
             _cb(txs);
         });
     }

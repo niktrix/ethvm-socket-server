@@ -66,15 +66,19 @@ class RethinkDB {
         r.table('blocks').changes().run(_this.dbConn, (err, cursor) => {
             cursor.each((err: Error, row: any) => {
                 if (!err) {
-                    _this.onNewBlock(new SmallBlock(row.new_val).smallify())
+                    let sBlock = new SmallBlock(row.new_val).smallify()
+                    _this.socketIO.to('blocks').emit('latestBlock', sBlock)
+                    _this.onNewBlock(sBlock)
                     let hashes = row.new_val.transactionHashes.map((_hash: Buffer) => {
                         return r.binary(_hash)
                     })
                     r.table('transactions').getAll(r.args(hashes)).run(_this.dbConn, (err, cursor) => {
                         cursor.toArray(function(err, results) {
                             if (!err && results) {
-                                _this.onNewTx(results.map((_tx)=>{
-                                    return new SmallTx(_tx).smallify()
+                                _this.onNewTx(results.map((_tx, idx)=>{
+                                    let sTx = new SmallTx(_tx).smallify()
+                                    if (idx === results.length - 1) _this.socketIO.to('txs').emit('latestTx', sTx)
+                                    return sTx
                                 }))
                             }
                         });

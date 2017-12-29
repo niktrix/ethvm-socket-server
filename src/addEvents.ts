@@ -28,7 +28,7 @@ let events: Array<_event> = [{
             _blocks.forEach((_block: blockLayout, idx: number): void => {
                 blocks.unshift(new SmallBlock(_block).smallify())
             })
-            _socket.emit('latestBlock', blocks[0])
+            _socket.emit('latestBlock', blocks[blocks.length-1])
             _cb(blocks)
         })
     }
@@ -40,7 +40,7 @@ let events: Array<_event> = [{
             _txs.forEach((_tx) => {
                 txs.unshift(new SmallTx(_tx).smallify())
             })
-            _socket.emit('latestTx', txs[0])
+            _socket.emit('latestTx', txs[txs.length-1])
             _cb(txs)
         })
     }
