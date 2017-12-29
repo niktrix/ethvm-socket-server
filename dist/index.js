@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 3);
+/******/ 	return __webpack_require__(__webpack_require__.s = 4);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -71,11 +71,9 @@
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const global_1 = __webpack_require__(4);
-const validRooms_1 = __webpack_require__(5);
+const global_1 = __webpack_require__(5);
 exports.default = {
-    global: global_1.default,
-    validRooms: validRooms_1.default
+    global: global_1.default
 };
 
 /***/ }),
@@ -86,8 +84,8 @@ exports.default = {
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const datastore_redis_1 = __webpack_require__(12);
-const datastore_loki_1 = __webpack_require__(14);
+const datastore_redis_1 = __webpack_require__(11);
+const datastore_loki_1 = __webpack_require__(13);
 const configs_1 = __webpack_require__(0);
 let DS_TYPE = configs_1.default.global.DATASTORE;
 let VALID_DS = {
@@ -111,15 +109,21 @@ exports.default = expObj;
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const SmallBlock_1 = __webpack_require__(16);
+const SmallBlock_1 = __webpack_require__(15);
 exports.SmallBlock = SmallBlock_1.default;
-const SmallTx_1 = __webpack_require__(18);
+const SmallTx_1 = __webpack_require__(17);
 exports.SmallTx = SmallTx_1.default;
-const common = __webpack_require__(19);
+const common = __webpack_require__(18);
 exports.common = common;
 
 /***/ }),
 /* 3 */
+/***/ (function(module, exports) {
+
+module.exports = require("yargs");
+
+/***/ }),
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -129,12 +133,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const configs_1 = __webpack_require__(0);
 const http = __webpack_require__(6);
 const rethinkConn_1 = __webpack_require__(7);
-const addEvents_1 = __webpack_require__(20);
+const addEvents_1 = __webpack_require__(19);
 const datastores_1 = __webpack_require__(1);
-const yargs_1 = __webpack_require__(11);
+const yargs_1 = __webpack_require__(3);
 if (yargs_1.argv.resetDS) datastores_1.default.initialize();
 const server = http.createServer();
-const io = __webpack_require__(22)(server, configs_1.default.global.SOCKET_IO);
+const io = __webpack_require__(21)(server, configs_1.default.global.SOCKET_IO);
 server.listen(configs_1.default.global.SOCKET_IO.port, configs_1.default.global.SOCKET_IO.ip, () => {
     console.log("Listening on", configs_1.default.global.SOCKET_IO.port);
 });
@@ -144,7 +148,7 @@ io.on('connection', _socket => {
 });
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -186,16 +190,6 @@ exports.default = {
 };
 
 /***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = ["blocks", "minedtxs", "pendingTxs", "txs", "uncles"];
-
-/***/ }),
 /* 6 */
 /***/ (function(module, exports) {
 
@@ -213,7 +207,7 @@ const r = __webpack_require__(8);
 const configs_1 = __webpack_require__(0);
 const fs = __webpack_require__(9);
 const url_1 = __webpack_require__(10);
-const yargs_1 = __webpack_require__(11);
+const yargs_1 = __webpack_require__(3);
 const datastores_1 = __webpack_require__(1);
 const libs_1 = __webpack_require__(2);
 class RethinkDB {
@@ -328,19 +322,13 @@ module.exports = require("url");
 
 /***/ }),
 /* 11 */
-/***/ (function(module, exports) {
-
-module.exports = require("yargs");
-
-/***/ }),
-/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Redis = __webpack_require__(13);
+const Redis = __webpack_require__(12);
 const configs_1 = __webpack_require__(0);
 let redis = new Redis(configs_1.default.global.REDIS.URL);
 let tables = {
@@ -394,20 +382,20 @@ exports.default = {
 };
 
 /***/ }),
-/* 13 */
+/* 12 */
 /***/ (function(module, exports) {
 
 module.exports = require("ioredis");
 
 /***/ }),
-/* 14 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const loki = __webpack_require__(15);
+const loki = __webpack_require__(14);
 const configs_1 = __webpack_require__(0);
 let lokiDB = new loki(configs_1.default.global.LOKI.dbName, { autosave: true, autosaveInterval: 5000, autoload: true });
 let tables = configs_1.default.global.LOKI.tableNames;
@@ -488,13 +476,13 @@ exports.default = {
 };
 
 /***/ }),
-/* 15 */
+/* 14 */
 /***/ (function(module, exports) {
 
 module.exports = require("lokijs");
 
 /***/ }),
-/* 16 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -502,7 +490,7 @@ module.exports = require("lokijs");
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const libs_1 = __webpack_require__(2);
-const bignumber_js_1 = __webpack_require__(17);
+const bignumber_js_1 = __webpack_require__(16);
 class SmallBlock {
     constructor(_block) {
         this.block = _block;
@@ -528,13 +516,13 @@ class SmallBlock {
 exports.default = SmallBlock;
 
 /***/ }),
-/* 17 */
+/* 16 */
 /***/ (function(module, exports) {
 
 module.exports = require("bignumber.js");
 
 /***/ }),
-/* 18 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -566,7 +554,7 @@ class SmallTx {
 exports.default = SmallTx;
 
 /***/ }),
-/* 19 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -581,20 +569,20 @@ let bufferToHex = _buf => {
 exports.bufferToHex = bufferToHex;
 
 /***/ }),
-/* 20 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const globalFuncs_1 = __webpack_require__(21);
+const globalFuncs_1 = __webpack_require__(20);
 const datastores_1 = __webpack_require__(1);
 const libs_1 = __webpack_require__(2);
 let events = [{
     name: "join",
     onEvent: (_socket, _msg) => {
-        if (globalFuncs_1.isValidRoom(_msg)) {
+        if (_msg) {
             _socket.join(_msg);
             globalFuncs_1.log.info(_socket.id, "joined", _msg);
         } else {
@@ -603,65 +591,56 @@ let events = [{
     }
 }, {
     name: "pastBlocks",
-    onEvent: (_socket, _msg) => {
+    onEvent: (_socket, _msg, _rdb, _cb) => {
         datastores_1.default.getBlocks(_blocks => {
-            _socket.emit('newBlock', _blocks);
+            let blocks = [];
+            _blocks.forEach((_block, idx) => {
+                blocks.unshift(new libs_1.SmallBlock(_block).smallify());
+            });
+            _socket.emit('latestBlock', blocks[0]);
+            _cb(blocks);
         });
     }
 }, {
     name: "pastTxs",
-    onEvent: (_socket, _msg) => {
-        datastores_1.default.getTransactions(_txs => {
-            _socket.emit('newTx', _txs);
-        });
-    }
-}, {
-    name: "pastData",
-    onEvent: (_socket, _msg) => {
+    onEvent: (_socket, _msg, _rdb, _cb) => {
         datastores_1.default.getTransactions(_txs => {
             let txs = [];
             _txs.forEach(_tx => {
                 txs.unshift(new libs_1.SmallTx(_tx).smallify());
             });
-            datastores_1.default.getBlocks(_blocks => {
-                let blocks = [];
-                _blocks.forEach((_block, idx) => {
-                    blocks.unshift(new libs_1.SmallBlock(_block).smallify());
-                });
-                _socket.emit('newBlock', blocks);
-                _socket.emit('newTx', txs);
-            });
+            _socket.emit('latestTx', txs[0]);
+            _cb(txs);
         });
+    }
+}, {
+    name: "getBlock",
+    onEvent: (_socket, _msg, _rdb, _cb) => {
+        _rdb.getBlock(_msg, _cb);
+    }
+}, {
+    name: "getTx",
+    onEvent: (_socket, _msg, _rdb, _cb) => {
+        _rdb.getTx(_msg, _cb);
     }
 }];
 let onConnection = (_socket, rdb) => {
     events.forEach((event, idx) => {
-        _socket.on(event.name, msg => {
-            event.onEvent(_socket, msg);
+        _socket.on(event.name, (msg, cb) => {
+            event.onEvent(_socket, msg, rdb, cb);
         });
-    });
-    _socket.on('getBlock', (msg, cb) => {
-        rdb.getBlock(msg, cb);
-    });
-    _socket.on('getTx', (msg, cb) => {
-        rdb.getTx(msg, cb);
     });
 };
 exports.default = onConnection;
 
 /***/ }),
-/* 21 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const configs_1 = __webpack_require__(0);
-let isValidRoom = _rName => {
-    return configs_1.default.validRooms.indexOf(_rName) > -1;
-};
-exports.isValidRoom = isValidRoom;
 let log = {
     error: (..._msg) => {
         console.error(_msg.join(' '));
@@ -673,7 +652,7 @@ let log = {
 exports.log = log;
 
 /***/ }),
-/* 22 */
+/* 21 */
 /***/ (function(module, exports) {
 
 module.exports = require("socket.io");
