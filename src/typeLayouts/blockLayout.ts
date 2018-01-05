@@ -29,4 +29,5 @@ export default interface blockLayout {
 	txFees?: Buffer;
 	blockReward?: Buffer;
 	totalBlockReward?: Buffer;
+	uncleReward?: Buffer;
 }

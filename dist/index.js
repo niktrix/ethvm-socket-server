@@ -511,9 +511,10 @@ class SmallBlock {
             transactionCount: _block.transactionHashes.length,
             uncleHashes: _block.uncleHashes,
             isUncle: _block.isUncle,
-            totalBlockReward: Buffer.from(new bignumber_js_1.default(libs_1.common.bufferToHex(_block.blockReward)).plus(new bignumber_js_1.default(libs_1.common.bufferToHex(_block.txFees))).toString(16), 'hex'),
+            totalBlockReward: Buffer.from(new bignumber_js_1.default(libs_1.common.bufferToHex(_block.blockReward)).plus(new bignumber_js_1.default(libs_1.common.bufferToHex(_block.txFees))).plus(new bignumber_js_1.default(libs_1.common.bufferToHex(_block.uncleReward))).toString(16), 'hex'),
             blockReward: _block.blockReward,
-            txFees: _block.txFees
+            txFees: _block.txFees,
+            uncleReward: _block.uncleReward
         };
     }
 }
