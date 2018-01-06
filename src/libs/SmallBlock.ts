@@ -22,7 +22,8 @@ class SmallBlock {
 			totalBlockReward: Buffer.from(new bn(common.bufferToHex(_block.blockReward)).plus(new bn(common.bufferToHex(_block.txFees))).plus(new bn(common.bufferToHex(_block.uncleReward))).toString(16), 'hex'),
 			blockReward: _block.blockReward,
 			txFees: _block.txFees,
-			uncleReward: _block.uncleReward
+			uncleReward: _block.uncleReward,
+			blockStats: _block.blockStats
 		}
 	}
 }

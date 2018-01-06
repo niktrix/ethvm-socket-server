@@ -5,7 +5,7 @@ import { URL } from 'url'
 import { argv } from 'yargs'
 import ds from '@/datastores'
 import { txLayout, blockLayout } from '@/typeLayouts'
-import { SmallBlock, SmallTx } from '@/libs'
+import { SmallBlock, SmallTx, BlockStats } from '@/libs'
 declare module 'rethinkdb' {
     let binary: any;
     let args: any;
@@ -66,9 +66,6 @@ class RethinkDB {
         r.table('blocks').changes().run(_this.dbConn, (err, cursor) => {
             cursor.each((err: Error, row: any) => {
                 if (!err) {
-                    let sBlock = new SmallBlock(row.new_val).smallify()
-                    _this.socketIO.to('blocks').emit('latestBlock', sBlock)
-                    _this.onNewBlock(sBlock)
                     let hashes = row.new_val.transactionHashes.map((_hash: Buffer) => {
                         return r.binary(_hash)
                     })
@@ -80,6 +77,11 @@ class RethinkDB {
                                     if (idx === results.length - 1) _this.socketIO.to('txs').emit('latestTx', sTx)
                                     return sTx
                                 }))
+                                let bstats = new BlockStats(row.new_val, results)
+                                row.new_val.blockStats = bstats.getBlockStats()
+                                let sBlock = new SmallBlock(row.new_val).smallify()
+                                _this.socketIO.to('blocks').emit('latestBlock', sBlock)
+                                _this.onNewBlock(sBlock)
                             }
                         });
                     })
@@ -103,7 +105,6 @@ class RethinkDB {
 
     onNewBlock(_block: blockLayout) {
         let _this = this
-        this.socketIO.to('blocks').emit('newBlock', _block)
         console.log(_block.hash)
         ds.addBlock(_block)
     }

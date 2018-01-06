@@ -1,4 +1,10 @@
 import { txLayout } from '@/typeLayouts'
+interface IblockStats {
+	failed: string,
+	success: string,
+	avgGasPrice: string,
+	avgTxFees: string
+}
 export default interface blockLayout {
 	number: Buffer;
 	intNumber: number;
@@ -30,4 +36,5 @@ export default interface blockLayout {
 	blockReward?: Buffer;
 	totalBlockReward?: Buffer;
 	uncleReward?: Buffer;
+	blockStats?: IblockStats;
 }

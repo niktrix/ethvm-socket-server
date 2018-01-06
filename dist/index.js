@@ -113,6 +113,8 @@ const SmallBlock_1 = __webpack_require__(15);
 exports.SmallBlock = SmallBlock_1.default;
 const SmallTx_1 = __webpack_require__(17);
 exports.SmallTx = SmallTx_1.default;
+const BlockStats_1 = __webpack_require__(23);
+exports.BlockStats = BlockStats_1.default;
 const common = __webpack_require__(18);
 exports.common = common;
 
@@ -262,9 +264,6 @@ class RethinkDB {
         r.table('blocks').changes().run(_this.dbConn, (err, cursor) => {
             cursor.each((err, row) => {
                 if (!err) {
-                    let sBlock = new libs_1.SmallBlock(row.new_val).smallify();
-                    _this.socketIO.to('blocks').emit('latestBlock', sBlock);
-                    _this.onNewBlock(sBlock);
                     let hashes = row.new_val.transactionHashes.map(_hash => {
                         return r.binary(_hash);
                     });
@@ -276,6 +275,11 @@ class RethinkDB {
                                     if (idx === results.length - 1) _this.socketIO.to('txs').emit('latestTx', sTx);
                                     return sTx;
                                 }));
+                                let bstats = new libs_1.BlockStats(row.new_val, results);
+                                row.new_val.blockStats = bstats.getBlockStats();
+                                let sBlock = new libs_1.SmallBlock(row.new_val).smallify();
+                                _this.socketIO.to('blocks').emit('latestBlock', sBlock);
+                                _this.onNewBlock(sBlock);
                             }
                         });
                     });
@@ -295,7 +299,6 @@ class RethinkDB {
     }
     onNewBlock(_block) {
         let _this = this;
-        this.socketIO.to('blocks').emit('newBlock', _block);
         console.log(_block.hash);
         datastores_1.default.addBlock(_block);
     }
@@ -514,7 +517,8 @@ class SmallBlock {
             totalBlockReward: Buffer.from(new bignumber_js_1.default(libs_1.common.bufferToHex(_block.blockReward)).plus(new bignumber_js_1.default(libs_1.common.bufferToHex(_block.txFees))).plus(new bignumber_js_1.default(libs_1.common.bufferToHex(_block.uncleReward))).toString(16), 'hex'),
             blockReward: _block.blockReward,
             txFees: _block.txFees,
-            uncleReward: _block.uncleReward
+            uncleReward: _block.uncleReward,
+            blockStats: _block.blockStats
         };
     }
 }
@@ -572,6 +576,10 @@ let bufferToHex = _buf => {
     return r;
 };
 exports.bufferToHex = bufferToHex;
+let bnToHex = _bn => {
+    return '0x' + _bn.toString(16);
+};
+exports.bnToHex = bnToHex;
 
 /***/ }),
 /* 19 */
@@ -661,6 +669,50 @@ exports.log = log;
 /***/ (function(module, exports) {
 
 module.exports = require("socket.io");
+
+/***/ }),
+/* 22 */,
+/* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const bignumber_js_1 = __webpack_require__(16);
+const libs_1 = __webpack_require__(2);
+class BlockStats {
+    constructor(_block, _txs) {
+        this.block = _block;
+        this.txs = _txs;
+    }
+    getBlockStats() {
+        if (!this.txs.length) return {
+            failed: '0x0',
+            success: '0x0',
+            avgGasPrice: '0x0',
+            avgTxFees: '0x0'
+        };
+        let txStatus = {
+            failed: new bignumber_js_1.default(0),
+            success: new bignumber_js_1.default(0),
+            totGasPrice: new bignumber_js_1.default(0),
+            totTxFees: new bignumber_js_1.default(0)
+        };
+        this.txs.forEach(_tx => {
+            if (_tx.status) txStatus.success = txStatus.success.add(1);else txStatus.failed = txStatus.failed.add(1);
+            txStatus.totGasPrice = txStatus.totGasPrice.add(new bignumber_js_1.default(libs_1.common.bufferToHex(_tx.gasPrice)));
+            txStatus.totTxFees = txStatus.totTxFees.add(new bignumber_js_1.default(libs_1.common.bufferToHex(_tx.gasPrice)).mul(new bignumber_js_1.default(libs_1.common.bufferToHex(_tx.gasUsed))));
+        });
+        return {
+            failed: libs_1.common.bnToHex(txStatus.failed),
+            success: libs_1.common.bnToHex(txStatus.success),
+            avgGasPrice: libs_1.common.bnToHex(txStatus.totGasPrice.div(this.txs.length).ceil()),
+            avgTxFees: libs_1.common.bnToHex(txStatus.totTxFees.div(this.txs.length).ceil())
+        };
+    }
+}
+exports.default = BlockStats;
 
 /***/ })
 /******/ ]);
