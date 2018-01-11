@@ -7,6 +7,9 @@ class SmallBlock {
 	constructor(_block: blockLayout) {
 		this.block = _block
 	}
+	hash(): string {
+		return '0x' + new Buffer(this.block.hash).toString('hex')
+	}
 	smallify(): blockLayout {
 		let _block = this.block
 		return {

@@ -63,7 +63,7 @@ class RethinkDB {
     }
     setAllEvents(): void {
         let _this = this
-        r.table('blocks').changes().run(_this.dbConn, (err, cursor) => {
+        r.table('blocks').changes().run(_this.dbConn, (err: Error, cursor: r.Cursor) => {
             cursor.each((err: Error, row: any) => {
                 if (!err) {
                     let hashes = row.new_val.transactionHashes.map((_hash: Buffer) => {
@@ -73,21 +73,33 @@ class RethinkDB {
                         cursor.toArray(function(err, results) {
                             if (!err && results) {
                                 _this.onNewTx(results.map((_tx, idx)=>{
-                                    let sTx = new SmallTx(_tx).smallify()
-                                    if (idx === results.length - 1) _this.socketIO.to('txs').emit('latestTx', sTx)
-                                    return sTx
+                                    let sTx = new SmallTx(_tx)
+                                    let _hashStr:string = sTx.hash()
+                                    _this.socketIO.to(_hashStr).emit(_hashStr + '_update', _tx)
+                                    return sTx.smallify()
                                 }))
                                 let bstats = new BlockStats(row.new_val, results)
                                 row.new_val.blockStats = bstats.getBlockStats()
-                                let sBlock = new SmallBlock(row.new_val).smallify()
-                                _this.socketIO.to('blocks').emit('latestBlock', sBlock)
-                                _this.onNewBlock(sBlock)
+                                let sBlock = new SmallBlock(row.new_val)
+                                let blockHash = sBlock.hash()
+                                _this.socketIO.to(blockHash).emit(blockHash + '_update', row.new_val)
+                                _this.onNewBlock(sBlock.smallify())
                             }
                         });
                     })
                 }
             });
         });
+        r.table('transactions').changes().run(_this.dbConn, (err: Error, cursor: r.Cursor)=>{
+            cursor.each((err: Error, row: any)=>{
+                if(!err) {
+                    let _tx: txLayout = row.new_val
+                    if(_tx.pending){
+                        _this.socketIO.to('pendingTxs').emit('newPendingTx', new SmallTx(_tx).smallify())
+                    }
+                }
+            })
+        })
     }
 
     getBlock(hash: string, cb: any): void {
@@ -106,9 +118,11 @@ class RethinkDB {
     onNewBlock(_block: blockLayout) {
         let _this = this
         console.log(_block.hash)
+        this.socketIO.to('blocks').emit('newBlock', _block)
         ds.addBlock(_block)
     }
     onNewTx(_tx: txLayout | Array<txLayout>) {
+        if(Array.isArray(_tx) && !_tx.length) return 
         this.socketIO.to('txs').emit('newTx', _tx)
         ds.addTransaction(_tx)
     }

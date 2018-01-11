@@ -21,6 +21,16 @@ let events: Array<_event> = [{
         }
     }
 }, {
+        name: "leave",
+        onEvent: (_socket, _msg): void => {
+            if (_msg) {
+                _socket.leave(_msg)
+                log.info(_socket.id, "Left", _msg)
+            } else {
+                log.error(_socket.id, 'tried to leave invalid room', _msg)
+            }
+        }
+}, {
     name: "pastBlocks",
     onEvent: (_socket, _msg, _rdb, _cb): void => {
         ds.getBlocks((_blocks: Array<blockLayout>) => {
@@ -28,7 +38,6 @@ let events: Array<_event> = [{
             _blocks.forEach((_block: blockLayout, idx: number): void => {
                 blocks.unshift(new SmallBlock(_block).smallify())
             })
-            _socket.emit('latestBlock', blocks[blocks.length-1])
             _cb(blocks)
         })
     }
@@ -40,7 +49,6 @@ let events: Array<_event> = [{
             _txs.forEach((_tx) => {
                 txs.unshift(new SmallTx(_tx).smallify())
             })
-            _socket.emit('latestTx', txs[txs.length-1])
             _cb(txs)
         })
     }

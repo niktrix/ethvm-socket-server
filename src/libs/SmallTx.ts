@@ -7,6 +7,9 @@ class SmallTx {
 	constructor(_tx: txLayout) {
 		this.tx = _tx
 	}
+	hash(): string {
+		return '0x' + new Buffer(this.tx.hash).toString('hex')
+	}
 	smallify(): txLayout {
 		let _tx = this.tx
 		return {
