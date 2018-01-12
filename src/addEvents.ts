@@ -62,6 +62,11 @@ let events: Array<_event> = [{
     onEvent: (_socket, _msg, _rdb, _cb): void => {
         _rdb.getTx(_msg, _cb)
     }
+}, {
+        name: "getBlockTransactions",
+        onEvent: (_socket, _msg, _rdb, _cb): void => {
+            _rdb.getBlockTransactions(_msg, _cb)
+        }
 }]
 let onConnection = (_socket: SocketIO.Socket, rdb: RethinkDB) => {
     events.forEach((event: _event, idx: number) => {

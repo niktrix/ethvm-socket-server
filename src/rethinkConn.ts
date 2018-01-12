@@ -6,10 +6,7 @@ import { argv } from 'yargs'
 import ds from '@/datastores'
 import { txLayout, blockLayout } from '@/typeLayouts'
 import { SmallBlock, SmallTx, BlockStats } from '@/libs'
-declare module 'rethinkdb' {
-    let binary: any;
-    let args: any;
-}
+
 class RethinkDB {
     socketIO: any
     dbConn: r.Connection
@@ -22,12 +19,12 @@ class RethinkDB {
         let _this = this
         this.tempTxs = []
         let conf = configs.global.RETHINK_DB
-        let tempConfig: r.ConnectionOptions = {
+        let tempConfig: r.ConnectOptions = {
             host: conf.host,
             port: conf.port,
             db: conf.db
         }
-        let connect = (_config: r.ConnectionOptions): void => {
+        let connect = (_config: r.ConnectOptions): void => {
             r.connect(_config, (err: Error, conn: r.Connection): void => {
                 if (!err) {
                     _this.dbConn = conn
@@ -61,55 +58,65 @@ class RethinkDB {
         }
 
     }
+
     setAllEvents(): void {
         let _this = this
-        r.table('blocks').changes().run(_this.dbConn, (err: Error, cursor: r.Cursor) => {
-            cursor.each((err: Error, row: any) => {
+        r.table('blocks').changes().map((change) => {
+            return change('new_val')
+        }).merge((block: any) => {
+            return {
+                transactions: r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array')
+            }
+        }).run(_this.dbConn, (err, cursor) => {
+            cursor.each((err: Error, block: blockLayout) => {
                 if (!err) {
-                    let hashes = row.new_val.transactionHashes.map((_hash: Buffer) => {
-                        return r.binary(_hash)
-                    })
-                    r.table('transactions').getAll(r.args(hashes)).run(_this.dbConn, (err, cursor) => {
-                        cursor.toArray(function(err, results) {
-                            if (!err && results) {
-                                _this.onNewTx(results.map((_tx, idx)=>{
-                                    let sTx = new SmallTx(_tx)
-                                    let _hashStr:string = sTx.hash()
-                                    _this.socketIO.to(_hashStr).emit(_hashStr + '_update', _tx)
-                                    return sTx.smallify()
-                                }))
-                                let bstats = new BlockStats(row.new_val, results)
-                                row.new_val.blockStats = bstats.getBlockStats()
-                                let sBlock = new SmallBlock(row.new_val)
-                                let blockHash = sBlock.hash()
-                                _this.socketIO.to(blockHash).emit(blockHash + '_update', row.new_val)
-                                _this.onNewBlock(sBlock.smallify())
-                            }
-                        });
-                    })
+                    let bstats = new BlockStats(block, block.transactions)
+                    block.blockStats = bstats.getBlockStats()
+                    let sBlock = new SmallBlock(block)
+                    let blockHash = sBlock.hash()
+                    _this.socketIO.to(blockHash).emit(blockHash + '_update', block)
+                    _this.onNewBlock(sBlock.smallify())
+                    _this.onNewTx(block.transactions.map((_tx) => {
+                        let sTx = new SmallTx(_tx)
+                        let txHash: string = sTx.hash()
+                        _this.socketIO.to(txHash).emit(txHash + '_update', _tx)
+                        return sTx.smallify()
+                    }))
                 }
             });
         });
-        r.table('transactions').changes().run(_this.dbConn, (err: Error, cursor: r.Cursor)=>{
-            cursor.each((err: Error, row: any)=>{
-                if(!err) {
+        r.table('transactions').changes().filter(r.row('new_val')('pending').eq(true)).run(_this.dbConn, (err, cursor) => {
+            cursor.each((err, row: r.ChangeSet<any, any>) => {
+                if (!err) {
                     let _tx: txLayout = row.new_val
-                    if(_tx.pending){
-                        _this.socketIO.to('pendingTxs').emit('newPendingTx', new SmallTx(_tx).smallify())
+                    if (_tx.pending) {
+                        let sTx = new SmallTx(_tx)
+                        let txHash: string = sTx.hash()
+                        _this.socketIO.to(txHash).emit(txHash + '_update', _tx)
+                        _this.socketIO.to('pendingTxs').emit('newPendingTx', sTx.smallify())
                     }
                 }
             })
         })
     }
-
+    getBlockTransactions(hash: string, cb: any): void {
+        r.table('blocks').get(r.args([new Buffer(hash)])).do((block: any) => {
+            return r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array')
+        }).run(this.dbConn, (err: Error, result) => {
+            if (err) cb(err);
+            else cb(result.map((_tx: txLayout)=>{
+                return new SmallTx(_tx).smallify()
+            }));
+        })
+    }
     getBlock(hash: string, cb: any): void {
-        r.table('blocks').get(r.binary(new Buffer(hash))).run(this.dbConn, (err, result) => {
+        r.table('blocks').get(r.args([new Buffer(hash)])).run(this.dbConn, (err: Error, result: blockLayout) => {
             if (err) cb(err);
             else cb(result);
         })
     }
     getTx(hash: string, cb: any): void {
-        r.table("transactions").get(r.binary(new Buffer(hash))).run(this.dbConn, (err, result) => {
+        r.table("transactions").get(r.args([new Buffer(hash)])).run(this.dbConn, (err: Error, result: txLayout) => {
             if (err) cb(err)
             else cb(result)
         })
@@ -122,7 +129,7 @@ class RethinkDB {
         ds.addBlock(_block)
     }
     onNewTx(_tx: txLayout | Array<txLayout>) {
-        if(Array.isArray(_tx) && !_tx.length) return 
+        if (Array.isArray(_tx) && !_tx.length) return
         this.socketIO.to('txs').emit('newTx', _tx)
         ds.addTransaction(_tx)
     }

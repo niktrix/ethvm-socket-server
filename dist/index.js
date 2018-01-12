@@ -267,51 +267,60 @@ class RethinkDB {
     }
     setAllEvents() {
         let _this = this;
-        r.table('blocks').changes().run(_this.dbConn, (err, cursor) => {
-            cursor.each((err, row) => {
+        r.table('blocks').changes().map(change => {
+            return change('new_val');
+        }).merge(block => {
+            return {
+                transactions: r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array')
+            };
+        }).run(_this.dbConn, (err, cursor) => {
+            cursor.each((err, block) => {
                 if (!err) {
-                    let hashes = row.new_val.transactionHashes.map(_hash => {
-                        return r.binary(_hash);
-                    });
-                    r.table('transactions').getAll(r.args(hashes)).run(_this.dbConn, (err, cursor) => {
-                        cursor.toArray(function (err, results) {
-                            if (!err && results) {
-                                _this.onNewTx(results.map((_tx, idx) => {
-                                    let sTx = new libs_1.SmallTx(_tx);
-                                    let _hashStr = sTx.hash();
-                                    _this.socketIO.to(_hashStr).emit(_hashStr + '_update', _tx);
-                                    return sTx.smallify();
-                                }));
-                                let bstats = new libs_1.BlockStats(row.new_val, results);
-                                row.new_val.blockStats = bstats.getBlockStats();
-                                let sBlock = new libs_1.SmallBlock(row.new_val);
-                                let blockHash = sBlock.hash();
-                                _this.socketIO.to(blockHash).emit(blockHash + '_update', row.new_val);
-                                _this.onNewBlock(sBlock.smallify());
-                            }
-                        });
-                    });
+                    let bstats = new libs_1.BlockStats(block, block.transactions);
+                    block.blockStats = bstats.getBlockStats();
+                    let sBlock = new libs_1.SmallBlock(block);
+                    let blockHash = sBlock.hash();
+                    _this.socketIO.to(blockHash).emit(blockHash + '_update', block);
+                    _this.onNewBlock(sBlock.smallify());
+                    _this.onNewTx(block.transactions.map(_tx => {
+                        let sTx = new libs_1.SmallTx(_tx);
+                        let txHash = sTx.hash();
+                        _this.socketIO.to(txHash).emit(txHash + '_update', _tx);
+                        return sTx.smallify();
+                    }));
                 }
             });
         });
-        r.table('transactions').changes().run(_this.dbConn, (err, cursor) => {
+        r.table('transactions').changes().filter(r.row('new_val')('pending').eq(true)).run(_this.dbConn, (err, cursor) => {
             cursor.each((err, row) => {
                 if (!err) {
                     let _tx = row.new_val;
                     if (_tx.pending) {
-                        _this.socketIO.to('pendingTxs').emit('newPendingTx', new libs_1.SmallTx(_tx).smallify());
+                        let sTx = new libs_1.SmallTx(_tx);
+                        let txHash = sTx.hash();
+                        _this.socketIO.to(txHash).emit(txHash + '_update', _tx);
+                        _this.socketIO.to('pendingTxs').emit('newPendingTx', sTx.smallify());
                     }
                 }
             });
         });
     }
+    getBlockTransactions(hash, cb) {
+        r.table('blocks').get(r.args([new Buffer(hash)])).do(block => {
+            return r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array');
+        }).run(this.dbConn, (err, result) => {
+            if (err) cb(err);else cb(result.map(_tx => {
+                return new libs_1.SmallTx(_tx).smallify();
+            }));
+        });
+    }
     getBlock(hash, cb) {
-        r.table('blocks').get(r.binary(new Buffer(hash))).run(this.dbConn, (err, result) => {
+        r.table('blocks').get(r.args([new Buffer(hash)])).run(this.dbConn, (err, result) => {
             if (err) cb(err);else cb(result);
         });
     }
     getTx(hash, cb) {
-        r.table("transactions").get(r.binary(new Buffer(hash))).run(this.dbConn, (err, result) => {
+        r.table("transactions").get(r.args([new Buffer(hash)])).run(this.dbConn, (err, result) => {
             if (err) cb(err);else cb(result);
         });
     }
@@ -706,6 +715,11 @@ let events = [{
     name: "getTx",
     onEvent: (_socket, _msg, _rdb, _cb) => {
         _rdb.getTx(_msg, _cb);
+    }
+}, {
+    name: "getBlockTransactions",
+    onEvent: (_socket, _msg, _rdb, _cb) => {
+        _rdb.getBlockTransactions(_msg, _cb);
     }
 }];
 let onConnection = (_socket, rdb) => {
