@@ -66,13 +66,16 @@ class RethinkDB {
             return change('new_val')
         }).merge((block: any) => {
             return {
-                transactions: r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array')
+                transactions: r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array'),
+                blockStats: {
+                    pendingTxs: r.table('transactions')('pending').count(true)
+                }
             }
         }).run(_this.dbConn, (err, cursor) => {
             cursor.each((err: Error, block: blockLayout) => {
                 if (!err) {
                     let bstats = new BlockStats(block, block.transactions)
-                    block.blockStats = bstats.getBlockStats()
+                    block.blockStats = Object.assign({}, bstats.getBlockStats(), block.blockStats)
                     let sBlock = new SmallBlock(block)
                     let blockHash = sBlock.hash()
                     _this.socketIO.to(blockHash).emit(blockHash + '_update', block)
