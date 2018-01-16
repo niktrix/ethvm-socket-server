@@ -45,6 +45,7 @@ class RethinkDB {
                 },
                 db: conf.db
             }
+            if(!_cert) delete tempConfig.ssl
             connect(tempConfig)
         }
         if (argv.remoteRDB && !argv.rawCert) {

@@ -7,7 +7,8 @@
         "build": "webpack --progress",
         "start": "node dist/index.js --remoteRDB --rawCert",
         "debug": "webpack --progress --watch & nodemon --watch dist dist/index.js",
-        "compose": "webpack --progress --watch & nodemon --watch dist dist/index.js --remoteRDB --rawCert"
+        "compose": "webpack --progress --watch & nodemon --watch dist dist/index.js --remoteRDB --rawCert",
+        "gcloud": "webpack --progress --watch & nodemon --watch dist dist/index.js  --remoteRDB --rawCert"
     },
     "repository": {
         "type": "git",

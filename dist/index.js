@@ -253,6 +253,7 @@ class RethinkDB {
                 },
                 db: conf.db
             };
+            if (!_cert) delete tempConfig.ssl;
             connect(tempConfig);
         };
         if (yargs_1.argv.remoteRDB && !yargs_1.argv.rawCert) {
