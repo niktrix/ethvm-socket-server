@@ -31,6 +31,6 @@ export default {
 		env_url: "RETHINKDB_URL"
 	},
 	MAX : {
-		socketRows : 100
+		socketRows : 50
 	}
 }

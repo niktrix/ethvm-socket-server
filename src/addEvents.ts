@@ -21,15 +21,15 @@ let events: Array<_event> = [{
         }
     }
 }, {
-        name: "leave",
-        onEvent: (_socket, _msg): void => {
-            if (_msg) {
-                _socket.leave(_msg)
-                log.info(_socket.id, "Left", _msg)
-            } else {
-                log.error(_socket.id, 'tried to leave invalid room', _msg)
-            }
+    name: "leave",
+    onEvent: (_socket, _msg): void => {
+        if (_msg) {
+            _socket.leave(_msg)
+            log.info(_socket.id, "Left", _msg)
+        } else {
+            log.error(_socket.id, 'tried to leave invalid room', _msg)
         }
+    }
 }, {
     name: "pastBlocks",
     onEvent: (_socket, _msg, _rdb, _cb): void => {
@@ -63,10 +63,10 @@ let events: Array<_event> = [{
         _rdb.getTx(_msg, _cb)
     }
 }, {
-        name: "getBlockTransactions",
-        onEvent: (_socket, _msg, _rdb, _cb): void => {
-            _rdb.getBlockTransactions(_msg, _cb)
-        }
+    name: "getBlockTransactions",
+    onEvent: (_socket, _msg, _rdb, _cb): void => {
+        _rdb.getBlockTransactions(_msg, _cb)
+    }
 }]
 let onConnection = (_socket: SocketIO.Socket, rdb: RethinkDB) => {
     events.forEach((event: _event, idx: number) => {
