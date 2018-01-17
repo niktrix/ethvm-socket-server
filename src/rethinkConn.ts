@@ -11,6 +11,7 @@ class RethinkDB {
     socketIO: any
     dbConn: r.Connection
     tempTxs: Array<txLayout>
+    numPendingTxs: number
     constructor(_socketIO: any) {
         this.socketIO = _socketIO
         this.start()
@@ -68,7 +69,7 @@ class RethinkDB {
             return {
                 transactions: r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array'),
                 blockStats: {
-                    pendingTxs: r.table('transactions')('pending').count(true)
+                    pendingTxs: r.table('data').get('cached').getField('pendingTxs')
                 }
             }
         }).run(_this.dbConn, (err, cursor) => {
