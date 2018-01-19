@@ -552,7 +552,7 @@ let cacheDB = new cacheDB_1.default(configs_1.default.global.REDIS.URL, {
 let vmRunner = new vmRunner_1.default(cacheDB);
 let rdb = new rethinkConn_1.default(io, vmRunner);
 datastores_1.default.getBlocks(_blocks => {
-    vmRunner.setStateRoot(new Buffer(_blocks[0].stateRoot));
+    vmRunner.setStateRoot(_blocks && _blocks[0] && _blocks[0].stateRoot ? new Buffer(_blocks[0].stateRoot) : new Buffer('0x0', 'hex'));
 });
 io.on('connection', _socket => {
     addEvents_1.default(_socket, rdb, vmRunner);
