@@ -8,9 +8,21 @@ let tables = {
     blocks: 'blocks'
 }
 type CallbackFunction = (data: Array<any>) => void;
+let bufferify = (obj: any):any =>  {
+    for (let key in obj) {
+        if (obj.hasOwnProperty(key) && obj[key]) {
+            if (obj[key].type && obj[key].type === 'Buffer') {
+                obj[key] = new Buffer(obj[key])
+            }
+        }
+    }
+    return obj
+}
 let getArray = (tbName: string, cb: CallbackFunction) => {
     let vals = redis.get(tbName, (err, result) => {
-        if (!err && result) cb(JSON.parse(result))
+        if (!err && result) cb(JSON.parse(result).map((_item:any)=>{
+            return bufferify(_item)
+        }))
         else cb([])
     })
 

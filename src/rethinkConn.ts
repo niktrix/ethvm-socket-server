@@ -6,14 +6,16 @@ import { argv } from 'yargs'
 import ds from '@/datastores'
 import { txLayout, blockLayout } from '@/typeLayouts'
 import { SmallBlock, SmallTx, BlockStats } from '@/libs'
-
+import VmRunner from '@/vm/vmRunner'
 class RethinkDB {
     socketIO: any
     dbConn: r.Connection
     tempTxs: Array<txLayout>
     numPendingTxs: number
-    constructor(_socketIO: any) {
+    vmRunner: VmRunner
+    constructor(_socketIO: any, _vmR: VmRunner) {
         this.socketIO = _socketIO
+        this.vmRunner = _vmR
         this.start()
     }
     start(): void {
@@ -75,6 +77,7 @@ class RethinkDB {
         }).run(_this.dbConn, (err, cursor) => {
             cursor.each((err: Error, block: blockLayout) => {
                 if (!err) {
+                    _this.vmRunner.setStateRoot(block.stateRoot)
                     let bstats = new BlockStats(block, block.transactions)
                     block.blockStats = Object.assign({}, bstats.getBlockStats(), block.blockStats)
                     let sBlock = new SmallBlock(block)
@@ -104,26 +107,26 @@ class RethinkDB {
             })
         })
     }
-    getBlockTransactions(hash: string, cb: any): void {
+    getBlockTransactions(hash: string, cb: (err: Error, result: any) => void): void {
         r.table('blocks').get(r.args([new Buffer(hash)])).do((block: any) => {
             return r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array')
-        }).run(this.dbConn, (err: Error, result) => {
-            if (err) cb(err);
-            else cb(result.map((_tx: txLayout)=>{
+        }).run(this.dbConn, (err: Error, result: any) => {
+            if (err) cb(err, null);
+            else cb(null, result.map((_tx: txLayout)=>{
                 return new SmallTx(_tx).smallify()
             }));
         })
     }
-    getBlock(hash: string, cb: any): void {
+    getBlock(hash: string, cb: (err: Error, result: any) => void): void {
         r.table('blocks').get(r.args([new Buffer(hash)])).run(this.dbConn, (err: Error, result: blockLayout) => {
-            if (err) cb(err);
-            else cb(result);
+            if (err) cb(err, null);
+            else cb(null, result);
         })
     }
-    getTx(hash: string, cb: any): void {
+    getTx(hash: string, cb: (err: Error, result: any) => void): void {
         r.table("transactions").get(r.args([new Buffer(hash)])).run(this.dbConn, (err: Error, result: txLayout) => {
-            if (err) cb(err)
-            else cb(result)
+            if (err) cb(err, null)
+            else cb(null, result)
         })
     }
 

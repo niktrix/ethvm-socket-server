@@ -29,9 +29,13 @@
     "homepage": "https://github.com/enKryptIO/ethvm-socket-server#readme",
     "dependencies": {
         "bignumber.js": "^5.0.0",
+        "ethereumjs-account": "^2.0.4",
+        "ethereumjs-vm": "^2.3.2",
         "ioredis": "^3.2.2",
+        "json-rpc2": "git+https://github.com/kvhnuke/node-jsonrpc2.git",
         "lodash": "^4.17.4",
         "lokijs": "^1.5.1",
+        "merkle-patricia-tree": "^2.3.0",
         "rethinkdb": "^2.3.3",
         "socket.io": "^2.0.4",
         "yargs": "^10.0.3"
