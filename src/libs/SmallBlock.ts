@@ -18,7 +18,6 @@ class SmallBlock {
 			hash: _block.hash,
 			miner: _block.miner,
 			timestamp: _block.timestamp,
-			transactionHashes: _block.transactionHashes,
 			transactionCount: _block.transactionHashes.length,
 			uncleHashes: _block.uncleHashes,
 			isUncle: _block.isUncle,

@@ -13,6 +13,11 @@ let bufferify = (obj: any):any =>  {
         if (obj.hasOwnProperty(key) && obj[key]) {
             if (obj[key].type && obj[key].type === 'Buffer') {
                 obj[key] = new Buffer(obj[key])
+            } else if(Array.isArray(obj[key])){
+                obj[key] = obj[key].map((_item: any)=>{
+                    if(_item.type && _item.type === 'Buffer') return new Buffer(_item)
+                    else return _item
+                })
             }
         }
     }

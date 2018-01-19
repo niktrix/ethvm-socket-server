@@ -1,7 +1,6 @@
 import { log } from '@/globalFuncs'
 import ds from '@/datastores'
 import { txLayout, blockLayout } from '@/typeLayouts'
-import { SmallBlock, SmallTx } from '@/libs'
 import configs from '@/configs'
 import * as SocketIO from 'socket.io'
 import RethinkDB from '@/rethinkConn'
@@ -41,7 +40,7 @@ let events: Array<_event> = [{
         ds.getBlocks((_blocks: Array<blockLayout>) => {
             let blocks: Array<blockLayout> = []
             _blocks.forEach((_block: blockLayout, idx: number): void => {
-                blocks.unshift(new SmallBlock(_block).smallify())
+                blocks.unshift(_block)
             })
             _cb(null, blocks)
         })
@@ -52,7 +51,7 @@ let events: Array<_event> = [{
         ds.getTransactions((_txs: Array<txLayout>) => {
             let txs: Array<txLayout> = []
             _txs.forEach((_tx) => {
-                txs.unshift(new SmallTx(_tx).smallify())
+                txs.unshift(_tx)
             })
             _cb(null, txs)
         })

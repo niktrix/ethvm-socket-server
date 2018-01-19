@@ -162,35 +162,18 @@ exports.default = {
 
 /***/ }),
 /* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const SmallBlock_1 = __webpack_require__(25);
-exports.SmallBlock = SmallBlock_1.default;
-const SmallTx_1 = __webpack_require__(26);
-exports.SmallTx = SmallTx_1.default;
-const BlockStats_1 = __webpack_require__(27);
-exports.BlockStats = BlockStats_1.default;
-const common = __webpack_require__(28);
-exports.common = common;
-
-/***/ }),
-/* 3 */
 /***/ (function(module, exports) {
 
 module.exports = require("ethereumjs-util");
 
 /***/ }),
-/* 4 */
+/* 3 */
 /***/ (function(module, exports) {
 
 module.exports = require("util");
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -215,6 +198,23 @@ let expObj = {
 exports.default = expObj;
 
 /***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const SmallBlock_1 = __webpack_require__(25);
+exports.SmallBlock = SmallBlock_1.default;
+const SmallTx_1 = __webpack_require__(26);
+exports.SmallTx = SmallTx_1.default;
+const BlockStats_1 = __webpack_require__(27);
+exports.BlockStats = BlockStats_1.default;
+const common = __webpack_require__(28);
+exports.common = common;
+
+/***/ }),
 /* 6 */
 /***/ (function(module, exports) {
 
@@ -225,7 +225,7 @@ module.exports = require("async");
 /***/ (function(module, exports, __webpack_require__) {
 
 const rlp = __webpack_require__(13)
-const ethUtil = __webpack_require__(3)
+const ethUtil = __webpack_require__(2)
 
 module.exports = TrieNode
 
@@ -535,7 +535,7 @@ const configs_1 = __webpack_require__(1);
 const http = __webpack_require__(17);
 const rethinkConn_1 = __webpack_require__(18);
 const addEvents_1 = __webpack_require__(29);
-const datastores_1 = __webpack_require__(5);
+const datastores_1 = __webpack_require__(4);
 const yargs_1 = __webpack_require__(8);
 const cacheDB_1 = __webpack_require__(31);
 const vmRunner_1 = __webpack_require__(33);
@@ -623,8 +623,8 @@ const configs_1 = __webpack_require__(1);
 const fs = __webpack_require__(20);
 const url_1 = __webpack_require__(21);
 const yargs_1 = __webpack_require__(8);
-const datastores_1 = __webpack_require__(5);
-const libs_1 = __webpack_require__(2);
+const datastores_1 = __webpack_require__(4);
+const libs_1 = __webpack_require__(5);
 class RethinkDB {
     constructor(_socketIO, _vmR) {
         this.socketIO = _socketIO;
@@ -789,6 +789,10 @@ let bufferify = obj => {
         if (obj.hasOwnProperty(key) && obj[key]) {
             if (obj[key].type && obj[key].type === 'Buffer') {
                 obj[key] = new Buffer(obj[key]);
+            } else if (Array.isArray(obj[key])) {
+                obj[key] = obj[key].map(_item => {
+                    if (_item.type && _item.type === 'Buffer') return new Buffer(_item);else return _item;
+                });
             }
         }
     }
@@ -944,7 +948,7 @@ module.exports = require("lokijs");
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const libs_1 = __webpack_require__(2);
+const libs_1 = __webpack_require__(5);
 const bignumber_js_1 = __webpack_require__(10);
 class SmallBlock {
     constructor(_block) {
@@ -961,7 +965,6 @@ class SmallBlock {
             hash: _block.hash,
             miner: _block.miner,
             timestamp: _block.timestamp,
-            transactionHashes: _block.transactionHashes,
             transactionCount: _block.transactionHashes.length,
             uncleHashes: _block.uncleHashes,
             isUncle: _block.isUncle,
@@ -1020,7 +1023,7 @@ exports.default = SmallTx;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const bignumber_js_1 = __webpack_require__(10);
-const libs_1 = __webpack_require__(2);
+const libs_1 = __webpack_require__(5);
 class BlockStats {
     constructor(_block, _txs) {
         this.block = _block;
@@ -1082,8 +1085,7 @@ exports.bnToHex = bnToHex;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const globalFuncs_1 = __webpack_require__(30);
-const datastores_1 = __webpack_require__(5);
-const libs_1 = __webpack_require__(2);
+const datastores_1 = __webpack_require__(4);
 let events = [{
     name: "join",
     onEvent: (_socket, _msg) => {
@@ -1110,7 +1112,7 @@ let events = [{
         datastores_1.default.getBlocks(_blocks => {
             let blocks = [];
             _blocks.forEach((_block, idx) => {
-                blocks.unshift(new libs_1.SmallBlock(_block).smallify());
+                blocks.unshift(_block);
             });
             _cb(null, blocks);
         });
@@ -1121,7 +1123,7 @@ let events = [{
         datastores_1.default.getTransactions(_txs => {
             let txs = [];
             _txs.forEach(_tx => {
-                txs.unshift(new libs_1.SmallTx(_tx).smallify());
+                txs.unshift(_tx);
             });
             _cb(null, txs);
         });
@@ -1310,7 +1312,7 @@ module.exports = require("ethereumjs-account");
 
 const CheckpointTrie = __webpack_require__(37)
 const secureInterface = __webpack_require__(45)
-const inherits = __webpack_require__(4).inherits
+const inherits = __webpack_require__(3).inherits
 
 module.exports = SecureTrie
 inherits(SecureTrie, CheckpointTrie)
@@ -1332,7 +1334,7 @@ function SecureTrie () {
 
 const BaseTrie = __webpack_require__(38)
 const checkpointInterface = __webpack_require__(42)
-const inherits = __webpack_require__(4).inherits
+const inherits = __webpack_require__(3).inherits
 const proof = __webpack_require__(44)
 
 module.exports = CheckpointTrie
@@ -1358,7 +1360,7 @@ const levelup = __webpack_require__(11)
 const memdown = __webpack_require__(12)
 const async = __webpack_require__(6)
 const rlp = __webpack_require__(13)
-const ethUtil = __webpack_require__(3)
+const ethUtil = __webpack_require__(2)
 const semaphore = __webpack_require__(40)
 const TrieNode = __webpack_require__(7)
 const ReadStream = __webpack_require__(41)
@@ -2125,7 +2127,7 @@ module.exports = require("semaphore");
 
 const Readable = __webpack_require__(14).Readable
 const TrieNode = __webpack_require__(7)
-const util = __webpack_require__(4)
+const util = __webpack_require__(3)
 
 module.exports = TrieReadStream
 
@@ -2164,7 +2166,7 @@ TrieReadStream.prototype._read = function () {
 const levelup = __webpack_require__(11)
 const memdown = __webpack_require__(12)
 const async = __webpack_require__(6)
-const inherits = __webpack_require__(4).inherits
+const inherits = __webpack_require__(3).inherits
 const Readable = __webpack_require__(14).Readable
 const levelws = __webpack_require__(43)
 const callTogether = __webpack_require__(0).callTogether
@@ -2359,7 +2361,7 @@ module.exports = require("level-ws");
 /***/ (function(module, exports, __webpack_require__) {
 
 const TrieNode = __webpack_require__(7)
-const ethUtil = __webpack_require__(3)
+const ethUtil = __webpack_require__(2)
 const matchingNibbleLength = __webpack_require__(0).matchingNibbleLength
 
 /**
@@ -2459,7 +2461,7 @@ exports.verifyProof = function (rootHash, key, proof, cb) {
 /* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const ethUtil = __webpack_require__(3)
+const ethUtil = __webpack_require__(2)
 
 module.exports = secureInterface
 
