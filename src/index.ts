@@ -23,7 +23,7 @@ let cacheDB = new CacheDB(configs.global.REDIS.URL, {
 let vmRunner = new VmRunner(cacheDB);
 let rdb = new RethinkDB(io, vmRunner)
 ds.getBlocks((_blocks: Array<blockLayout>)=>{
-	vmRunner.setStateRoot(_blocks && _blocks[0] && _blocks[0].stateRoot ? new Buffer(_blocks[0].stateRoot) : new Buffer('0x0', 'hex'))
+	vmRunner.setStateRoot(_blocks && _blocks[0] && _blocks[0].stateRoot ? new Buffer(_blocks[0].stateRoot) : new Buffer('0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544', 'hex')) //genesis state by default
 })
 io.on('connection', (_socket: SocketIO.Socket) => { 
 	addEvents(_socket, rdb, vmRunner)
