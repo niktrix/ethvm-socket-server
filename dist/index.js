@@ -567,6 +567,7 @@ io.on('connection', _socket => {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = {
+    BLOCK_TIME: 14,
     LOKI: {
         dbName: "loki.json",
         tableNames: ["blocks", "transactions"],
@@ -596,7 +597,7 @@ exports.default = {
         env_url: "RETHINKDB_URL"
     },
     MAX: {
-        socketRows: 50
+        socketRows: 64
     },
     GETH_RPC: {
         port: process.env.RPC_PORT ? parseInt(process.env.RPC_PORT) : 8545,
@@ -988,6 +989,7 @@ class SmallBlock {
             txFees: _block.txFees,
             stateRoot: _block.stateRoot,
             uncleReward: _block.uncleReward,
+            difficulty: _block.difficulty,
             blockStats: _block.blockStats
         };
     }
@@ -1039,19 +1041,28 @@ exports.default = SmallTx;
 Object.defineProperty(exports, "__esModule", { value: true });
 const bignumber_js_1 = __webpack_require__(10);
 const libs_1 = __webpack_require__(5);
+const configs_1 = __webpack_require__(1);
+let previousBlockTime = new bignumber_js_1.default(0);
+const BLOCK_TIME = configs_1.default.global.BLOCK_TIME;
 class BlockStats {
     constructor(_block, _txs) {
         this.block = _block;
         this.txs = _txs;
+        let ts = new bignumber_js_1.default(libs_1.common.bufferToHex(this.block.timestamp));
+        if (!previousBlockTime) previousBlockTime = ts.sub(BLOCK_TIME);
+        this.blockTime = ts.sub(previousBlockTime).abs();
+        if (!this.block.isUncle) previousBlockTime = new bignumber_js_1.default(libs_1.common.bufferToHex(this.block.timestamp));
     }
     getBlockStats() {
         if (!this.txs.length) return {
+            blockTime: '0x0',
             failed: '0x0',
             success: '0x0',
             avgGasPrice: '0x0',
             avgTxFees: '0x0'
         };
         let txStatus = {
+            blockTime: new bignumber_js_1.default(0),
             failed: new bignumber_js_1.default(0),
             success: new bignumber_js_1.default(0),
             totGasPrice: new bignumber_js_1.default(0),
@@ -1063,6 +1074,7 @@ class BlockStats {
             txStatus.totTxFees = txStatus.totTxFees.add(new bignumber_js_1.default(libs_1.common.bufferToHex(_tx.gasPrice)).mul(new bignumber_js_1.default(libs_1.common.bufferToHex(_tx.gasUsed))));
         });
         return {
+            blockTime: libs_1.common.bnToHex(this.blockTime),
             failed: libs_1.common.bnToHex(txStatus.failed),
             success: libs_1.common.bnToHex(txStatus.success),
             avgGasPrice: libs_1.common.bnToHex(txStatus.totGasPrice.div(this.txs.length).ceil()),

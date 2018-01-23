@@ -1,9 +1,11 @@
 import { txLayout } from '@/typeLayouts'
 interface IblockStats {
-	failed: string,
-	success: string,
-	avgGasPrice: string,
-	avgTxFees: string
+	blockTime: string;
+	failed: string;
+	success: string;
+	avgGasPrice: string;
+	avgTxFees: string;
+	pendingTxs?: number;
 }
 export default interface blockLayout {
 	number: Buffer;

@@ -1,4 +1,5 @@
 export default {
+	BLOCK_TIME: 14, //seconds
 	LOKI: {
 		dbName: "loki.json",
 		tableNames: [
@@ -31,7 +32,7 @@ export default {
 		env_url: "RETHINKDB_URL"
 	},
 	MAX : {
-		socketRows : 50
+		socketRows : 64
 	},
 	GETH_RPC: {
 		port: process.env.RPC_PORT ? parseInt(process.env.RPC_PORT) : 8545,

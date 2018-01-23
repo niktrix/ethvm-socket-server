@@ -26,6 +26,7 @@ class SmallBlock {
 			txFees: _block.txFees,
 			stateRoot: _block.stateRoot,
 			uncleReward: _block.uncleReward,
+			difficulty: _block.difficulty,
 			blockStats: _block.blockStats
 		}
 	}
