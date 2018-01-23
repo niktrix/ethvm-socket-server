@@ -780,8 +780,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Redis = __webpack_require__(9);
 const configs_1 = __webpack_require__(1);
 let redis = new Redis(configs_1.default.global.REDIS.URL);
+let tableCache = {
+    transactions: [],
+    blocks: []
+};
 let tables = {
-    transactions: 'transactions',
+    transactions: "transactions",
     blocks: 'blocks'
 };
 let bufferify = obj => {
@@ -799,11 +803,18 @@ let bufferify = obj => {
     return obj;
 };
 let getArray = (tbName, cb) => {
-    let vals = redis.get(tbName, (err, result) => {
-        if (!err && result) cb(JSON.parse(result).map(_item => {
-            return bufferify(_item);
-        }));else cb([]);
-    });
+    let tbKey = tbName;
+    if (tableCache[tbKey].length) cb(tableCache[tbKey]);else {
+        let vals = redis.get(tbName, (err, result) => {
+            if (!err && result) {
+                let bufferedArr = JSON.parse(result).map(_item => {
+                    return bufferify(_item);
+                });
+                tableCache[tbKey] = bufferedArr;
+                cb(bufferedArr);
+            } else cb([]);
+        });
+    }
 };
 let addTransaction = tx => {
     getArray(tables.transactions, pTxs => {
@@ -815,6 +826,8 @@ let addTransaction = tx => {
             pTxs.unshift(tx);
         }
         if (pTxs.length > configs_1.default.global.MAX.socketRows) pTxs = pTxs.slice(0, configs_1.default.global.MAX.socketRows);
+        let tbKey = "transactions";
+        tableCache[tbKey] = pTxs;
         redis.set(tables.transactions, JSON.stringify(pTxs));
     });
 };
@@ -822,6 +835,8 @@ let addBlock = block => {
     getArray(tables.blocks, pBlocks => {
         pBlocks.unshift(block);
         if (pBlocks.length > configs_1.default.global.MAX.socketRows) pBlocks = pBlocks.slice(0, configs_1.default.global.MAX.socketRows);
+        let tbKey = "blocks";
+        tableCache[tbKey] = pBlocks;
         redis.set(tables.blocks, JSON.stringify(pBlocks));
     });
 };
