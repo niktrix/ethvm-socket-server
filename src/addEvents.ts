@@ -5,6 +5,7 @@ import configs from '@/configs'
 import * as SocketIO from 'socket.io'
 import RethinkDB from '@/rethinkConn'
 import VmRunner from '@/vm/vmRunner'
+import {common} from '@/libs'
 type CallbackFunction = (err: Error, result: any) => any;
 interface Iinstances {
     rdb: RethinkDB;
@@ -73,15 +74,21 @@ let events: Array<_event> = [{
     }
 }, {
     name: "getAccount",
-    onEvent: (_socket, _msg, _glob, _cb): void =>{
+    onEvent: (_socket, _msg, _glob, _cb): void => {
         _glob.vmR.getAccount(_msg, _cb)
     }
 }, {
     name: "ethCall",
-    onEvent: (_socket, _msg:any, _glob, _cb): void => {
+    onEvent: (_socket, _msg: any, _glob, _cb): void => {
         _glob.vmR.call(_msg, _cb)
     }
-}]
+}, {
+    name: "getTransactionPages",
+    onEvent: (_socket, reqObj: any, _glob, _cb): void => {
+        if (reqObj.hash && (!common.check.isBufferObject(reqObj.hash, 32) || !common.check.isNumber(reqObj.number))) _cb(common.newError(common.errors.notBuffer), null)
+        else _glob.rdb.getTransactionPages(reqObj.hash, reqObj.number, _cb)
+    }
+}] 
 let onConnection = (_socket: SocketIO.Socket, _rdb: RethinkDB, _vmR: VmRunner) => {
     events.forEach((event: _event, idx: number) => {
         _socket.on(event.name, (msg: any, cb: CallbackFunction) => {

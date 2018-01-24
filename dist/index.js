@@ -67,6 +67,19 @@
 /* 0 */
 /***/ (function(module, exports, __webpack_require__) {
 
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const global_1 = __webpack_require__(16);
+exports.default = {
+    global: global_1.default
+};
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
 const async = __webpack_require__(6)
 
 module.exports = {
@@ -148,19 +161,6 @@ function asyncFirstSeries (array, iterator, cb) {
 
 
 /***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const global_1 = __webpack_require__(16);
-exports.default = {
-    global: global_1.default
-};
-
-/***/ }),
 /* 2 */
 /***/ (function(module, exports) {
 
@@ -182,7 +182,7 @@ module.exports = require("util");
 Object.defineProperty(exports, "__esModule", { value: true });
 const datastore_redis_1 = __webpack_require__(22);
 const datastore_loki_1 = __webpack_require__(23);
-const configs_1 = __webpack_require__(1);
+const configs_1 = __webpack_require__(0);
 let DS_TYPE = configs_1.default.global.DATASTORE;
 let VALID_DS = {
     Redis: datastore_redis_1.default,
@@ -531,7 +531,7 @@ module.exports = require("readable-stream");
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const configs_1 = __webpack_require__(1);
+const configs_1 = __webpack_require__(0);
 const http = __webpack_require__(17);
 const rethinkConn_1 = __webpack_require__(18);
 const addEvents_1 = __webpack_require__(29);
@@ -620,7 +620,7 @@ module.exports = require("http");
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const r = __webpack_require__(19);
-const configs_1 = __webpack_require__(1);
+const configs_1 = __webpack_require__(0);
 const fs = __webpack_require__(20);
 const url_1 = __webpack_require__(21);
 const yargs_1 = __webpack_require__(8);
@@ -719,6 +719,25 @@ class RethinkDB {
             });
         });
     }
+    getTransactionPages(hash, bNumber, cb) {
+        let _this = this;
+        let sendResults = _cursor => {
+            _cursor.toArray((err, results) => {
+                if (err) cb(err, null);else cb(null, results.map(_tx => {
+                    return new libs_1.SmallTx(_tx).smallify();
+                }));
+            });
+        };
+        if (!hash) {
+            r.table("transactions").orderBy({ index: r.desc("numberAndHash") }).filter({ pending: false }).limit(25).run(_this.dbConn, (err, cursor) => {
+                if (err) cb(err, null);else sendResults(cursor);
+            });
+        } else {
+            r.table("transactions").orderBy({ index: r.desc("numberAndHash") }).between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: "open", index: "numberAndHash" }).filter({ pending: false }).limit(25).run(_this.dbConn, function (err, cursor) {
+                if (err) cb(err, null);else sendResults(cursor);
+            });
+        }
+    }
     getBlockTransactions(hash, cb) {
         r.table('blocks').get(r.args([new Buffer(hash)])).do(block => {
             return r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array');
@@ -779,7 +798,7 @@ module.exports = require("url");
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Redis = __webpack_require__(9);
-const configs_1 = __webpack_require__(1);
+const configs_1 = __webpack_require__(0);
 let redis = new Redis(configs_1.default.global.REDIS.URL);
 let tableCache = {
     transactions: [],
@@ -871,7 +890,7 @@ exports.default = {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const loki = __webpack_require__(24);
-const configs_1 = __webpack_require__(1);
+const configs_1 = __webpack_require__(0);
 let lokiDB = new loki(configs_1.default.global.LOKI.dbName, { autosave: true, autosaveInterval: 5000, autoload: true });
 let tables = configs_1.default.global.LOKI.tableNames;
 let setCollections = () => {
@@ -1041,7 +1060,7 @@ exports.default = SmallTx;
 Object.defineProperty(exports, "__esModule", { value: true });
 const bignumber_js_1 = __webpack_require__(10);
 const libs_1 = __webpack_require__(5);
-const configs_1 = __webpack_require__(1);
+const configs_1 = __webpack_require__(0);
 let previousBlockTime = new bignumber_js_1.default(0);
 const BLOCK_TIME = configs_1.default.global.BLOCK_TIME;
 class BlockStats {
@@ -1092,6 +1111,7 @@ exports.default = BlockStats;
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
+const _ = __webpack_require__(47);
 let bufferToHex = _buf => {
     let r = '0x' + new Buffer(_buf).toString('hex');
     if (r == '0x') r = "0x0";
@@ -1102,6 +1122,53 @@ let bnToHex = _bn => {
     return '0x' + _bn.toString(16);
 };
 exports.bnToHex = bnToHex;
+let validateHexString = str => {
+    if (str == "") return true;
+    str = str.substring(0, 2) == '0x' ? str.substring(2).toUpperCase() : str.toUpperCase();
+    var re = /^[0-9A-F]+$/g;
+    return re.test(str);
+};
+let validateByteArray = arr => {
+    let valid = true;
+    arr.forEach(_item => {
+        if (!_.isNumber(_item) || _item < 0 || _item > 255) valid = false;
+    });
+    return valid;
+};
+let check = {
+    isNumber(_item) {
+        return _.isNumber(_item);
+    },
+    isHashString(_item) {
+        return _item.substr(0, 2) == "0x" && validateHexString(_item.substring(2).toUpperCase()) && _item.length === 66;
+    },
+    isHashBuffer(_item) {
+        return Buffer.isBuffer(_item) && _item.length === 32;
+    },
+    isAddressString(_item) {
+        return _item.substr(0, 2) == "0x" && validateHexString(_item.substring(2).toUpperCase()) && _item.length === 42;
+    },
+    isAddressBuffer(_item) {
+        return Buffer.isBuffer(_item) && _item.length === 20;
+    },
+    isBufferObject(_item, length) {
+        return _item.type && _item.type == "Buffer" && _item.data && _.isArray(_item.data) && validateByteArray(_item.data) && _item.data.length == length;
+    }
+};
+exports.check = check;
+let newError = _msg => {
+    return {
+        message: _msg
+    };
+};
+exports.newError = newError;
+let errors = {
+    notNumber: "Not a valid number",
+    notBuffer: "Not a valid Buffer",
+    notHash: "Not a valid Hash string",
+    notAddress: "Not a valid Address string"
+};
+exports.errors = errors;
 
 /***/ }),
 /* 29 */
@@ -1113,6 +1180,7 @@ exports.bnToHex = bnToHex;
 Object.defineProperty(exports, "__esModule", { value: true });
 const globalFuncs_1 = __webpack_require__(30);
 const datastores_1 = __webpack_require__(4);
+const libs_1 = __webpack_require__(5);
 let events = [{
     name: "join",
     onEvent: (_socket, _msg) => {
@@ -1179,6 +1247,11 @@ let events = [{
     name: "ethCall",
     onEvent: (_socket, _msg, _glob, _cb) => {
         _glob.vmR.call(_msg, _cb);
+    }
+}, {
+    name: "getTransactionPages",
+    onEvent: (_socket, reqObj, _glob, _cb) => {
+        if (reqObj.hash && (!libs_1.common.check.isBufferObject(reqObj.hash, 32) || !libs_1.common.check.isNumber(reqObj.number))) _cb(libs_1.common.newError(libs_1.common.errors.notBuffer), null);else _glob.rdb.getTransactionPages(reqObj.hash, reqObj.number, _cb);
     }
 }];
 let onConnection = (_socket, _rdb, _vmR) => {
@@ -1391,10 +1464,10 @@ const ethUtil = __webpack_require__(2)
 const semaphore = __webpack_require__(40)
 const TrieNode = __webpack_require__(7)
 const ReadStream = __webpack_require__(41)
-const matchingNibbleLength = __webpack_require__(0).matchingNibbleLength
-const doKeysMatch = __webpack_require__(0).doKeysMatch
-const callTogether = __webpack_require__(0).callTogether
-const asyncFirstSeries = __webpack_require__(0).asyncFirstSeries
+const matchingNibbleLength = __webpack_require__(1).matchingNibbleLength
+const doKeysMatch = __webpack_require__(1).doKeysMatch
+const callTogether = __webpack_require__(1).callTogether
+const asyncFirstSeries = __webpack_require__(1).asyncFirstSeries
 
 module.exports = Trie
 
@@ -2196,7 +2269,7 @@ const async = __webpack_require__(6)
 const inherits = __webpack_require__(3).inherits
 const Readable = __webpack_require__(14).Readable
 const levelws = __webpack_require__(43)
-const callTogether = __webpack_require__(0).callTogether
+const callTogether = __webpack_require__(1).callTogether
 
 module.exports = checkpointInterface
 
@@ -2389,7 +2462,7 @@ module.exports = require("level-ws");
 
 const TrieNode = __webpack_require__(7)
 const ethUtil = __webpack_require__(2)
-const matchingNibbleLength = __webpack_require__(0).matchingNibbleLength
+const matchingNibbleLength = __webpack_require__(1).matchingNibbleLength
 
 /**
  * Returns a merkle proof for a given key
@@ -2534,6 +2607,12 @@ function del (_super, key, cb) {
 /***/ (function(module, exports) {
 
 module.exports = require("socket.io");
+
+/***/ }),
+/* 47 */
+/***/ (function(module, exports) {
+
+module.exports = require("lodash");
 
 /***/ })
 /******/ ]);

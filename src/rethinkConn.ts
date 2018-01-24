@@ -3,9 +3,10 @@ import configs from '@/configs'
 import * as fs from 'fs'
 import { URL } from 'url'
 import { argv } from 'yargs'
+import _ from 'lodash'
 import ds from '@/datastores'
 import { txLayout, blockLayout } from '@/typeLayouts'
-import { SmallBlock, SmallTx, BlockStats } from '@/libs'
+import { SmallBlock, SmallTx, BlockStats, common } from '@/libs'
 import VmRunner from '@/vm/vmRunner'
 class RethinkDB {
     socketIO: any
@@ -48,7 +49,7 @@ class RethinkDB {
                 },
                 db: conf.db
             }
-            if(!_cert) delete tempConfig.ssl
+            if (!_cert) delete tempConfig.ssl
             connect(tempConfig)
         }
         if (argv.remoteRDB && !argv.rawCert) {
@@ -107,12 +108,35 @@ class RethinkDB {
             })
         })
     }
+    getTransactionPages(hash: string, bNumber: number, cb: (err: Error, result: any) => void): void {
+        let _this = this
+        let sendResults = (_cursor: any) => {
+            _cursor.toArray((err: Error, results: Array<txLayout>) => {
+                if (err) cb(err, null)
+                else cb(null, results.map((_tx: txLayout) => {
+                    return new SmallTx(_tx).smallify()
+                }))
+            });
+        }
+        if (!hash) {
+            r.table("transactions").orderBy({ index: r.desc("numberAndHash") }).filter({ pending: false }).limit(25).run(_this.dbConn, (err, cursor) => {
+                if (err) cb(err, null)
+                else sendResults(cursor)
+            });
+        } else {
+            r.table("transactions").orderBy({ index: r.desc("numberAndHash") }).between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: "open", index: "numberAndHash" })
+                .filter({ pending: false }).limit(25).run(_this.dbConn, function(err, cursor) {
+                    if (err) cb(err, null)
+                    else sendResults(cursor)
+                });
+        }
+    }
     getBlockTransactions(hash: string, cb: (err: Error, result: any) => void): void {
         r.table('blocks').get(r.args([new Buffer(hash)])).do((block: any) => {
             return r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array')
         }).run(this.dbConn, (err: Error, result: any) => {
             if (err) cb(err, null);
-            else cb(null, result.map((_tx: txLayout)=>{
+            else cb(null, result.map((_tx: txLayout) => {
                 return new SmallTx(_tx).smallify()
             }));
         })
