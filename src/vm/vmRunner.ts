@@ -1,5 +1,5 @@
 import CacheDb from './cacheDB'
-let VM =  require('ethereumjs-vm')
+let VM = require('ethereumjs-vm')
 let Account = require('ethereumjs-account')
 let Trie = require('merkle-patricia-tree/secure')
 const GAS_LIMIT = '0x4c4b40' // 50000000
@@ -17,38 +17,57 @@ class VmRunner {
 		this.db = _db
 	}
 	setStateRoot(_hash: Buffer) {
-		this.stateTrie = new Trie(this.db, _hash)
+		let _temp = new Trie(this.db, _hash)
+		this.stateTrie = _temp
 	}
-	call(tx: Itx, cb: (err: Error, result: Buffer) => void) {
+	call(txs: Itx | Array<Itx>, mCB: (err: Error, result: any) => void) {
 		let _this = this
-		_this.stateTrie.get(hexToBuffer(tx.to), (err: Error, val: Buffer)=>{
-			if(err) {
-				cb(err, null)
-				return
-			}
-			let account = new Account(val)
-			_this.stateTrie.getRaw(account.codeHash, (err: Error, code: string)=>{
+		let _trie = _this.stateTrie.copy()
+		let getResult = (tx: Itx, treeClone: any, cb: (err: Error, result: Buffer) => void) => {
+			treeClone.get(hexToBuffer(tx.to), (err: Error, val: Buffer) => {
 				if (err) {
 					cb(err, null)
 					return
 				}
-				let vm = new VM({
-					state: _this.stateTrie
-				})
-				vm.runCode({
-					address: hexToBuffer(tx.to),
-					code: hexToBuffer(code),
-					gasLimit: GAS_LIMIT,
-					data: hexToBuffer(tx.data)
-				}, (err: Error, result: any)=>{
-					cb(err, result ? result.return : null)
+				let account = new Account(val)
+				treeClone.getRaw(account.codeHash, (err: Error, code: Buffer) => {
+					if (err) {
+						cb(err, null)
+						return
+					}
+					let vm = new VM({
+						state: treeClone
+					})
+					vm.runCode({
+						address: hexToBuffer(tx.to),
+						code: code ? code : "0x00",
+						gasLimit: GAS_LIMIT,
+						data: hexToBuffer(tx.data)
+					}, (err: Error, result: any) => {
+						cb(err, result ? result.return : null)
+					})
 				})
 			})
-		})
+		}
+		if (Array.isArray(txs)) {
+			let returnArr: Array<{ error: Error, result: any }> = []
+			let counter = 0
+			txs.forEach((_tx, _idx) => {
+				getResult(_tx, _trie.copy(), (err: Error, result: any) => {
+					counter++
+					returnArr[_idx] = ({ error: err, result: result })
+					if (counter == txs.length) mCB(null, returnArr)
+				})
+			})
+		} else {
+			getResult(txs, _trie, mCB)
+		}
 	}
 	getAccount(_to: string, cb: (err: Error, result: Buffer) => void) {
-		this.stateTrie.get(hexToBuffer(_to), (err: Error, val: Buffer) => {
-			if(err) {
+		let treeClone = this.stateTrie.copy()
+		treeClone.get(hexToBuffer(_to), (err: Error, val: Buffer) => {
+			console.log(val)
+			if (err) {
 				cb(err, null)
 			} else {
 				cb(null, val)

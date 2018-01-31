@@ -24,7 +24,8 @@ class SmallTx {
 			hash: _tx.hash,
 			input: _tx.input,
 			value: _tx.value,
-			status: _tx.status
+			status: _tx.status,
+			timestamp: _tx.timestamp
 		}
 	}
 }

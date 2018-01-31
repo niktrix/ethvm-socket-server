@@ -162,18 +162,35 @@ function asyncFirstSeries (array, iterator, cb) {
 
 /***/ }),
 /* 2 */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
-module.exports = require("ethereumjs-util");
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const SmallBlock_1 = __webpack_require__(25);
+exports.SmallBlock = SmallBlock_1.default;
+const SmallTx_1 = __webpack_require__(26);
+exports.SmallTx = SmallTx_1.default;
+const BlockStats_1 = __webpack_require__(27);
+exports.BlockStats = BlockStats_1.default;
+const common = __webpack_require__(28);
+exports.common = common;
 
 /***/ }),
 /* 3 */
 /***/ (function(module, exports) {
 
-module.exports = require("util");
+module.exports = require("ethereumjs-util");
 
 /***/ }),
 /* 4 */
+/***/ (function(module, exports) {
+
+module.exports = require("util");
+
+/***/ }),
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -198,23 +215,6 @@ let expObj = {
 exports.default = expObj;
 
 /***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const SmallBlock_1 = __webpack_require__(25);
-exports.SmallBlock = SmallBlock_1.default;
-const SmallTx_1 = __webpack_require__(26);
-exports.SmallTx = SmallTx_1.default;
-const BlockStats_1 = __webpack_require__(27);
-exports.BlockStats = BlockStats_1.default;
-const common = __webpack_require__(28);
-exports.common = common;
-
-/***/ }),
 /* 6 */
 /***/ (function(module, exports) {
 
@@ -225,7 +225,7 @@ module.exports = require("async");
 /***/ (function(module, exports, __webpack_require__) {
 
 const rlp = __webpack_require__(13)
-const ethUtil = __webpack_require__(2)
+const ethUtil = __webpack_require__(3)
 
 module.exports = TrieNode
 
@@ -534,14 +534,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const configs_1 = __webpack_require__(0);
 const http = __webpack_require__(17);
 const rethinkConn_1 = __webpack_require__(18);
-const addEvents_1 = __webpack_require__(29);
-const datastores_1 = __webpack_require__(4);
+const addEvents_1 = __webpack_require__(30);
+const datastores_1 = __webpack_require__(5);
 const yargs_1 = __webpack_require__(8);
-const cacheDB_1 = __webpack_require__(31);
-const vmRunner_1 = __webpack_require__(33);
+const cacheDB_1 = __webpack_require__(32);
+const vmRunner_1 = __webpack_require__(34);
 if (yargs_1.argv.resetDS) datastores_1.default.initialize();
 const server = http.createServer();
-const io = __webpack_require__(46)(server, configs_1.default.global.SOCKET_IO);
+const io = __webpack_require__(47)(server, configs_1.default.global.SOCKET_IO);
 server.listen(configs_1.default.global.SOCKET_IO.port, configs_1.default.global.SOCKET_IO.ip, () => {
     console.log("Listening on", configs_1.default.global.SOCKET_IO.port);
 });
@@ -602,7 +602,8 @@ exports.default = {
     GETH_RPC: {
         port: process.env.RPC_PORT ? parseInt(process.env.RPC_PORT) : 8545,
         host: process.env.RPC_HOST || "localhost"
-    }
+    },
+    ID: process.env.DYNO || "local"
 };
 
 /***/ }),
@@ -624,8 +625,8 @@ const configs_1 = __webpack_require__(0);
 const fs = __webpack_require__(20);
 const url_1 = __webpack_require__(21);
 const yargs_1 = __webpack_require__(8);
-const datastores_1 = __webpack_require__(4);
-const libs_1 = __webpack_require__(5);
+const datastores_1 = __webpack_require__(5);
+const libs_1 = __webpack_require__(2);
 class RethinkDB {
     constructor(_socketIO, _vmR) {
         this.socketIO = _socketIO;
@@ -753,7 +754,12 @@ class RethinkDB {
         });
     }
     getTx(hash, cb) {
-        r.table("transactions").get(r.args([new Buffer(hash)])).run(this.dbConn, (err, result) => {
+        r.table("transactions").get(r.args([new Buffer(hash)])).merge(function (_tx) {
+            return {
+                trace: r.db("eth_mainnet").table('traces').get(_tx('hash')),
+                logs: r.db("eth_mainnet").table('logs').get(_tx('hash'))
+            };
+        }).run(this.dbConn, (err, result) => {
             if (err) cb(err, null);else cb(null, result);
         });
     }
@@ -983,7 +989,7 @@ module.exports = require("lokijs");
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const libs_1 = __webpack_require__(5);
+const libs_1 = __webpack_require__(2);
 const bignumber_js_1 = __webpack_require__(10);
 class SmallBlock {
     constructor(_block) {
@@ -1044,7 +1050,8 @@ class SmallTx {
             hash: _tx.hash,
             input: _tx.input,
             value: _tx.value,
-            status: _tx.status
+            status: _tx.status,
+            timestamp: _tx.timestamp
         };
     }
 }
@@ -1059,7 +1066,7 @@ exports.default = SmallTx;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const bignumber_js_1 = __webpack_require__(10);
-const libs_1 = __webpack_require__(5);
+const libs_1 = __webpack_require__(2);
 const configs_1 = __webpack_require__(0);
 let previousBlockTime = new bignumber_js_1.default(0);
 const BLOCK_TIME = configs_1.default.global.BLOCK_TIME;
@@ -1111,7 +1118,7 @@ exports.default = BlockStats;
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const _ = __webpack_require__(47);
+const _ = __webpack_require__(29);
 let bufferToHex = _buf => {
     let r = '0x' + new Buffer(_buf).toString('hex');
     if (r == '0x') r = "0x0";
@@ -1172,15 +1179,21 @@ exports.errors = errors;
 
 /***/ }),
 /* 29 */
+/***/ (function(module, exports) {
+
+module.exports = require("lodash");
+
+/***/ }),
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const globalFuncs_1 = __webpack_require__(30);
-const datastores_1 = __webpack_require__(4);
-const libs_1 = __webpack_require__(5);
+const globalFuncs_1 = __webpack_require__(31);
+const datastores_1 = __webpack_require__(5);
+const libs_1 = __webpack_require__(2);
 let events = [{
     name: "join",
     onEvent: (_socket, _msg) => {
@@ -1267,7 +1280,7 @@ let onConnection = (_socket, _rdb, _vmR) => {
 exports.default = onConnection;
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1285,7 +1298,7 @@ let log = {
 exports.log = log;
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1293,7 +1306,7 @@ exports.log = log;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Redis = __webpack_require__(9);
-const rpc = __webpack_require__(32);
+const rpc = __webpack_require__(33);
 class CacheDB {
     constructor(_redis, _rpc) {
         this.redisConn = new Redis(_redis);
@@ -1302,14 +1315,16 @@ class CacheDB {
     get(key, options, cb) {
         let _this = this;
         this.redisConn.get(key, (err, result) => {
-            if (!err && result) cb(null, result);else {
+            if (!err && result) {
+                cb(null, new Buffer(result, 'hex'));
+            } else {
                 this.rpcConn.call('eth_getKeyValue', ['0x' + key.toString('hex')], function (err, result) {
-                    console.log(err);
                     if (err) {
                         cb(err, null);
                     } else {
-                        _this.redisConn.set(key, result);
-                        cb(null, result);
+                        let resBuf = new Buffer(result.substring(2), 'hex');
+                        _this.redisConn.set(key, resBuf.toString('hex'));
+                        cb(null, resBuf);
                     }
                 });
             }
@@ -1318,32 +1333,35 @@ class CacheDB {
     put(key, val, options, cb) {
         cb(null, true);
     }
-    batch(op, options, cb) {
+    batch(ops, options, cb) {
         cb(null, true);
     }
     del(key, cb) {
         cb(null, true);
     }
+    isOpen() {
+        return true;
+    }
 }
 exports.default = CacheDB;
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports) {
 
 module.exports = require("json-rpc2");
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-let VM = __webpack_require__(34);
-let Account = __webpack_require__(35);
-let Trie = __webpack_require__(36);
+let VM = __webpack_require__(35);
+let Account = __webpack_require__(36);
+let Trie = __webpack_require__(37);
 const GAS_LIMIT = '0x4c4b40';
 const hexToBuffer = hex => {
     return Buffer.from(hex.toLowerCase().replace('0x', ''), 'hex');
@@ -1353,37 +1371,56 @@ class VmRunner {
         this.db = _db;
     }
     setStateRoot(_hash) {
-        this.stateTrie = new Trie(this.db, _hash);
+        let _temp = new Trie(this.db, _hash);
+        this.stateTrie = _temp;
     }
-    call(tx, cb) {
+    call(txs, mCB) {
         let _this = this;
-        _this.stateTrie.get(hexToBuffer(tx.to), (err, val) => {
-            if (err) {
-                cb(err, null);
-                return;
-            }
-            let account = new Account(val);
-            _this.stateTrie.getRaw(account.codeHash, (err, code) => {
+        let _trie = _this.stateTrie.copy();
+        let getResult = (tx, treeClone, cb) => {
+            treeClone.get(hexToBuffer(tx.to), (err, val) => {
                 if (err) {
                     cb(err, null);
                     return;
                 }
-                let vm = new VM({
-                    state: _this.stateTrie
-                });
-                vm.runCode({
-                    address: hexToBuffer(tx.to),
-                    code: hexToBuffer(code),
-                    gasLimit: GAS_LIMIT,
-                    data: hexToBuffer(tx.data)
-                }, (err, result) => {
-                    cb(err, result ? result.return : null);
+                let account = new Account(val);
+                treeClone.getRaw(account.codeHash, (err, code) => {
+                    if (err) {
+                        cb(err, null);
+                        return;
+                    }
+                    let vm = new VM({
+                        state: treeClone
+                    });
+                    vm.runCode({
+                        address: hexToBuffer(tx.to),
+                        code: code ? code : "0x00",
+                        gasLimit: GAS_LIMIT,
+                        data: hexToBuffer(tx.data)
+                    }, (err, result) => {
+                        cb(err, result ? result.return : null);
+                    });
                 });
             });
-        });
+        };
+        if (Array.isArray(txs)) {
+            let returnArr = [];
+            let counter = 0;
+            txs.forEach((_tx, _idx) => {
+                getResult(_tx, _trie.copy(), (err, result) => {
+                    counter++;
+                    returnArr[_idx] = { error: err, result: result };
+                    if (counter == txs.length) mCB(null, returnArr);
+                });
+            });
+        } else {
+            getResult(txs, _trie, mCB);
+        }
     }
     getAccount(_to, cb) {
-        this.stateTrie.get(hexToBuffer(_to), (err, val) => {
+        let treeClone = this.stateTrie.copy();
+        treeClone.get(hexToBuffer(_to), (err, val) => {
+            console.log(val);
             if (err) {
                 cb(err, null);
             } else {
@@ -1395,24 +1432,24 @@ class VmRunner {
 exports.default = VmRunner;
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports) {
 
 module.exports = require("ethereumjs-vm");
 
 /***/ }),
-/* 35 */
+/* 36 */
 /***/ (function(module, exports) {
 
 module.exports = require("ethereumjs-account");
 
 /***/ }),
-/* 36 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const CheckpointTrie = __webpack_require__(37)
-const secureInterface = __webpack_require__(45)
-const inherits = __webpack_require__(3).inherits
+const CheckpointTrie = __webpack_require__(38)
+const secureInterface = __webpack_require__(46)
+const inherits = __webpack_require__(4).inherits
 
 module.exports = SecureTrie
 inherits(SecureTrie, CheckpointTrie)
@@ -1429,13 +1466,13 @@ function SecureTrie () {
 
 
 /***/ }),
-/* 37 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const BaseTrie = __webpack_require__(38)
-const checkpointInterface = __webpack_require__(42)
-const inherits = __webpack_require__(3).inherits
-const proof = __webpack_require__(44)
+const BaseTrie = __webpack_require__(39)
+const checkpointInterface = __webpack_require__(43)
+const inherits = __webpack_require__(4).inherits
+const proof = __webpack_require__(45)
 
 module.exports = CheckpointTrie
 
@@ -1452,18 +1489,18 @@ CheckpointTrie.verifyProof = proof.verifyProof
 
 
 /***/ }),
-/* 38 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const assert = __webpack_require__(39)
+const assert = __webpack_require__(40)
 const levelup = __webpack_require__(11)
 const memdown = __webpack_require__(12)
 const async = __webpack_require__(6)
 const rlp = __webpack_require__(13)
-const ethUtil = __webpack_require__(2)
-const semaphore = __webpack_require__(40)
+const ethUtil = __webpack_require__(3)
+const semaphore = __webpack_require__(41)
 const TrieNode = __webpack_require__(7)
-const ReadStream = __webpack_require__(41)
+const ReadStream = __webpack_require__(42)
 const matchingNibbleLength = __webpack_require__(1).matchingNibbleLength
 const doKeysMatch = __webpack_require__(1).doKeysMatch
 const callTogether = __webpack_require__(1).callTogether
@@ -2210,24 +2247,24 @@ Trie.prototype.checkRoot = function (root, cb) {
 
 
 /***/ }),
-/* 39 */
+/* 40 */
 /***/ (function(module, exports) {
 
 module.exports = require("assert");
 
 /***/ }),
-/* 40 */
+/* 41 */
 /***/ (function(module, exports) {
 
 module.exports = require("semaphore");
 
 /***/ }),
-/* 41 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Readable = __webpack_require__(14).Readable
 const TrieNode = __webpack_require__(7)
-const util = __webpack_require__(3)
+const util = __webpack_require__(4)
 
 module.exports = TrieReadStream
 
@@ -2260,15 +2297,15 @@ TrieReadStream.prototype._read = function () {
 
 
 /***/ }),
-/* 42 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const levelup = __webpack_require__(11)
 const memdown = __webpack_require__(12)
 const async = __webpack_require__(6)
-const inherits = __webpack_require__(3).inherits
+const inherits = __webpack_require__(4).inherits
 const Readable = __webpack_require__(14).Readable
-const levelws = __webpack_require__(43)
+const levelws = __webpack_require__(44)
 const callTogether = __webpack_require__(1).callTogether
 
 module.exports = checkpointInterface
@@ -2451,17 +2488,17 @@ ScratchReadStream.prototype._read = function () {
 
 
 /***/ }),
-/* 43 */
+/* 44 */
 /***/ (function(module, exports) {
 
 module.exports = require("level-ws");
 
 /***/ }),
-/* 44 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const TrieNode = __webpack_require__(7)
-const ethUtil = __webpack_require__(2)
+const ethUtil = __webpack_require__(3)
 const matchingNibbleLength = __webpack_require__(1).matchingNibbleLength
 
 /**
@@ -2558,10 +2595,10 @@ exports.verifyProof = function (rootHash, key, proof, cb) {
 
 
 /***/ }),
-/* 45 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const ethUtil = __webpack_require__(2)
+const ethUtil = __webpack_require__(3)
 
 module.exports = secureInterface
 
@@ -2603,16 +2640,10 @@ function del (_super, key, cb) {
 
 
 /***/ }),
-/* 46 */
-/***/ (function(module, exports) {
-
-module.exports = require("socket.io");
-
-/***/ }),
 /* 47 */
 /***/ (function(module, exports) {
 
-module.exports = require("lodash");
+module.exports = require("socket.io");
 
 /***/ })
 /******/ ]);

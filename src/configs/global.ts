@@ -37,5 +37,6 @@ export default {
 	GETH_RPC: {
 		port: process.env.RPC_PORT ? parseInt(process.env.RPC_PORT) : 8545,
 		host: process.env.RPC_HOST || "localhost"
-	}
+	},
+	ID: process.env.DYNO || "local"
 }
