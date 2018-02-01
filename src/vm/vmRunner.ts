@@ -66,7 +66,6 @@ class VmRunner {
 	getAccount(_to: string, cb: (err: Error, result: Buffer) => void) {
 		let treeClone = this.stateTrie.copy()
 		treeClone.get(hexToBuffer(_to), (err: Error, val: Buffer) => {
-			console.log(val)
 			if (err) {
 				cb(err, null)
 			} else {
