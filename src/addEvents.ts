@@ -83,6 +83,18 @@ let events: Array<_event> = [{
         _glob.vmR.call(_msg, _cb)
     }
 }, {
+    name: "getKeyValue",
+    onEvent: (_socket, _msg: any, _glob, _cb): void => {
+        if(!common.check.isBufferObject(_msg, 32)) _cb(common.newError(common.errors.notBuffer), null)
+        else _glob.vmR.getKeyValue(_msg, _cb)
+    }
+}, {
+    name: "getCurrentStateRoot",
+    onEvent: (_socket, _msg: any, _glob, _cb): void => {
+        if(_msg != "") _cb(common.newError(common.errors.invalidInput), null)
+        else _glob.vmR.getCurrentStateRoot(_cb)
+    }
+}, {
     name: "getTransactionPages",
     onEvent: (_socket, reqObj: any, _glob, _cb): void => {
         if (reqObj.hash && (!common.check.isBufferObject(reqObj.hash, 32) || !common.check.isNumber(reqObj.number))) _cb(common.newError(common.errors.notBuffer), null)

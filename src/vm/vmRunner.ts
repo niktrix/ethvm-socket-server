@@ -63,6 +63,15 @@ class VmRunner {
 			getResult(txs, _trie, mCB)
 		}
 	}
+	getKeyValue(_key: Buffer, _cb: (err: Error, result: Buffer)=> void) {
+		this.db.get(new Buffer(_key), {
+			keyEncoding: 'binary',
+			valueEncoding: 'binary'
+		}, _cb)
+	}
+	getCurrentStateRoot(_cb:(err: Error, result: Buffer) =>void) {
+		_cb(null, this.stateTrie.root)
+	}
 	getAccount(_to: string, cb: (err: Error, result: Buffer) => void) {
 		let treeClone = this.stateTrie.copy()
 		treeClone.get(hexToBuffer(_to), (err: Error, val: Buffer) => {

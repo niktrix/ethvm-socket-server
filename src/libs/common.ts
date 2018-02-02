@@ -50,7 +50,8 @@ let errors = {
 	notNumber: "Not a valid number",
 	notBuffer: "Not a valid Buffer",
 	notHash: "Not a valid Hash string",
-	notAddress: "Not a valid Address string"
+	notAddress: "Not a valid Address string",
+	invalidInput: "Invalid input"
 }
 
 export {

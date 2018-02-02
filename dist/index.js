@@ -1173,7 +1173,8 @@ let errors = {
     notNumber: "Not a valid number",
     notBuffer: "Not a valid Buffer",
     notHash: "Not a valid Hash string",
-    notAddress: "Not a valid Address string"
+    notAddress: "Not a valid Address string",
+    invalidInput: "Invalid input"
 };
 exports.errors = errors;
 
@@ -1260,6 +1261,16 @@ let events = [{
     name: "ethCall",
     onEvent: (_socket, _msg, _glob, _cb) => {
         _glob.vmR.call(_msg, _cb);
+    }
+}, {
+    name: "getKeyValue",
+    onEvent: (_socket, _msg, _glob, _cb) => {
+        if (!libs_1.common.check.isBufferObject(_msg, 32)) _cb(libs_1.common.newError(libs_1.common.errors.notBuffer), null);else _glob.vmR.getKeyValue(_msg, _cb);
+    }
+}, {
+    name: "getCurrentStateRoot",
+    onEvent: (_socket, _msg, _glob, _cb) => {
+        if (_msg != "") _cb(libs_1.common.newError(libs_1.common.errors.invalidInput), null);else _glob.vmR.getCurrentStateRoot(_cb);
     }
 }, {
     name: "getTransactionPages",
@@ -1416,6 +1427,15 @@ class VmRunner {
         } else {
             getResult(txs, _trie, mCB);
         }
+    }
+    getKeyValue(_key, _cb) {
+        this.db.get(new Buffer(_key), {
+            keyEncoding: 'binary',
+            valueEncoding: 'binary'
+        }, _cb);
+    }
+    getCurrentStateRoot(_cb) {
+        _cb(null, this.stateTrie.root);
     }
     getAccount(_to, cb) {
         let treeClone = this.stateTrie.copy();
