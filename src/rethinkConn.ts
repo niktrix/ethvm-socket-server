@@ -128,7 +128,7 @@ class RethinkDB {
         } else {
             r.table("transactions").orderBy({ index: r.desc("numberAndHash") }).between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: "open", index: "numberAndHash" })
                 .filter(
-                    r.row("from").eq(r.args([new Buffer(address)])).or(r.row("to").eq(r.args([new Buffer(address)])))
+                    r.or( r.row("from").eq(r.args([new Buffer(address)])), r.row("to").eq(r.args([new Buffer(address)])))
                 ).limit(25).run(_this.dbConn, function(err, cursor) {
                     if (err) cb(err, null)
                     else sendResults(cursor)
