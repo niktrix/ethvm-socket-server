@@ -108,7 +108,34 @@ class RethinkDB {
             })
         })
     }
-    getTransactionPages(hash: string, bNumber: number, cb: (err: Error, result: any) => void): void {
+    getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void): void {
+        let _this = this
+        let sendResults = (_cursor: any) => {
+            _cursor.toArray((err: Error, results: Array<txLayout>) => {
+                if (err) cb(err, null)
+                else cb(null, results.map((_tx: txLayout) => {
+                    return new SmallTx(_tx).smallify()
+                }))
+            });
+        }
+        if (!hash) {
+            r.table("transactions").orderBy({ index: r.desc("numberAndHash") }).filter(
+                r.row("from").eq(r.args([new Buffer(address)])).or(r.row("to").eq(r.args([new Buffer(address)])))
+            ).limit(25).run(_this.dbConn, (err, cursor) => {
+                if (err) cb(err, null)
+                else sendResults(cursor)
+            });
+        } else {
+            r.table("transactions").orderBy({ index: r.desc("numberAndHash") }).between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: "open", index: "numberAndHash" })
+                .filter(
+                    r.row("from").eq(r.args([new Buffer(address)])).or(r.row("to").eq(r.args([new Buffer(address)])))
+                ).limit(25).run(_this.dbConn, function(err, cursor) {
+                    if (err) cb(err, null)
+                    else sendResults(cursor)
+                });
+        }
+    }
+    getTransactionPages(hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void): void {
         let _this = this
         let sendResults = (_cursor: any) => {
             _cursor.toArray((err: Error, results: Array<txLayout>) => {
@@ -147,9 +174,9 @@ class RethinkDB {
             else cb(null, result);
         })
     }
-    
+
     getTx(hash: string, cb: (err: Error, result: any) => void): void {
-        r.table("transactions").get(r.args([new Buffer(hash)])).merge(function(_tx){
+        r.table("transactions").get(r.args([new Buffer(hash)])).merge(function(_tx) {
             return {
                 trace: r.db("eth_mainnet").table('traces').get(_tx('hash')),
                 logs: r.db("eth_mainnet").table('logs').get(_tx('hash'))

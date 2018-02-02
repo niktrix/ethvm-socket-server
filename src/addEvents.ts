@@ -100,6 +100,13 @@ let events: Array<_event> = [{
         if (reqObj.hash && (!common.check.isBufferObject(reqObj.hash, 32) || !common.check.isNumber(reqObj.number))) _cb(common.newError(common.errors.notBuffer), null)
         else _glob.rdb.getTransactionPages(reqObj.hash, reqObj.number, _cb)
     }
+}, {
+    name: "getAddressTransactionPages",
+    onEvent: (_socket, reqObj: any, _glob, _cb): void => {
+        if (reqObj.hash && (!common.check.isBufferObject(reqObj.hash, 32) || !common.check.isNumber(reqObj.number))) _cb(common.newError(common.errors.notBuffer), null)
+        else if(!common.check.isBufferObject(reqObj.address, 20))  _cb(common.newError(common.errors.notBuffer), null)
+        else _glob.rdb.getAddressTransactionPages(reqObj.address, reqObj.hash, reqObj.number, _cb)
+    }
 }] 
 let onConnection = (_socket: SocketIO.Socket, _rdb: RethinkDB, _vmR: VmRunner) => {
     events.forEach((event: _event, idx: number) => {

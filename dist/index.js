@@ -720,6 +720,25 @@ class RethinkDB {
             });
         });
     }
+    getAddressTransactionPages(address, hash, bNumber, cb) {
+        let _this = this;
+        let sendResults = _cursor => {
+            _cursor.toArray((err, results) => {
+                if (err) cb(err, null);else cb(null, results.map(_tx => {
+                    return new libs_1.SmallTx(_tx).smallify();
+                }));
+            });
+        };
+        if (!hash) {
+            r.table("transactions").orderBy({ index: r.desc("numberAndHash") }).filter(r.row("from").eq(r.args([new Buffer(address)])).or(r.row("to").eq(r.args([new Buffer(address)])))).limit(25).run(_this.dbConn, (err, cursor) => {
+                if (err) cb(err, null);else sendResults(cursor);
+            });
+        } else {
+            r.table("transactions").orderBy({ index: r.desc("numberAndHash") }).between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: "open", index: "numberAndHash" }).filter(r.row("from").eq(r.args([new Buffer(address)])).or(r.row("to").eq(r.args([new Buffer(address)])))).limit(25).run(_this.dbConn, function (err, cursor) {
+                if (err) cb(err, null);else sendResults(cursor);
+            });
+        }
+    }
     getTransactionPages(hash, bNumber, cb) {
         let _this = this;
         let sendResults = _cursor => {
@@ -1276,6 +1295,11 @@ let events = [{
     name: "getTransactionPages",
     onEvent: (_socket, reqObj, _glob, _cb) => {
         if (reqObj.hash && (!libs_1.common.check.isBufferObject(reqObj.hash, 32) || !libs_1.common.check.isNumber(reqObj.number))) _cb(libs_1.common.newError(libs_1.common.errors.notBuffer), null);else _glob.rdb.getTransactionPages(reqObj.hash, reqObj.number, _cb);
+    }
+}, {
+    name: "getAddressTransactionPages",
+    onEvent: (_socket, reqObj, _glob, _cb) => {
+        if (reqObj.hash && (!libs_1.common.check.isBufferObject(reqObj.hash, 32) || !libs_1.common.check.isNumber(reqObj.number))) _cb(libs_1.common.newError(libs_1.common.errors.notBuffer), null);else if (!libs_1.common.check.isBufferObject(reqObj.address, 20)) _cb(libs_1.common.newError(libs_1.common.errors.notBuffer), null);else _glob.rdb.getAddressTransactionPages(reqObj.address, reqObj.hash, reqObj.number, _cb);
     }
 }];
 let onConnection = (_socket, _rdb, _vmR) => {
