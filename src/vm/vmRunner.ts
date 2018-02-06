@@ -3,6 +3,7 @@ let VM = require('ethereumjs-vm')
 let Account = require('ethereumjs-account')
 let Trie = require('merkle-patricia-tree/secure')
 const GAS_LIMIT = '0x4c4b40' // 50000000
+var LRU = require('lru');
 interface Itx {
 	to: string;
 	data: string;
@@ -13,8 +14,10 @@ const hexToBuffer = (hex: string): Buffer => {
 class VmRunner {
 	db: CacheDb
 	stateTrie: any
+	codeCache: any
 	constructor(_db: CacheDb) {
 		this.db = _db
+		this.codeCache = new LRU(2000)
 	}
 	setStateRoot(_hash: Buffer) {
 		let _temp = new Trie(this.db, _hash)
@@ -23,7 +26,24 @@ class VmRunner {
 	call(txs: Itx | Array<Itx>, mCB: (err: Error, result: any) => void) {
 		let _this = this
 		let _trie = _this.stateTrie.copy()
+		let runCode = (sTree: any, to: Buffer, code: Buffer, gasLimit: string, data: Buffer, _cb: (err: Error, result: any)=>void) => {
+					let vm = new VM({
+						state: sTree
+					})
+					vm.runCode({
+						address: to,
+						code: code,
+						gasLimit: gasLimit,
+						data: data
+					}, (err: Error, result: any) => {
+						_cb(err, result ? result.return : null)
+					})
+		}
 		let getResult = (tx: Itx, treeClone: any, cb: (err: Error, result: Buffer) => void) => {
+			if(_this.codeCache.peek(tx.to)){
+				runCode(treeClone, hexToBuffer(tx.to),_this.codeCache.get(tx.to), GAS_LIMIT, hexToBuffer(tx.data), cb)
+				return
+			}
 			treeClone.get(hexToBuffer(tx.to), (err: Error, val: Buffer) => {
 				if (err) {
 					cb(err, null)
@@ -35,17 +55,8 @@ class VmRunner {
 						cb(err, null)
 						return
 					}
-					let vm = new VM({
-						state: treeClone
-					})
-					vm.runCode({
-						address: hexToBuffer(tx.to),
-						code: code ? code : "0x00",
-						gasLimit: GAS_LIMIT,
-						data: hexToBuffer(tx.data)
-					}, (err: Error, result: any) => {
-						cb(err, result ? result.return : null)
-					})
+					_this.codeCache.set(tx.to, code);
+					runCode(treeClone, hexToBuffer(tx.to),code ? code : new Buffer('00', 'hex'), GAS_LIMIT, hexToBuffer(tx.data), cb)
 				})
 			})
 		}

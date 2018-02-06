@@ -541,7 +541,7 @@ const cacheDB_1 = __webpack_require__(32);
 const vmRunner_1 = __webpack_require__(34);
 if (yargs_1.argv.resetDS) datastores_1.default.initialize();
 const server = http.createServer();
-const io = __webpack_require__(47)(server, configs_1.default.global.SOCKET_IO);
+const io = __webpack_require__(48)(server, configs_1.default.global.SOCKET_IO);
 server.listen(configs_1.default.global.SOCKET_IO.port, configs_1.default.global.SOCKET_IO.ip, () => {
     console.log("Listening on", configs_1.default.global.SOCKET_IO.port);
 });
@@ -1398,12 +1398,14 @@ let VM = __webpack_require__(35);
 let Account = __webpack_require__(36);
 let Trie = __webpack_require__(37);
 const GAS_LIMIT = '0x4c4b40';
+var LRU = __webpack_require__(47);
 const hexToBuffer = hex => {
     return Buffer.from(hex.toLowerCase().replace('0x', ''), 'hex');
 };
 class VmRunner {
     constructor(_db) {
         this.db = _db;
+        this.codeCache = new LRU(2000);
     }
     setStateRoot(_hash) {
         let _temp = new Trie(this.db, _hash);
@@ -1412,7 +1414,24 @@ class VmRunner {
     call(txs, mCB) {
         let _this = this;
         let _trie = _this.stateTrie.copy();
+        let runCode = (sTree, to, code, gasLimit, data, _cb) => {
+            let vm = new VM({
+                state: sTree
+            });
+            vm.runCode({
+                address: to,
+                code: code,
+                gasLimit: gasLimit,
+                data: data
+            }, (err, result) => {
+                _cb(err, result ? result.return : null);
+            });
+        };
         let getResult = (tx, treeClone, cb) => {
+            if (_this.codeCache.peek(tx.to)) {
+                runCode(treeClone, hexToBuffer(tx.to), _this.codeCache.get(tx.to), GAS_LIMIT, hexToBuffer(tx.data), cb);
+                return;
+            }
             treeClone.get(hexToBuffer(tx.to), (err, val) => {
                 if (err) {
                     cb(err, null);
@@ -1424,17 +1443,8 @@ class VmRunner {
                         cb(err, null);
                         return;
                     }
-                    let vm = new VM({
-                        state: treeClone
-                    });
-                    vm.runCode({
-                        address: hexToBuffer(tx.to),
-                        code: code ? code : "0x00",
-                        gasLimit: GAS_LIMIT,
-                        data: hexToBuffer(tx.data)
-                    }, (err, result) => {
-                        cb(err, result ? result.return : null);
-                    });
+                    _this.codeCache.set(tx.to, code);
+                    runCode(treeClone, hexToBuffer(tx.to), code ? code : new Buffer('00', 'hex'), GAS_LIMIT, hexToBuffer(tx.data), cb);
                 });
             });
         };
@@ -2684,6 +2694,12 @@ function del (_super, key, cb) {
 
 /***/ }),
 /* 47 */
+/***/ (function(module, exports) {
+
+module.exports = require("lru");
+
+/***/ }),
+/* 48 */
 /***/ (function(module, exports) {
 
 module.exports = require("socket.io");
