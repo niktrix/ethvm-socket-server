@@ -5,11 +5,14 @@ import configs from '@/configs'
 import * as SocketIO from 'socket.io'
 import RethinkDB from '@/rethinkConn'
 import VmRunner from '@/vm/vmRunner'
+import VmEngine from '@/vm/vmEngine'
 import {common} from '@/libs'
 type CallbackFunction = (err: Error, result: any) => any;
 interface Iinstances {
     rdb: RethinkDB;
     vmR: VmRunner;
+    vmE: VmEngine;
+
 }
 interface _event {
     name: string,
@@ -75,11 +78,15 @@ let events: Array<_event> = [{
 }, {
     name: "getAccount",
     onEvent: (_socket, _msg, _glob, _cb): void => {
-        _glob.vmR.getAccount(_msg, _cb)
+      //_glob.vmR.getAccount(_msg, _cb)
+        _glob.vmE.getStorageAt(_msg, _cb)
+
+
     }
 }, {
     name: "ethCall",
     onEvent: (_socket, _msg: any, _glob, _cb): void => {
+ 
         _glob.vmR.call(_msg, _cb)
     }
 }, {
@@ -108,12 +115,13 @@ let events: Array<_event> = [{
         else _glob.rdb.getAddressTransactionPages(reqObj.address, reqObj.hash, reqObj.number, _cb)
     }
 }] 
-let onConnection = (_socket: SocketIO.Socket, _rdb: RethinkDB, _vmR: VmRunner) => {
+let onConnection = (_socket: SocketIO.Socket, _rdb: RethinkDB, _vmR: VmRunner,_vmE: VmEngine) => {
     events.forEach((event: _event, idx: number) => {
         _socket.on(event.name, (msg: any, cb: CallbackFunction) => {
             event.onEvent(_socket, msg, {
                 rdb: _rdb,
-                vmR: _vmR
+                vmR: _vmR,
+                vmE: _vmE
             }, cb)
         })
     })

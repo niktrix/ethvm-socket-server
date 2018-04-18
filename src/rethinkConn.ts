@@ -189,7 +189,7 @@ class RethinkDB {
 
     onNewBlock(_block: blockLayout) {
         let _this = this
-        console.log(_block.hash)
+        console.log("go new block",_block.hash)
         this.socketIO.to('blocks').emit('newBlock', _block)
         ds.addBlock(_block)
     }

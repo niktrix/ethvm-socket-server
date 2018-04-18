@@ -40,6 +40,7 @@
         "merkle-patricia-tree": "^2.3.0",
         "rethinkdb": "^2.3.3",
         "socket.io": "^2.0.4",
+        "web3-provider-engine": "^14.0.4",
         "yargs": "^10.0.3"
     },
     "devDependencies": {
