@@ -9,6 +9,8 @@ const RpcSubprovider = require('web3-provider-engine/subproviders/rpc.js')
 const createPayload = require("web3-provider-engine/util/create-payload.js")
 const ZeroClientProvider = require("./Zeroclient.js")
 var abi = require('ethereumjs-abi')
+var utils = require('../libs/utils.js')
+
 var tokenAbi = [{ "constant": true, "inputs": [{ "name": "", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "", "type": "uint256" }], "type": "function" }, { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "success", "type": "bool" }], "type": "function" }, { "inputs": [], "type": "constructor" }]
 var BN = require('bn.js')
 // var ethereum_address = require('ethereum-address');
@@ -49,71 +51,25 @@ VmEngine.getAccount = function (args: any, a: any) {
 VmEngine.getAllTokens = function(args:any,a:any){
   var argss = ["address", "bool", "bool", "bool", "uint256"]
   console.log("Get Token Balance for : ",args)
-  var vals = [args, "true", "true", "true", 10]
-  var encoded = encodeCall("getAllBalance", argss, vals)
+  var vals = [args, "true", "true", "true", 0]
+  var encoded = utils.encodeCall("getAllBalance", argss, vals)
   var pl = createPayload({ jsonrpc: '2.0', method: 'eth_call', params: [{ to: "0xbe1ecf8e340f13071761e0eef054d9a511e1cb56", data: encoded }, "pending"], id: 1 })
-  console.log(JSON.stringify(pl))
   VmEngine.sendAsync(pl, function (err: any, response: any) {
-    console.log("eth_call", response)
+   // console.log("eth_call", response)
+    var tokens = utils.decode(response.result)
+    console.log(tokens.length)
+    // tokens.forEach(element => {
+    //   console.log(element);
+    // });
   });
 }
 
 
 
 
-function encodeCall(name, argumentss = [], rawValues = []) {
-  const values = rawValues.map(value => value.toString()) // convert BigNumbers to string
-  const methodId = abi.methodID(name, argumentss).toString('hex');
-  const params = abi.rawEncode(argumentss, values).toString('hex');
-  return '0x' + methodId + params;
-}
 
 
-var speedomatic = require("speedomatic");
-var clone = require("clone");
-
-var packageRequest = function (payload: any) {
-  var tx = clone(payload);
-  if (tx.params == null) {
-    tx.params = [];
-  } else if (!Array.isArray(tx.params)) {
-    tx.params = [tx.params];
-  }
-  var numParams = tx.params.length;
-  if (numParams) {
-    if (tx.signature && tx.signature.length !== numParams) {
-      //throw new RPCError("PARAMETER_NUMBER_ERROR");
-    }
-    for (var j = 0; j < numParams; ++j) {
-      if (tx.params[j] != null && tx.signature[j]) {
-        if (tx.params[j].constructor === Number) {
-          tx.params[j] = speedomatic.prefixHex(tx.params[j].toString(16));
-        }
-        if (tx.signature[j] === "int256") {
-          tx.params[j] = speedomatic.unfork(tx.params[j], true);
-        } else if (tx.signature[j] === "int256[]" && Array.isArray(tx.params[j]) && tx.params[j].length) {
-          for (var k = 0, arrayLen = tx.params[j].length; k < arrayLen; ++k) {
-            tx.params[j][k] = speedomatic.unfork(tx.params[j][k], true);
-          }
-        }
-      }
-    }
-  }
-  if (tx.to) tx.to = speedomatic.formatEthereumAddress(tx.to);
-  if (tx.from) tx.from = speedomatic.formatEthereumAddress(tx.from);
-  var packaged = {
-    from: tx.from,
-    to: tx.to,
-    data: (tx.data) ? speedomatic.prefixHex(tx.data) : speedomatic.abiEncodeTransactionPayload(tx),
-    gas: tx.gas ? speedomatic.hex(tx.gas) : 0x2fd618,
-  };
-  if (tx.gasPrice) packaged.gasPrice = speedomatic.hex(tx.gasPrice);
-  if (tx.value) packaged.value = speedomatic.hex(tx.value);
-  if (tx.returns) packaged.returns = tx.returns;
-  if (tx.nonce) packaged.nonce = tx.nonce;
-  return packaged;
-};
-
+ 
 
 
 
