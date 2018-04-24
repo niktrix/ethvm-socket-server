@@ -1,4 +1,4 @@
-const ProviderEngine = require('web3-provider-engine')
+const ProviderEngine = require('web3-provider-engine/index.js')
 const DefaultFixture = require('web3-provider-engine/subproviders/default-fixture.js')
 const NonceTrackerSubprovider = require('web3-provider-engine/subproviders/nonce-tracker.js')
 const CacheSubprovider = require('web3-provider-engine/subproviders/cache.js')
@@ -10,8 +10,6 @@ const SanitizingSubprovider = require('web3-provider-engine/subproviders/sanitiz
 const InfuraSubprovider = require('web3-provider-engine/subproviders/infura.js')
 const FetchSubprovider = require('web3-provider-engine/subproviders/fetch.js')
 const WebSocketSubprovider = require('web3-provider-engine/subproviders/websocket.js')
-const VMSubprovider = require('web3-provider-engine/subproviders/vm.js')
-
 
 
 module.exports = ZeroClientProvider
@@ -19,33 +17,66 @@ module.exports = ZeroClientProvider
 
 function ZeroClientProvider(opts = {}){
   const connectionType = getConnectionType(opts)
-
   const engine = new ProviderEngine(opts.engineParams)
 
   // static
   const staticSubprovider = new DefaultFixture(opts.static)
   engine.addProvider(staticSubprovider)
 
-  //vm provider
-  engine.addProvider(new VMSubprovider())
-
-
   // nonce tracker
   engine.addProvider(new NonceTrackerSubprovider())
 
-//   // sanitization
-//   const sanitizer = new SanitizingSubprovider()
-//   engine.addProvider(sanitizer)
+  // sanitization
+  const sanitizer = new SanitizingSubprovider()
+  engine.addProvider(sanitizer)
 
   // cache layer
   const cacheSubprovider = new CacheSubprovider()
   engine.addProvider(cacheSubprovider)
 
- 
+  // filters + subscriptions
+  // for websockets, only polyfill filters
+  if (connectionType === 'ws') {
+    const filterSubprovider = new FilterSubprovider()
+    engine.addProvider(filterSubprovider)
+  // otherwise, polyfill both subscriptions and filters
+  } else {
+    const filterAndSubsSubprovider = new SubscriptionSubprovider()
+    // forward subscription events through provider
+    filterAndSubsSubprovider.on('data', (err, notification) => {
+      engine.emit('data', err, notification)
+    })
+    engine.addProvider(filterAndSubsSubprovider)
+  }
+
+  // inflight cache
   const inflightCache = new InflightCacheSubprovider()
   engine.addProvider(inflightCache)
 
- 
+  // id mgmt
+  const idmgmtSubprovider = new HookedWalletSubprovider({
+    // accounts
+    getAccounts: opts.getAccounts,
+    // transactions
+    processTransaction: opts.processTransaction,
+    approveTransaction: opts.approveTransaction,
+    signTransaction: opts.signTransaction,
+    publishTransaction: opts.publishTransaction,
+    // messages
+    // old eth_sign
+    processMessage: opts.processMessage,
+    approveMessage: opts.approveMessage,
+    signMessage: opts.signMessage,
+    // new personal_sign
+    processPersonalMessage: opts.processPersonalMessage,
+    processTypedMessage: opts.processTypedMessage,
+    approvePersonalMessage: opts.approvePersonalMessage,
+    approveTypedMessage: opts.approveTypedMessage,
+    signPersonalMessage: opts.signPersonalMessage,
+    signTypedMessage: opts.signTypedMessage,
+    personalRecoverSigner: opts.personalRecoverSigner,
+  })
+  engine.addProvider(idmgmtSubprovider)
 
   // data source
   const dataSubprovider = opts.dataSubprovider || createDataSubprovider(connectionType, opts)

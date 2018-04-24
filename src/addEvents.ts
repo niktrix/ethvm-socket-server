@@ -79,11 +79,15 @@ let events: Array<_event> = [{
     name: "getAccount",
     onEvent: (_socket, _msg, _glob, _cb): void => {
       //_glob.vmR.getAccount(_msg, _cb)
-        _glob.vmE.getStorageAt(_msg, _cb)
-
-
+        _glob.vmE.getAllTokens(_msg, _cb)
     }
-}, {
+},{
+    name: "getTokenBalance",
+    onEvent: (_socket, _msg, _glob, _cb): void => {
+        _glob.vmE.getAllTokens(_msg, _cb)
+    }
+},
+{
     name: "ethCall",
     onEvent: (_socket, _msg: any, _glob, _cb): void => {
  
