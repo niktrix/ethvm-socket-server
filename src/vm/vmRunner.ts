@@ -24,6 +24,7 @@ class VmRunner {
 		this.stateTrie = _temp
 	}
 	call(txs: Itx | Array<Itx>, mCB: (err: Error, result: any) => void) {
+		console.log("eth call ====================")
 		let _this = this
 		let _trie = _this.stateTrie.copy()
 		let runCode = (sTree: any, to: Buffer, code: Buffer, gasLimit: string, data: Buffer, _cb: (err: Error, result: any)=>void) => {
@@ -85,7 +86,9 @@ class VmRunner {
 	}
 	getAccount(_to: string, cb: (err: Error, result: Buffer) => void) {
 		let treeClone = this.stateTrie.copy()
+		console.log("----getAccountgetAccount -----",_to)
 		treeClone.get(hexToBuffer(_to), (err: Error, val: Buffer) => {
+			console.log(err,val)
 			if (err) {
 				cb(err, null)
 			} else {
