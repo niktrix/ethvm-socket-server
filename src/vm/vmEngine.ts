@@ -52,14 +52,16 @@ VmEngine.getAllTokens = function(args:any,a:any){
   var vals = [args, "true", "true", "true", 0]
   var encoded = utils.encodeCall("getAllBalance", argss, vals)
   var pl = createPayload({ jsonrpc: '2.0', method: 'eth_call', params: [{ to: "0xbe1ecf8e340f13071761e0eef054d9a511e1cb56", data: encoded }, "pending"], id: 1 })
-  VmEngine.sendAsync(pl, function (err: any, response: any) {
-   // console.log("eth_call", response)
-    var tokens = utils.decode(response.result)
-    console.log(tokens.length)
-    // tokens.forEach(element => {
-    //   console.log(element);
-    // });
-  });
+  VmEngine.sendAsync(pl, a);
+
+  // function (err: any, response: any) {
+  //   // console.log("eth_call", response)
+  //    var tokens = utils.decode(response.result)
+  //    console.log(tokens.length)
+  //    // tokens.forEach(element => {
+  //    //   console.log(element);
+  //    // });
+  //  });
 }
 
 
