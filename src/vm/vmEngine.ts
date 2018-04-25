@@ -34,11 +34,9 @@ var VmEngine = ZeroClientProvider({
 
 VmEngine.getBalance = function (args: any, a: any) {
   console.log("getbalance====== ==================")
-  var payload = createPayload({ jsonrpc: '2.0', method: 'eth_getBalance', params: ['0x2a65aca4d5fc5b5c859090a6c34d164135398226', "latest"], id: 1 })
+  var payload = createPayload({ jsonrpc: '2.0', method: 'eth_getBalance', params: [args, "latest"], id: 1 })
   console.log(JSON.stringify(payload))
-  VmEngine.sendAsync(payload, function (err: any, response: any) {
-    console.log("response", response)
-  })
+  VmEngine.sendAsync(payload, a);
 }
 
 

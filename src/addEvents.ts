@@ -76,10 +76,10 @@ let events: Array<_event> = [{
         _glob.rdb.getBlockTransactions(_msg, _cb)
     }
 }, {
-    name: "getAccount",
+    name: "getBalance",
     onEvent: (_socket, _msg, _glob, _cb): void => {
       //_glob.vmR.getAccount(_msg, _cb)
-        _glob.vmE.getAllTokens(_msg, _cb)
+        _glob.vmE.getBalance(_msg, _cb)
     }
 },{
     name: "getTokenBalance",
