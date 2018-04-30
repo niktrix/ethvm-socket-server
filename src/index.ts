@@ -7,6 +7,8 @@ import ds from '@/datastores'
 import { argv } from 'yargs'
 import CacheDB from '@/vm/cacheDB'
 import VmRunner from '@/vm/vmRunner'
+import VmEngine from '@/vm/vmEngine'
+
 import { blockLayout } from '@/typeLayouts'
 
 if(argv.resetDS) ds.initialize()
@@ -25,6 +27,8 @@ let rdb = new RethinkDB(io, vmRunner)
 ds.getBlocks((_blocks: Array<blockLayout>)=>{
 	vmRunner.setStateRoot(_blocks && _blocks[0] && _blocks[0].stateRoot ? new Buffer(_blocks[0].stateRoot) : new Buffer('d7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544', 'hex')) //genesis state by default
 })
+console.log("Start VmEngine")
+VmEngine.start()
 io.on('connection', (_socket: SocketIO.Socket) => { 
-	addEvents(_socket, rdb, vmRunner)
+	addEvents(_socket, rdb, vmRunner,VmEngine)
 });
