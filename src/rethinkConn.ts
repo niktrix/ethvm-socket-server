@@ -168,6 +168,16 @@ class RethinkDB {
             }));
         })
     }
+
+    getTotalTxs(hash: string, cb: (err: Error, result: any) => void): void {
+        var bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex');
+         r.table("transactions").getAll(r.args([bhash]), { index: "cofrom" }).count().run(this.dbConn,function(err:Error,count:any){
+            if (err) cb(err, null);
+            else cb(null, count);
+     })
+    }
+
+    
     getBlock(hash: string, cb: (err: Error, result: any) => void): void {
         r.table('blocks').get(r.args([new Buffer(hash)])).run(this.dbConn, (err: Error, result: blockLayout) => {
             if (err) cb(err, null);
