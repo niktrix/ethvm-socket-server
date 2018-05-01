@@ -94,6 +94,12 @@ let events: Array<_event> = [{
     }
 },
 {
+    name: "getTxs",
+    onEvent: (_socket, _msg, _glob, _cb): void => {
+        _glob.rdb.getTxsOfAddress(_msg, _cb)
+    }
+},
+{
     name: "ethCall",
     onEvent: (_socket, _msg: any, _glob, _cb): void => {
  
