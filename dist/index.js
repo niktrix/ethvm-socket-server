@@ -1843,12 +1843,15 @@ function BlockCacheStrategy() {
   this.cache = {}
 }
 
-BlockCacheStrategy.prototype.getBlockCacheForPayload = function(payload, blockNumber) {
-  var blockTag = cacheUtils.blockTagForPayload(payload)
-  var blockCache = this.cache[blockNumber]
+BlockCacheStrategy.prototype.getBlockCacheForPayload = function(payload, blockNumberHex) {
+  const blockNumber = Number.parseInt(blockNumberHex, 16)
+  let blockCache = this.cache[blockNumber]
   // create new cache if necesary
-  if (!blockCache) blockCache = this.cache[blockNumber] = {}
-
+  if (!blockCache) {
+    const newCache = {}
+    this.cache[blockNumber] = newCache
+    blockCache = newCache
+  }
   return blockCache
 }
 
@@ -1891,8 +1894,13 @@ BlockCacheStrategy.prototype.canCache = function(payload) {
 // naively removes older block caches
 BlockCacheStrategy.prototype.cacheRollOff = function(previousBlock){
   const self = this
-  var previousHex = ethUtil.bufferToHex(previousBlock.number)
-  delete self.cache[previousHex]
+  const previousHex = ethUtil.bufferToHex(previousBlock.number)
+  const oldBlockNumber = Number.parseInt(previousHex, 16)
+  // clear old caches
+  Object.keys(self.cache)
+    .map(Number)
+    .filter(num => num <= oldBlockNumber)
+    .forEach(num => delete self.cache[num])
 }
 
 
@@ -1914,6 +1922,7 @@ function containsBlockhash(result) {
   const hasNonZeroHash = hexToBN(result.blockHash).gt(new BN(0))
   return hasNonZeroHash
 }
+
 
 /***/ }),
 /* 41 */
@@ -3661,10 +3670,22 @@ class RethinkDB {
     }
     getTotalTxs(hash, cb) {
         var bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex');
-        console.log("getTotalTxs  ", hash);
         r.table("transactions").getAll(r.args([bhash]), { index: "cofrom" }).count().run(this.dbConn, function (err, count) {
-            console.log("cofrom  cofrom");
             if (err) cb(err, null);else cb(null, count);
+        });
+    }
+    getTxsOfAddress(hash, cb) {
+        let _this = this;
+        let sendResults = _cursor => {
+            _cursor.toArray((err, results) => {
+                if (err) cb(err, null);else cb(null, results.map(_tx => {
+                    return new libs_1.SmallTx(_tx).smallify();
+                }));
+            });
+        };
+        var bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex');
+        r.table("transactions").getAll(r.args([bhash]), { index: "cofrom" }).limit(20).run(this.dbConn, function (err, count) {
+            if (err) cb(err, null);else sendResults(count);
         });
     }
     getBlock(hash, cb) {
@@ -4185,6 +4206,11 @@ let events = [{
     name: "getTotalTxs",
     onEvent: (_socket, _msg, _glob, _cb) => {
         _glob.rdb.getTotalTxs(_msg, _cb);
+    }
+}, {
+    name: "getTxs",
+    onEvent: (_socket, _msg, _glob, _cb) => {
+        _glob.rdb.getTxsOfAddress(_msg, _cb);
     }
 }, {
     name: "ethCall",
@@ -5797,8 +5823,7 @@ VmSubprovider.prototype.runVm = function(payload, cb){
     gasPrice: txParams.gasPrice ? ethUtil.addHexPrefix(txParams.gasPrice) : undefined,
     nonce: txParams.nonce ? ethUtil.addHexPrefix(txParams.nonce) : undefined,
   }
-
-   var tx = new FakeTransaction(normalizedTxParams)
+  var tx = new FakeTransaction(normalizedTxParams)
   tx._from = normalizedTxParams.from || '0x0000000000000000000000000000000000000000'
 
   vm.runTx({
@@ -6267,10 +6292,7 @@ VM.prototype.runCall = __webpack_require__(126);
 VM.prototype.runBlockchain = __webpack_require__(127);
 
 VM.prototype.copy = function () {
-  return new VM({
-    state: this.trie.copy(),
-    blockchain: this.blockchain
-  });
+  return new VM({ stateManager: this.stateManager.copy() });
 };
 
 /**
@@ -6321,10 +6343,14 @@ function StateManager(opts) {
   self.trie = trie;
   self._storageTries = {}; // the storage trie cache
   self.cache = new Cache(trie);
-  self.touched = [];
+  self._touched = new Set();
 }
 
 var proto = StateManager.prototype;
+
+proto.copy = function () {
+  return new StateManager({ trie: this.trie.copy(), blockchain: this.blockchain });
+};
 
 // gets the account from the cache, or triggers a lookup and stores
 // the result in the cache
@@ -6340,14 +6366,13 @@ proto.exists = function (address, cb) {
 };
 
 // saves the account
-proto._putAccount = function (address, account, cb) {
+proto.putAccount = function (address, account, cb) {
   var self = this;
-  var addressHex = Buffer.from(address, 'hex');
   // TODO: dont save newly created accounts that have no balance
   // if (toAccount.balance.toString('hex') === '00') {
   // if they have money or a non-zero nonce or code, then write to tree
-  self.cache.put(addressHex, account);
-  self.touched.push(address);
+  self.cache.put(address, account);
+  self._touched.add(address.toString('hex'));
   // self.trie.put(addressHex, account.serialize(), cb)
   cb();
 };
@@ -6375,7 +6400,7 @@ proto.putAccountBalance = function (address, balance, cb) {
     }
 
     account.balance = balance;
-    self._putAccount(address, account, cb);
+    self.putAccount(address, account, cb);
   });
 };
 
@@ -6391,7 +6416,7 @@ proto.putContractCode = function (address, value, cb) {
       if (err) {
         return cb(err);
       }
-      self._putAccount(address, account, cb);
+      self.putAccount(address, account, cb);
     });
   });
 };
@@ -6473,8 +6498,8 @@ proto.putContractStorage = function (address, key, value, cb) {
       // update contract stateRoot
       var contract = self.cache.get(address);
       contract.stateRoot = storageTrie.root;
-      self._putAccount(address, contract, cb);
-      self.touched.push(address);
+      self.putAccount(address, contract, cb);
+      self._touched.add(address.toString('hex'));
     }
   });
 };
@@ -6497,6 +6522,7 @@ proto.commitContracts = function (cb) {
 proto.revertContracts = function () {
   var self = this;
   self._storageTries = {};
+  self._touched.clear();
 };
 
 //
@@ -6616,6 +6642,28 @@ proto.accountIsEmpty = function (address, cb) {
     }
 
     cb(null, account.nonce.toString('hex') === '' && account.balance.toString('hex') === '' && account.codeHash.toString('hex') === utils.SHA3_NULL_S);
+  });
+};
+
+proto.cleanupTouchedAccounts = function (cb) {
+  var self = this;
+  var touchedArray = Array.from(self._touched);
+  async.forEach(touchedArray, function (addressHex, next) {
+    var address = Buffer.from(addressHex, 'hex');
+    self.accountIsEmpty(address, function (err, empty) {
+      if (err) {
+        next(err);
+        return;
+      }
+
+      if (empty) {
+        self.cache.del(address);
+      }
+      next(null);
+    });
+  }, function () {
+    self._touched.clear();
+    cb();
   });
 };
 
@@ -7545,7 +7593,6 @@ module.exports = function (opts, cb) {
     if (results.exceptionError) {
       delete results.gasRefund;
       delete results.selfdestruct;
-      self.stateManager.touched = [];
     }
 
     if (err && err.error !== ERROR.REVERT) {
@@ -7937,7 +7984,7 @@ module.exports = {
       return new BN(0);
     }
 
-    return word.shrn((31 - pos.toNumber()) * 8).andln(0xff);
+    return new BN(word.shrn((31 - pos.toNumber()) * 8).andln(0xff));
   },
   // 0x20 range - crypto
   SHA3: function SHA3(offset, length, runState) {
@@ -9216,7 +9263,6 @@ module.exports = function (opts, cb) {
 
     if (tx.to.toString('hex') !== '') {
       accounts.add(tx.to.toString('hex'));
-      self.stateManager.touched.push(tx.to);
     }
 
     if (opts.populateCache === false) {
@@ -9295,49 +9341,43 @@ module.exports = function (opts, cb) {
       }
 
       results.amountSpent = results.gasUsed.mul(new BN(tx.gasPrice));
-      // refund the leftover gas amount
-      fromAccount.balance = new BN(tx.gasLimit).sub(results.gasUsed).mul(new BN(tx.gasPrice)).add(new BN(fromAccount.balance));
 
-      self.stateManager.cache.put(tx.from, fromAccount);
-      self.stateManager.touched.push(tx.from);
+      async.series([updateFromAccount, updateMinerAccount, cleanupAccounts], cb);
 
-      var minerAccount = self.stateManager.cache.get(block.header.coinbase);
-      // add the amount spent on gas to the miner's account
-      minerAccount.balance = new BN(minerAccount.balance).add(results.amountSpent);
+      function updateFromAccount(next) {
+        // refund the leftover gas amount
+        var finalFromBalance = new BN(tx.gasLimit).sub(results.gasUsed).mul(new BN(tx.gasPrice)).add(new BN(fromAccount.balance));
+        fromAccount.balance = finalFromBalance;
 
-      // save the miner's account
-      if (!new BN(minerAccount.balance).isZero()) {
-        self.stateManager.cache.put(block.header.coinbase, minerAccount);
+        self.stateManager.putAccountBalance(utils.toBuffer(tx.from), finalFromBalance, next);
       }
 
-      if (!results.vm.selfdestruct) {
-        results.vm.selfdestruct = {};
+      function updateMinerAccount(next) {
+        var minerAccount = self.stateManager.cache.get(block.header.coinbase);
+        // add the amount spent on gas to the miner's account
+        minerAccount.balance = new BN(minerAccount.balance).add(results.amountSpent);
+
+        // save the miner's account
+        if (!new BN(minerAccount.balance).isZero()) {
+          self.stateManager.cache.put(block.header.coinbase, minerAccount);
+        }
+
+        next(null);
       }
 
-      var keys = Object.keys(results.vm.selfdestruct);
+      function cleanupAccounts(next) {
+        if (!results.vm.selfdestruct) {
+          results.vm.selfdestruct = {};
+        }
 
-      keys.forEach(function (s) {
-        self.stateManager.cache.del(Buffer.from(s, 'hex'));
-      });
+        var keys = Object.keys(results.vm.selfdestruct);
 
-      // delete all touched accounts
-      var touched = self.stateManager.touched;
-      async.forEach(touched, function (address, next) {
-        self.stateManager.accountIsEmpty(address, function (err, empty) {
-          if (err) {
-            next(err);
-            return;
-          }
-
-          if (empty) {
-            self.stateManager.cache.del(address);
-          }
-          next(null);
+        keys.forEach(function (s) {
+          self.stateManager.cache.del(Buffer.from(s, 'hex'));
         });
-      }, function () {
-        self.stateManager.touched = [];
-        cb();
-      });
+
+        self.stateManager.cleanupTouchedAccounts(next);
+      }
     }
   }
 
@@ -9436,9 +9476,7 @@ module.exports = function (opts, cb) {
   stateManager.checkpoint();
 
   // run and parse
-  subTxValue();
-
-  async.series([loadToAccount, loadCode, runCode, saveCode], parseCallResult);
+  async.series([subTxValue, loadToAccount, addTxValue, loadCode, runCode, saveCode], parseCallResult);
 
   function loadToAccount(done) {
     // get receiver's account
@@ -9462,26 +9500,29 @@ module.exports = function (opts, cb) {
     }
   }
 
-  function subTxValue() {
+  function subTxValue(cb) {
     if (delegatecall) {
+      cb();
       return;
     }
-    account.balance = new BN(account.balance).sub(txValue);
-    stateManager.cache.put(caller, account);
+    var newBalance = new BN(account.balance).sub(txValue);
+    account.balance = newBalance;
+    stateManager.putAccountBalance(ethUtil.toBuffer(caller), newBalance, cb);
   }
 
-  function addTxValue() {
+  function addTxValue(cb) {
     if (delegatecall) {
+      cb();
       return;
     }
     // add the amount sent to the `to` account
-    toAccount.balance = new BN(toAccount.balance).add(txValue);
-    stateManager.cache.put(toAddress, toAccount);
-    stateManager.touched.push(toAddress);
+    var newBalance = new BN(toAccount.balance).add(txValue);
+    toAccount.balance = newBalance;
+    // putAccount as the nonce may have changed for contract creation
+    stateManager.putAccount(ethUtil.toBuffer(toAddress), toAccount, cb);
   }
 
   function loadCode(cb) {
-    addTxValue();
     // loads the contract's code if the account is a contract
     if (code || !(toAccount.isContract() || self._precompiled[toAddress.toString('hex')])) {
       cb();
@@ -11327,7 +11368,6 @@ Web3ProviderEngine.prototype.sendAsync = function(payload, cb){
 // private
 
 Web3ProviderEngine.prototype._handleAsync = function(payload, finished) {
-
   var self = this
   var currentProvider = -1
   var result = null
@@ -11343,7 +11383,7 @@ Web3ProviderEngine.prototype._handleAsync = function(payload, finished) {
 
     // Bubbled down as far as we could go, and the request wasn't
     // handled. Return an error.
-     if (currentProvider >= self._providers.length) {
+    if (currentProvider >= self._providers.length) {
       end(new Error('Request for method "' + payload.method + '" not handled by any subprovider. Please check your subprovider configuration to ensure this method is handled.'))
     } else {
       try {
@@ -11704,7 +11744,7 @@ function DefaultFixtures(opts) {
 /* 172 */
 /***/ (function(module, exports) {
 
-module.exports = {"_from":"web3-provider-engine","_id":"web3-provider-engine@14.0.4","_inBundle":false,"_integrity":"sha512-EKNWQ8vTBPtxYwHlYWySENy6hUD0xNuFRFlIBJUcR7wHQVzlJN7WD/ynqxy3uRruNUmCRRYrT9gyQnLTQ+lkgg==","_location":"/web3-provider-engine","_phantomChildren":{"async":"2.6.0","async-eventemitter":"0.2.4","async-limiter":"1.0.0","bn.js":"4.11.8","create-hash":"1.1.3","ethereum-common":"0.2.0","ethereumjs-account":"2.0.4","ethereumjs-block":"1.7.0","ethjs-util":"0.1.4","fake-merkle-patricia-tree":"1.0.1","functional-red-black-tree":"1.0.1","keccak":"1.4.0","merkle-patricia-tree":"2.3.0","rlp":"2.0.0","rustbn.js":"0.1.1","safe-buffer":"5.1.1","secp256k1":"3.4.0"},"_requested":{"type":"tag","registry":true,"raw":"web3-provider-engine","name":"web3-provider-engine","escapedName":"web3-provider-engine","rawSpec":"","saveSpec":null,"fetchSpec":"latest"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/web3-provider-engine/-/web3-provider-engine-14.0.4.tgz","_shasum":"6f96b71ea1b3a76cc67cd52007116c8d4b64465b","_spec":"web3-provider-engine","_where":"/Users/nickyg/Documents/workspace/src/github.com/enKryptIO/ethvm-socket-server","author":"","browser":{"request":false,"ws":false},"bugs":{"url":"https://github.com/MetaMask/provider-engine/issues"},"bundleDependencies":false,"dependencies":{"async":"^2.5.0","backoff":"^2.5.0","clone":"^2.0.0","cross-fetch":"^2.1.0","eth-block-tracker":"^2.3.0","eth-json-rpc-infura":"^3.1.0","eth-sig-util":"^1.4.2","ethereumjs-block":"^1.2.2","ethereumjs-tx":"^1.2.0","ethereumjs-util":"^5.1.5","ethereumjs-vm":"^2.3.4","json-rpc-error":"^2.0.0","json-stable-stringify":"^1.0.1","promise-to-callback":"^1.0.0","readable-stream":"^2.2.9","request":"^2.67.0","semaphore":"^1.0.3","tape":"^4.4.0","ws":"^5.1.1","xhr":"^2.2.0","xtend":"^4.0.1"},"deprecated":false,"description":"[![Greenkeeper badge](https://badges.greenkeeper.io/MetaMask/provider-engine.svg)](https://greenkeeper.io/)","devDependencies":{"babel-cli":"^6.26.0","babel-preset-es2015":"^6.24.1","babel-preset-stage-0":"^6.24.1","browserify":"^16.1.1","ethjs":"^0.3.6"},"homepage":"https://github.com/MetaMask/provider-engine#readme","license":"MIT","main":"index.js","name":"web3-provider-engine","repository":{"type":"git","url":"git+https://github.com/MetaMask/provider-engine.git"},"scripts":{"build":"babel zero.js index.js -d dist/es5 && babel subproviders -d dist/es5/subproviders && babel util -d dist/es5/util","bundle":"mkdir -p ./dist && npm run bundle-engine && npm run bundle-zero","bundle-engine":"browserify -s ProviderEngine -e index.js -t [ babelify --presets [ es2015 ] ] > dist/ProviderEngine.js","bundle-zero":"browserify -s ZeroClientProvider -e zero.js -t [ babelify --presets [ es2015 ] ] > dist/ZeroClientProvider.js","prepublish":"npm run build && npm run bundle","test":"node test/index.js"},"version":"14.0.4"}
+module.exports = {"_from":"web3-provider-engine@^14.0.4","_id":"web3-provider-engine@14.0.5","_inBundle":false,"_integrity":"sha512-1W/ue7VOwOMnmKgMY3HCpbixi6qhfl4r1dK8W597AwJLbrQ+twJKwWlFAedDpJjCc9MwRCCB3pyexW4HJVSiBg==","_location":"/web3-provider-engine","_phantomChildren":{"async":"2.6.0","async-eventemitter":"0.2.4","async-limiter":"1.0.0","bn.js":"4.11.8","create-hash":"1.1.3","ethereum-common":"0.2.0","ethereumjs-account":"2.0.4","ethereumjs-block":"1.7.0","ethjs-util":"0.1.4","fake-merkle-patricia-tree":"1.0.1","functional-red-black-tree":"1.0.1","keccak":"1.4.0","merkle-patricia-tree":"2.3.0","rlp":"2.0.0","rustbn.js":"0.1.1","safe-buffer":"5.1.1","secp256k1":"3.4.0"},"_requested":{"type":"range","registry":true,"raw":"web3-provider-engine@^14.0.4","name":"web3-provider-engine","escapedName":"web3-provider-engine","rawSpec":"^14.0.4","saveSpec":null,"fetchSpec":"^14.0.4"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/web3-provider-engine/-/web3-provider-engine-14.0.5.tgz","_shasum":"0283f880724af32970ecda473ac9382b6ff96e0a","_spec":"web3-provider-engine@^14.0.4","_where":"/home/kvhnuke/GitHub/ethvm-socket-server","author":"","browser":{"request":false,"ws":false},"bugs":{"url":"https://github.com/MetaMask/provider-engine/issues"},"bundleDependencies":false,"dependencies":{"async":"^2.5.0","backoff":"^2.5.0","clone":"^2.0.0","cross-fetch":"^2.1.0","eth-block-tracker":"^3.0.0","eth-json-rpc-infura":"^3.1.0","eth-sig-util":"^1.4.2","ethereumjs-block":"^1.2.2","ethereumjs-tx":"^1.2.0","ethereumjs-util":"^5.1.5","ethereumjs-vm":"^2.3.4","json-rpc-error":"^2.0.0","json-stable-stringify":"^1.0.1","promise-to-callback":"^1.0.0","readable-stream":"^2.2.9","request":"^2.67.0","semaphore":"^1.0.3","tape":"^4.4.0","ws":"^5.1.1","xhr":"^2.2.0","xtend":"^4.0.1"},"deprecated":false,"description":"[![Greenkeeper badge](https://badges.greenkeeper.io/MetaMask/provider-engine.svg)](https://greenkeeper.io/)","devDependencies":{"babel-cli":"^6.26.0","babel-preset-es2015":"^6.24.1","babel-preset-stage-0":"^6.24.1","browserify":"^16.1.1","ethjs":"^0.3.6"},"homepage":"https://github.com/MetaMask/provider-engine#readme","license":"MIT","main":"index.js","name":"web3-provider-engine","repository":{"type":"git","url":"git+https://github.com/MetaMask/provider-engine.git"},"scripts":{"build":"babel zero.js index.js -d dist/es5 && babel subproviders -d dist/es5/subproviders && babel util -d dist/es5/util","bundle":"mkdir -p ./dist && npm run bundle-engine && npm run bundle-zero","bundle-engine":"browserify -s ProviderEngine -e index.js -t [ babelify --presets [ es2015 ] ] > dist/ProviderEngine.js","bundle-zero":"browserify -s ZeroClientProvider -e zero.js -t [ babelify --presets [ es2015 ] ] > dist/ZeroClientProvider.js","prepublish":"npm run build && npm run bundle","test":"node test/index.js"},"version":"14.0.5"}
 
 /***/ }),
 /* 173 */
@@ -12054,6 +12094,7 @@ const RETRIABLE_ERRORS = [
   // ignore server overload errors
   'Gateway timeout',
   'ETIMEDOUT',
+  'ECONNRESET',
   // ignore server sent html error pages
   // or truncated json responses
   'SyntaxError',
@@ -12062,7 +12103,9 @@ const RETRIABLE_ERRORS = [
 module.exports = createInfuraMiddleware
 module.exports.fetchConfigFromReq = fetchConfigFromReq
 
-function createInfuraMiddleware({ network = 'mainnet', maxAttempts = 5 }) {
+function createInfuraMiddleware(opts = {}) {
+  const network = opts.network || 'mainnet'
+  const maxAttempts = opts.maxAttempts || 5
   // validate options
   if (!maxAttempts) throw new Error(`Invalid value for 'maxAttempts': "${maxAttempts}" (${typeof maxAttempts})`)
 
