@@ -26,7 +26,7 @@ class CacheDB {
 		let _this = this
 		this.redisConn.get(key, (err: Error, result: string) => {
 			if (!err && result) {
-				cb(null, new Buffer(result, 'hex'))
+ 				cb(null, new Buffer(result, 'hex'))
 			}
 			else {
 				this.rpcConn.call('eth_getKeyValue', ['0x' + key.toString('hex')], function(err: Error, result: string) {
@@ -42,7 +42,28 @@ class CacheDB {
 			}
 		})
 	}
-	put(key: Buffer, val: Buffer, options: IencOptions, cb: ImyCallbackType){ cb(null, true) }
+	put(key: Buffer, val: Buffer, options: IencOptions, cb: ImyCallbackType){
+		let _this = this
+		this.redisConn.set(key,val, (err: Error, result: string) => {
+			if (!err && result) {
+				cb(null, new Buffer(result, 'hex'))
+			}
+			else {
+				cb(err, null)
+			}
+		})}
+
+	getString(key: Buffer, options: IencOptions, cb: ImyCallbackType){
+			let _this = this
+			this.redisConn.get(key, (err: Error, result: string) => {
+				if (!err && result) {
+					cb(null, result)
+				}
+				else {
+					cb(err, null)
+				}
+			})}
+
 	batch(ops: Array<IputValues>, options: IencOptions, cb: ImyCallbackType){ 
 		cb(null, true)
 	}
