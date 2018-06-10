@@ -8,14 +8,14 @@ import VmRunner from '@/vm/vmRunner'
 import VmEngine from '@/vm/vmEngine'
 import { common } from '@/libs'
 import CacheDb from './vm/cacheDB'
-import fetch from 'node-fetch';
+import fetch from 'node-fetch'
 
 
 type CallbackFunction = (err: Error, result: any) => any;
 interface Iinstances {
     rdb: RethinkDB;
     vmR: VmRunner;
-    vmE: VmEngine;
+    vmE: any;
 
 }
 interface _event {
@@ -112,7 +112,7 @@ let events: Array<_event> = [{
 {
     name: "getChartsData",
     onEvent: (_socket, _msg, _glob, _cb): void => {
-        _glob.rdb.getChartsData(_msg, _cb)
+        _glob.rdb.getChartsData(_cb)
     }
 },
 {
@@ -185,7 +185,7 @@ let events: Array<_event> = [{
         else _glob.rdb.getAddressTransactionPages(reqObj.address, reqObj.hash, reqObj.number, _cb)
     }
 }]
-let onConnection = (_socket: SocketIO.Socket, _rdb: RethinkDB, _vmR: VmRunner, _vmE: VmEngine) => {
+let onConnection = (_socket: SocketIO.Socket, _rdb: RethinkDB, _vmR: VmRunner, _vmE: any) => {
     events.forEach((event: _event, idx: number) => {
         _socket.on(event.name, (msg: any, cb: CallbackFunction) => {
             event.onEvent(_socket, msg, {
