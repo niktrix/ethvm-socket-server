@@ -5,6 +5,8 @@ interface IencOptions {
 	keyEncoding: string;
 	valueEncoding: string;
 }
+
+
 interface IrpcOptions {
 	port: number;
 	host: string;
@@ -18,7 +20,7 @@ class CacheDB {
 	redisConn: any;
 	rpcConn: any;
 	curState: string;
-	constructor (_redis: string, _rpc: IrpcOptions) {
+	constructor(_redis: string, _rpc: IrpcOptions) {
 		this.redisConn = new Redis(_redis)
 		this.rpcConn = rpc.Client.$create(_rpc.port, _rpc.host)
 	}
@@ -26,15 +28,15 @@ class CacheDB {
 		let _this = this
 		this.redisConn.get(key, (err: Error, result: string) => {
 			if (!err && result) {
- 				cb(null, new Buffer(result, 'hex'))
+				cb(null, new Buffer(result, 'hex'))
 			}
 			else {
-				this.rpcConn.call('eth_getKeyValue', ['0x' + key.toString('hex')], function(err: Error, result: string) {
+				this.rpcConn.call('eth_getKeyValue', ['0x' + key.toString('hex')], function (err: Error, result: string) {
 					if (err) {
 						cb(err, null)
 					}
 					else {
-						let resBuf: Buffer = new Buffer(result.substring(2),'hex')
+						let resBuf: Buffer = new Buffer(result.substring(2), 'hex')
 						_this.redisConn.set(key, resBuf.toString('hex'))
 						cb(null, resBuf)
 					}
@@ -42,32 +44,70 @@ class CacheDB {
 			}
 		})
 	}
-	put(key: Buffer, val: Buffer, options: IencOptions, cb: ImyCallbackType){
+	put(key: Buffer, val: Buffer, options: IencOptions, cb: ImyCallbackType) {
 		let _this = this
-		this.redisConn.set(key,val, (err: Error, result: string) => {
+		this.redisConn.set(key, val, (err: Error, result: string) => {
 			if (!err && result) {
 				cb(null, new Buffer(result, 'hex'))
 			}
 			else {
 				cb(err, null)
 			}
-		})}
+		})
+	}
 
-	getString(key: Buffer, options: IencOptions, cb: ImyCallbackType){
-			let _this = this
-			this.redisConn.get(key, (err: Error, result: string) => {
-				if (!err && result) {
-					cb(null, result)
-				}
-				else {
-					cb(err, null)
-				}
-			})}
 
-	batch(ops: Array<IputValues>, options: IencOptions, cb: ImyCallbackType){ 
+	putMultiple(keysValue: any, cb: ImyCallbackType) {
+		let _this = this
+		var pipeline = this.redisConn.pipeline();
+		keysValue.forEach(function (kv: any) {
+			pipeline.set(kv.key, kv.value);
+		})
+		pipeline.exec(function (err: any, results: any) {
+			// `err` is always null, and `results` is an array of responses
+			if (results.length == 0) {
+				cb(new Error("Error while putting keys from redis"), null)
+			}
+			else {
+				cb(null, results)
+			}
+		});
+	}
+
+	getMultiple(keys: any, options: IencOptions, cb: ImyCallbackType) {
+		let _this = this
+		var pipeline = this.redisConn.pipeline();
+		keys.forEach(function (key: any) {
+			pipeline.get("TOKEN_" + key);
+		})
+		pipeline.exec(function (err: any, results: any) {
+			// `err` is always null, and `results` is an array of responses
+			if (results.length == 0 || results == null) {
+				cb(new Error("Error while getting keys from redis"), null)
+			}
+			else {
+				cb(null, results)
+			}
+		});
+	}
+
+
+	getString(key: Buffer, options: IencOptions, cb: ImyCallbackType) {
+		let _this = this
+		this.redisConn.get(key, (err: Error, result: string) => {
+			if (!err && result) {
+				cb(null, result)
+			}
+			else {
+				cb(err, null)
+			}
+		})
+	}
+
+	batch(ops: Array<IputValues>, options: IencOptions, cb: ImyCallbackType) {
 		cb(null, true)
 	}
 	del(key: Buffer, cb: ImyCallbackType) { cb(null, true) }
-	isOpen():boolean { return true}
+	isOpen(): boolean { return true }
 }
 export default CacheDB

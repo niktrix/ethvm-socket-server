@@ -135,39 +135,30 @@ let events: Array<_event> = [{
     }
 },
 {
-    name: "getEthToUSD",
+    name: "getTokenToUSD",
     onEvent: (_socket, _msg: any, _glob, _cb): void => {
         let _this = this
-
-         cacheDB.getString(new Buffer("Iethtousd"), {
+        //make ETH query as 1st by default
+        _msg.unshift("ETH");
+        console.log(_msg)
+        cacheDB.getMultiple(_msg, {
             keyEncoding: 'binary',
             valueEncoding: 'binary'
-        }, function (err: Error, result: any) {
-            if (err == null) {
-                console.log("EthtoUSD is in cache get ")
-                _cb(err, result)
+        }, function (err: Error, results: any) {
+            if (results[0][1] != null) {
+                console.log("Token Value is in cache  ")
+                _cb(err, results)
             } else {
-                console.log("EthtoUSD getting from api")
-                getEthToUSD(function (err, data) {
-                    console.log("data", data[0].price_usd)
-                    cacheDB.put(new Buffer("Iethtousd"), new Buffer(data[0].price_usd), {
+                console.log("Getting Token Value from api")
+                saveTokenValueToCache(function (err, result) {
+                    cacheDB.getMultiple(_msg, {
                         keyEncoding: 'binary',
                         valueEncoding: 'binary'
-                    }, function (err: Error, result: any) {
-                        _cb(err, result)
-                    })
-                    _cb(err, result)
+                    }, _cb)
 
-                });
-
+                })
             }
         });
-
-
-
-
-
-
 
     }
 },
@@ -198,12 +189,22 @@ let onConnection = (_socket: SocketIO.Socket, _rdb: RethinkDB, _vmR: VmRunner, _
 }
 
 
-async function getEthToUSD(cb: (error: Error, data: any) => void) {
-    const res = await fetch('https://api.coinmarketcap.com/v1/ticker/ethereum/')
+async function getTokenValues(cb: (error: Error, data: any) => void) {
+    const res = await fetch('http://still-waters-52916.herokuapp.com/ticker')
     const json = await res.json();
     return cb(null, json)
 
 };
+
+function saveTokenValueToCache(cb: (error: Error, data: any) => void) {
+    getTokenValues(function (err, data) {
+        var kv: any = [];
+        Object.keys(data.data).forEach(key => {
+            kv.push({ key: "TOKEN_" + data.data[key]["symbol"], value: data.data[key]["quotes"]["USD"]["price"] })
+            cacheDB.putMultiple(kv, cb)
+        });
+    });
+}
 
 
 export default onConnection
