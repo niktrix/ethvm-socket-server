@@ -4,8 +4,8 @@
     "description": "backend socket server for ethvm",
     "main": "src/index.js",
     "scripts": {
-        "build": "webpack --progress",
-        "start": "node dist/index.js --remoteRDB --rawCert",
+        "build": "tsc",
+        "start": "ts-node -r tsconfig-paths/register src/index.ts --remoteRDB --rawCert",
         "debug": "webpack --progress --watch & nodemon --watch dist dist/index.js",
         "compose": "webpack --progress --watch & nodemon --watch dist dist/index.js --remoteRDB --rawCert",
         "gcloud": "webpack --progress --watch & nodemon --watch dist dist/index.js  --remoteRDB --rawCert"
@@ -29,6 +29,7 @@
     "homepage": "https://github.com/enKryptIO/ethvm-socket-server#readme",
     "dependencies": {
         "bignumber.js": "^5.0.0",
+        "ethereumjs-abi": "^0.6.5",
         "ethereumjs-account": "^2.0.4",
         "ethereumjs-vm": "git+https://github.com/kvhnuke/ethereumjs-vm.git",
         "ioredis": "^3.2.2",
@@ -39,6 +40,7 @@
         "lrucache": "^1.0.3",
         "merkle-patricia-tree": "^2.3.0",
         "node-fetch": "^2.1.2",
+        "pino": "^4.17.3",
         "rethinkdb": "^2.3.3",
         "socket.io": "^2.0.4",
         "web3": "^1.0.0-beta.34",
@@ -52,7 +54,8 @@
         "@types/lokijs": "^1.5.0",
         "@types/lowdb": "^0.15.0",
         "@types/node": "^8.5.1",
-        "@types/rethinkdb": "github:types/npm-rethinkdb",
+        "@types/node-fetch": "^2.1.1",
+        "@types/pino": "^4.16.0",
         "@types/socket.io": "^1.4.31",
         "@types/yargs": "^10.0.0",
         "babel": "^6.23.0",
@@ -63,8 +66,7 @@
         "events": "^1.1.1",
         "nodemon": "^1.13.3",
         "tls": "0.0.1",
-        "ts-loader": "^3.2.0",
-        "typescript": "^2.6.2",
-        "webpack": "^3.10.0"
+        "tsconfig-paths": "^3.3.2",
+        "typescript": "^2.8.4"
     }
 }
