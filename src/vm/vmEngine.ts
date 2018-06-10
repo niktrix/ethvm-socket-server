@@ -8,14 +8,12 @@ const NonceSubprovider = require('web3-provider-engine/subproviders/nonce-tracke
 const RpcSubprovider = require('web3-provider-engine/subproviders/rpc.js')
 const createPayload = require("web3-provider-engine/util/create-payload.js")
 const ZeroClientProvider = require("./Zeroclient.js")
-var abi = require('ethereumjs-abi')
-var utils = require('../libs/utils.js')
+const abi = require('ethereumjs-abi')
+const utils = require('../libs/utils.js')
 
 var tokenAbi = [{ "constant": true, "inputs": [{ "name": "", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "", "type": "uint256" }], "type": "function" }, { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "success", "type": "bool" }], "type": "function" }, { "inputs": [], "type": "constructor" }]
 var BN = require('bn.js')
 // var ethereum_address = require('ethereum-address');
-
-
 
 var VmEngine = ZeroClientProvider({
   // supports http and websockets
@@ -39,40 +37,19 @@ VmEngine.getBalance = function (args: any, a: any) {
   VmEngine.sendAsync(payload, a);
 }
 
-
 VmEngine.getAccount = function (args: any, a: any) {
-   VmEngine.sendAsync(createPayload({ jsonrpc: '2.0', method: 'eth_getKeyValue', params: ['0x2a65aca4d5fc5b5c859090a6c34d164135398226'], id: 1 }), function (err: any, response: any) {
+  VmEngine.sendAsync(createPayload({ jsonrpc: '2.0', method: 'eth_getKeyValue', params: ['0x2a65aca4d5fc5b5c859090a6c34d164135398226'], id: 1 }), function (err: any, response: any) {
     console.log("response", response)
   })
 }
 
-VmEngine.getAllTokens = function(args:any,a:any){
+VmEngine.getAllTokens = function (args: any, a: any) {
   var argss = ["address", "bool", "bool", "bool", "uint256"]
-  console.log("Get Token Balance for : ",args)
+  console.log("Get Token Balance for : ", args)
   var vals = [args, "true", "true", "true", 0]
   var encoded = utils.encodeCall("getAllBalance", argss, vals)
   var pl = createPayload({ jsonrpc: '2.0', method: 'eth_call', params: [{ to: "0xbe1ecf8e340f13071761e0eef054d9a511e1cb56", data: encoded }, "pending"], id: 1 })
   VmEngine.sendAsync(pl, a);
-
-  // function (err: any, response: any) {
-  //   // console.log("eth_call", response)
-  //    var tokens = utils.decode(response.result)
-  //    console.log(tokens.length)
-  //    // tokens.forEach(element => {
-  //    //   console.log(element);
-  //    // });
-  //  });
 }
 
-
-
-
-
-
- 
-
-
-
-
 export default VmEngine
-
