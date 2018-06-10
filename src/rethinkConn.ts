@@ -1,251 +1,332 @@
-import * as r from 'rethinkdb'
 import configs from '@/configs'
+import ds from '@/datastores'
+import { BlockStats, SmallBlock, SmallTx } from '@/libs'
+import { blockLayout, ChartLayout, txLayout } from '@/typeLayouts'
+import VmRunner from '@/vm/vmRunner'
 import * as fs from 'fs'
+import * as r from 'rethinkdb'
 import { URL } from 'url'
 import { argv } from 'yargs'
-import _ from 'lodash'
-import ds from '@/datastores'
-import { txLayout, blockLayout,chartLayout } from '@/typeLayouts'
-import { SmallBlock, SmallTx, BlockStats, common } from '@/libs'
-import VmRunner from '@/vm/vmRunner'
+import { l } from '@/helpers'
+
+export interface RethinkDBConnectionOptions {
+  readonly db?: string
+  readonly host?: string,
+  readonly port?: number,
+  readonly user?: string,
+  readonly password?: string,
+  readonly timeout?: number,
+  readonly ssl?: Object
+}
+
 class RethinkDB {
-    socketIO: any
-    dbConn: r.Connection
-    tempTxs: Array<txLayout>
-    numPendingTxs: number
-    vmRunner: VmRunner
-    constructor(_socketIO: any, _vmR: VmRunner) {
-        this.socketIO = _socketIO
-        this.vmRunner = _vmR
-        this.start()
+  private dbConn: r.Connection
+  private tempTxs: Array<txLayout> = []
+  private numPendingTxs: number
+
+  constructor(private readonly socketIO: SocketIO.Server, private readonly vmRunner: VmRunner, private readonly opts: RethinkDBConnectionOptions) {
+    this.start()
+  }
+
+  async start() {
+    try {
+      this.dbConn = await r.connect(this.opts)
+      this.setAllEvents()
+    } catch (error) {
+      l.error(`Can't connect to RethinkDB: ${error}`)
     }
-    start(): void {
-        let _this = this
-        this.tempTxs = []
-        let conf = configs.global.RETHINK_DB
-        let tempConfig: r.ConnectOptions = {
-            host: conf.host,
-            port: conf.port,
-            db: conf.db
+  }
+
+  setAllEvents() {
+    r
+      .table('blocks')
+      .changes()
+      .map(change => change('new_val'))
+      .merge(block => {
+        return {
+          transactions: r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array'),
+          blockStats: {
+            pendingTxs: r.table('data').get('cached').getField('pendingTxs')
+          }
         }
-        let connect = (_config: r.ConnectOptions): void => {
-            r.connect(_config, (err: Error, conn: r.Connection): void => {
-                if (!err) {
-                    _this.dbConn = conn
-                    _this.setAllEvents()
-                } else {
-                    console.log(err)
-                }
-            })
-        }
-        let connectWithCert = (_cert: any) => {
-            let url = new URL(process.env[conf.env_url])
-            tempConfig = {
-                host: url.hostname,
-                port: parseInt(url.port),
-                password: url.password,
-                ssl: {
-                    ca: _cert
-                },
-                db: conf.db
+      })
+      .run(this.dbConn, (err, cursor) => {
+        cursor.each((err: Error, block: blockLayout) => {
+          if (!err) {
+            this.vmRunner.setStateRoot(block.stateRoot)
+            const bstats = new BlockStats(block, block.transactions)
+            block.blockStats = Object.assign({}, bstats.getBlockStats(), block.blockStats)
+            const sBlock = new SmallBlock(block)
+            const blockHash = sBlock.hash()
+            this.socketIO.to(blockHash).emit(blockHash + '_update', block)
+            this.onNewBlock(sBlock.smallify())
+            this.onNewTx(block.transactions.map((tx) => {
+              const sTx = new SmallTx(tx)
+              const txHash: string = sTx.hash()
+              this.socketIO.to(txHash).emit(txHash + '_update', tx)
+              return sTx.smallify()
+            }))
+          }
+        })
+      })
+
+    r
+      .table('transactions')
+      .changes()
+      .filter(r.row('new_val')('pending').eq(true))
+      .run(this.dbConn, (err, cursor) => {
+        cursor.each((err, row: r.ChangeSet<any, any>) => {
+          if (!err) {
+            const tx: txLayout = row.new_val
+            if (tx.pending) {
+              const sTx = new SmallTx(tx)
+              const txHash: string = sTx.hash()
+              this.socketIO.to(txHash).emit(txHash + '_update', tx)
+              this.socketIO.to('pendingTxs').emit('newPendingTx', sTx.smallify())
             }
-            if (!_cert) delete tempConfig.ssl
-            connect(tempConfig)
-        }
-        if (argv.remoteRDB && !argv.rawCert) {
-            fs.readFile(process.env[conf.env_cert], (err, caCert) => {
-                connectWithCert(caCert)
-            })
-        } else if (argv.remoteRDB && argv.rawCert) {
-            connectWithCert(process.env[conf.env_cert_raw])
-        } else {
-            connect(tempConfig)
-        }
-
-    }
-
-    setAllEvents(): void {
-        let _this = this
-        r.table('blocks').changes().map((change) => {
-            return change('new_val')
-        }).merge((block: any) => {
-            return {
-                transactions: r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array'),
-                blockStats: {
-                    pendingTxs: r.table('data').get('cached').getField('pendingTxs')
-                }
-            }
-        }).run(_this.dbConn, (err, cursor) => {
-            cursor.each((err: Error, block: blockLayout) => {
-                if (!err) {
-                    _this.vmRunner.setStateRoot(block.stateRoot)
-                    let bstats = new BlockStats(block, block.transactions)
-                    block.blockStats = Object.assign({}, bstats.getBlockStats(), block.blockStats)
-                    let sBlock = new SmallBlock(block)
-                    let blockHash = sBlock.hash()
-                    _this.socketIO.to(blockHash).emit(blockHash + '_update', block)
-                    _this.onNewBlock(sBlock.smallify())
-                    _this.onNewTx(block.transactions.map((_tx) => {
-                        let sTx = new SmallTx(_tx)
-                        let txHash: string = sTx.hash()
-                        _this.socketIO.to(txHash).emit(txHash + '_update', _tx)
-                        return sTx.smallify()
-                    }))
-                }
-            });
-        });
-        r.table('transactions').changes().filter(r.row('new_val')('pending').eq(true)).run(_this.dbConn, (err, cursor) => {
-            cursor.each((err, row: r.ChangeSet<any, any>) => {
-                if (!err) {
-                    let _tx: txLayout = row.new_val
-                    if (_tx.pending) {
-                        let sTx = new SmallTx(_tx)
-                        let txHash: string = sTx.hash()
-                        _this.socketIO.to(txHash).emit(txHash + '_update', _tx)
-                        _this.socketIO.to('pendingTxs').emit('newPendingTx', sTx.smallify())
-                    }
-                }
-            })
+          }
         })
+      })
+  }
+
+  getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void) {
+    const sendResults = cursor => {
+      cursor.toArray((err: Error, results: Array<txLayout>) => {
+        if (err) {
+          cb(err, null)
+          return
+        }
+
+        cb(null, results.map((tx: txLayout) => new SmallTx(tx).smallify()))
+      })
     }
-    getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void): void {
-        let _this = this
-        let sendResults = (_cursor: any) => {
-            _cursor.toArray((err: Error, results: Array<txLayout>) => {
-                if (err) cb(err, null)
-                else cb(null, results.map((_tx: txLayout) => {
-                    return new SmallTx(_tx).smallify()
-                }))
-            });
-        }
-        if (!hash) {
-            r.table("transactions").orderBy({ index: r.desc("numberAndHash") }).filter(
-                r.row("from").eq(r.args([new Buffer(address)])).or(r.row("to").eq(r.args([new Buffer(address)])))
-            ).limit(25).run(_this.dbConn, (err, cursor) => {
-                if (err) cb(err, null)
-                else sendResults(cursor)
-            });
-        } else {
-            r.table("transactions").orderBy({ index: r.desc("numberAndHash") }).between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: "open", index: "numberAndHash" })
-                .filter(
-                    r.or(r.row("from").eq(r.args([new Buffer(address)])), r.row("to").eq(r.args([new Buffer(address)])))
-                ).limit(25).run(_this.dbConn, function (err, cursor) {
-                    if (err) cb(err, null)
-                    else sendResults(cursor)
-                });
-        }
-    }
-    getTransactionPages(hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void): void {
-        let _this = this
-        let sendResults = (_cursor: any) => {
-            _cursor.toArray((err: Error, results: Array<txLayout>) => {
-                if (err) cb(err, null)
-                else cb(null, results.map((_tx: txLayout) => {
-                    return new SmallTx(_tx).smallify()
-                }))
-            });
-        }
-        if (!hash) {
-            r.table("transactions").orderBy({ index: r.desc("numberAndHash") }).filter({ pending: false }).limit(25).run(_this.dbConn, (err, cursor) => {
-                if (err) cb(err, null)
-                else sendResults(cursor)
-            });
-        } else {
-            r.table("transactions").orderBy({ index: r.desc("numberAndHash") }).between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: "open", index: "numberAndHash" })
-                .filter({ pending: false }).limit(25).run(_this.dbConn, function (err, cursor) {
-                    if (err) cb(err, null)
-                    else sendResults(cursor)
-                });
-        }
-    }
-    getBlockTransactions(hash: string, cb: (err: Error, result: any) => void): void {
-        r.table('blocks').get(r.args([new Buffer(hash)])).do((block: any) => {
-            return r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array')
-        }).run(this.dbConn, (err: Error, result: any) => {
-            if (err) cb(err, null);
-            else cb(null, result.map((_tx: txLayout) => {
-                return new SmallTx(_tx).smallify()
-            }));
+
+    if (!hash) {
+      r
+        .table('transactions')
+        .orderBy({ index: r.desc('numberAndHash') })
+        .filter(
+          r.row('from')
+            .eq(r.args([new Buffer(address)]))
+            .or(r.row('to')
+              .eq(r.args([new Buffer(address)])))
+        ).limit(25)
+        .run(this.dbConn, (err, cursor) => {
+          if (err) {
+            cb(err, null)
+            return
+          }
+
+          sendResults(cursor)
         })
+
+      return
     }
 
-    getTotalTxs(hash: string, cb: (err: Error, result: any) => void): void {
-        var bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex');
-        r.table("transactions").getAll(r.args([bhash]), { index: "cofrom" }).count().run(this.dbConn, function (err: Error, count: any) {
-            if (err) cb(err, null);
-            else cb(null, count);
-        })
-    }
-
-    getTxsOfAddress(hash: string, cb: (err: Error, result: any) => void): void {
-
-        let _this = this
-        let sendResults = (_cursor: any) => {
-            _cursor.toArray((err: Error, results: Array<txLayout>) => {
-                if (err) cb(err, null)
-                else cb(null, results.map((_tx: txLayout) => {
-                    return new SmallTx(_tx).smallify()
-                }))
-            });
+    r
+      .table('transactions')
+      .orderBy({ index: r.desc('numberAndHash') })
+      .between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: 'open', index: 'numberAndHash' })
+      .filter(
+        r.or(r.row('from').eq(r.args([new Buffer(address)])), r.row('to').eq(r.args([new Buffer(address)])))
+      )
+      .limit(25)
+      .run(this.dbConn, (err, cursor) => {
+        if (err) {
+          cb(err, null)
+          return
         }
-        var bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex');
-        r.table("transactions").getAll(r.args([bhash]), { index: "cofrom" }).limit(20).run(this.dbConn, function (err: Error, count: any) {
-            if (err) cb(err, null);
-            else sendResults(count)
-        })
-    }
 
-    getChartsData(cb: (err: Error, result: any) => void): void {
-        let _this = this
-        let sendResults = (_cursor: any) => {
-            _cursor.toArray((err: Error, results: Array<chartLayout>) => {
-                if (err) cb(err, null)
-                else cb(null, results)
-            });
+        sendResults(cursor)
+      })
+  }
+
+  getTransactionPages(hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void) {
+    const sendResults = cursor => {
+      cursor.toArray((err: Error, results: Array<txLayout>) => {
+        if (err) {
+          cb(err, null)
+          return
         }
-        r.table('blockscache').between(r.epochTime(1465556900),
-            r.epochTime(1465656900), { index: 'timestamp' }
-        ).run(this.dbConn, function (err: Error, count: any) {
-            if (err) cb(err, null);
-            else sendResults(count)
 
-        });
-
+        cb(null, results.map((tx: txLayout) => new SmallTx(tx).smallify()))
+      })
     }
 
+    if (!hash) {
+      r
+        .table('transactions')
+        .orderBy({ index: r.desc('numberAndHash') })
+        .filter({ pending: false })
+        .limit(25)
+        .run(this.dbConn, (err, cursor) => {
+          if (err) {
+            cb(err, null)
+            return
+          }
 
-
-
-    getBlock(hash: string, cb: (err: Error, result: any) => void): void {
-        r.table('blocks').get(r.args([new Buffer(hash)])).run(this.dbConn, (err: Error, result: blockLayout) => {
-            if (err) cb(err, null);
-            else cb(null, result);
+          sendResults(cursor)
         })
+
+      return
     }
 
-    getTx(hash: string, cb: (err: Error, result: any) => void): void {
-        r.table("transactions").get(r.args([new Buffer(hash)])).merge(function (_tx) {
-            return {
-                trace: r.db("eth_mainnet").table('traces').get(_tx('hash')),
-                logs: r.db("eth_mainnet").table('logs').get(_tx('hash'))
-            }
-        }).run(this.dbConn, (err: Error, result: txLayout) => {
-            if (err) cb(err, null)
-            else cb(null, result)
-        })
+    r
+      .table('transactions')
+      .orderBy({ index: r.desc('numberAndHash') })
+      .between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: 'open', index: 'numberAndHash' })
+      .filter({ pending: false })
+      .limit(25)
+      .run(this.dbConn, (err, cursor) => {
+        if (err) {
+          cb(err, null)
+          return
+        }
+
+        sendResults(cursor)
+      })
+  }
+
+  getBlockTransactions(hash: string, cb: (err: Error, result: any) => void) {
+    r
+      .table('blocks')
+      .get(r.args([new Buffer(hash)]))
+      .do(block => r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array'))
+      .run(this.dbConn, (err: Error, result: any) => {
+        if (err) {
+          cb(err, null)
+          return
+        }
+
+        cb(null, result.map((tx: txLayout) => new SmallTx(tx).smallify()))
+      })
+  }
+
+  getTotalTxs(hash: string, cb: (err: Error, result: any) => void) {
+    const bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex')
+    r
+      .table('transactions')
+      .getAll(r.args([bhash]), { index: 'cofrom' })
+      .count()
+      .run(this.dbConn, (err: Error, count: any) => {
+        if (err) {
+          cb(err, null)
+          return
+        }
+
+        cb(null, count)
+      })
+  }
+
+  getTxsOfAddress(hash: string, cb: (err: Error, result: any) => void) {
+    const sendResults = (cursor: any) => {
+      cursor.toArray((err: Error, results: Array<txLayout>) => {
+        if (err) {
+          cb(err, null)
+          return
+        }
+
+        cb(null, results.map((tx: txLayout) => {
+          return new SmallTx(tx).smallify()
+        }))
+      })
     }
 
-    onNewBlock(_block: blockLayout) {
-        let _this = this
-        console.log("go new block", _block.hash)
-        this.socketIO.to('blocks').emit('newBlock', _block)
-        ds.addBlock(_block)
+    const bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex')
+
+    r
+      .table('transactions')
+      .getAll(r.args([bhash]), { index: 'cofrom' })
+      .limit(20)
+      .run(this.dbConn, (err: Error, count: any) => {
+        if (err) {
+          cb(err, null)
+          return
+        }
+
+        sendResults(count)
+      })
+  }
+
+  getChartsData(cb: (err: Error, result: any) => void) {
+    const sendResults = (cursor: any) => {
+      cursor.toArray((err: Error, results: Array<ChartLayout>) => {
+        if (err) {
+          cb(err, null)
+          return
+        }
+
+        cb(null, results)
+      })
     }
-    onNewTx(_tx: txLayout | Array<txLayout>) {
-        if (Array.isArray(_tx) && !_tx.length) return
-        this.socketIO.to('txs').emit('newTx', _tx)
-        ds.addTransaction(_tx)
+
+    r
+      .table('blockscache')
+      .between(r.time(2016, 5, 2, 'Z'), r.time(2016, 5, 11, 'Z'), {
+        index: 'timestamp',
+        rightBound: 'closed'
+      })
+      .group(r.row('timestamp').date())
+      .map(r.row('accounts').count())
+      .reduce((l, r) => l.add(r))
+      .default(0)
+      .run(this.dbConn, (err: Error, results: any) => {
+        if (err) {
+          cb(err, null)
+          return
+        }
+
+        sendResults(results)
+      })
+  }
+
+  getBlock(hash: string, cb: (err: Error, result: any) => void) {
+    r
+      .table('blocks')
+      .get(r.args([new Buffer(hash)]))
+      .run(this.dbConn, (err: Error, result: blockLayout) => {
+        if (err) {
+          cb(err, null)
+          return
+        }
+
+        cb(null, result)
+      })
+  }
+
+  getTx(hash: string, cb: (err: Error, result: any) => void) {
+    r
+      .table('transactions')
+      .get(r.args([new Buffer(hash)]))
+      .merge(tx => {
+        return {
+          trace: r.db('eth_mainnet').table('traces').get(tx('hash')),
+          logs: r.db('eth_mainnet').table('logs').get(tx('hash'))
+        }
+      })
+      .run(this.dbConn, (err: Error, result: txLayout) => {
+        if (err) {
+          cb(err, null)
+          return
+        }
+
+        cb(null, result)
+      })
+  }
+
+  private onNewBlock(block: blockLayout) {
+    l.debug('got new block', block.hash)
+    this.socketIO.to('blocks').emit('newBlock', block)
+    ds.addBlock(block)
+  }
+
+  private onNewTx(tx: txLayout | Array<txLayout>) {
+    if (Array.isArray(tx) && !tx.length) {
+      return
     }
+    this.socketIO.to('txs').emit('newTx', tx)
+    ds.addTransaction(tx)
+  }
 }
 
 export default RethinkDB
