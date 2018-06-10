@@ -1,19 +1,23 @@
 {
-    "compilerOptions": {
-        "module": "none",
-        "noImplicitAny": true,
-        "removeComments": true,
-        "allowSyntheticDefaultImports": true,
-        "sourceMap": true,
-        "outDir": "dist",
-        "target": "es2015",
-        "types": ["node"],
-        "typeRoots": ["node_modules/@types"]
-    },
-    "include": [
-        "node_modules/@types/**/*.d.ts",
-        "types/**/*.d.ts",
-        "src/**/*.ts",
-        "typings/**/*.d.ts",
-    ]
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "noImplicitAny": false,
+    "removeComments": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true,
+    "allowJs": true,
+    "outDir": "./dist",
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "types/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
