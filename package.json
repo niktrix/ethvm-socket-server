@@ -5,10 +5,8 @@
     "main": "src/index.js",
     "scripts": {
         "build": "tsc",
-        "start": "ts-node -r tsconfig-paths/register src/index.ts --remoteRDB --rawCert",
-        "debug": "webpack --progress --watch & nodemon --watch dist dist/index.js",
-        "compose": "webpack --progress --watch & nodemon --watch dist dist/index.js --remoteRDB --rawCert",
-        "gcloud": "webpack --progress --watch & nodemon --watch dist dist/index.js  --remoteRDB --rawCert"
+        "start": "ts-node -r tsconfig-paths/register src/index.ts",
+        "start:dev": "nodemon"
     },
     "repository": {
         "type": "git",
@@ -29,6 +27,7 @@
     "homepage": "https://github.com/enKryptIO/ethvm-socket-server#readme",
     "dependencies": {
         "bignumber.js": "^5.0.0",
+        "convict": "^4.3.0",
         "ethereumjs-abi": "^0.6.5",
         "ethereumjs-account": "^2.0.4",
         "ethereumjs-vm": "git+https://github.com/kvhnuke/ethereumjs-vm.git",
@@ -64,7 +63,7 @@
         "babel-preset-node6": "^11.0.0",
         "bluebird": "^3.5.1",
         "events": "^1.1.1",
-        "nodemon": "^1.13.3",
+        "nodemon": "^1.17.5",
         "tls": "0.0.1",
         "tsconfig-paths": "^3.3.2",
         "typescript": "^2.8.4"
