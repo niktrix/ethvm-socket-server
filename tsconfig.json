@@ -1,14 +1,18 @@
 {
   "compilerOptions": {
+    "lib": ["es2018"],
     "target": "es6",
     "module": "commonjs",
+    "moduleResolution": "node",
+    "typeRoots": ["node_modules/@types", "typings"],
+    "outDir": "dist",
+    "baseUrl": "src",
+    "strict": false,
     "noImplicitAny": false,
     "removeComments": true,
     "allowSyntheticDefaultImports": true,
-    "sourceMap": true,
+    "inlineSourceMap": true,
     "allowJs": true,
-    "outDir": "./dist",
-    "baseUrl": "./src",
     "paths": {
       "@/*": ["*"]
     }
