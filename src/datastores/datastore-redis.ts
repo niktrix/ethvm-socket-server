@@ -1,20 +1,29 @@
 import * as Redis from 'ioredis'
-import configs from '@/configs'
+import config from '@/config'
 import { txLayout, blockLayout } from '@/typeLayouts'
+
 interface ItableCache  {
     transactions: Array<txLayout>;
     blocks: Array<blockLayout>;
 }
-let redis = new Redis(configs.global.REDIS.URL)
+
+const resisUrl = config.get('eth_vm_server.data_stores.redis.url')
+const socketRows = config.get('eth_vm_server.data_stores.redis.socket_rows')
+
+const redis = new Redis()
+
 let tableCache: ItableCache = {
     transactions: [],
     blocks: []
 }
+
 let tables = {
     transactions: "transactions",
     blocks: 'blocks'
 }
-type CallbackFunction = (data: Array<any>) => void;
+
+type CallbackFunction = (data: Array<any>) => void
+
 let bufferify = (obj: any):any =>  {
     for (let key in obj) {
         if (obj.hasOwnProperty(key) && obj[key]) {
@@ -30,6 +39,7 @@ let bufferify = (obj: any):any =>  {
     }
     return obj
 }
+
 let getArray = (tbName: any, cb: CallbackFunction) => {
     let tbKey: (keyof ItableCache) = tbName;
     if (tableCache[tbKey].length) cb(tableCache[tbKey])
@@ -45,10 +55,9 @@ let getArray = (tbName: any, cb: CallbackFunction) => {
             else cb([])
         })
     }
-
 }
 
-let addTransaction = (tx: txLayout | Array<txLayout>): void => {
+let addTransaction = (tx: txLayout | Array<txLayout>) => {
     getArray(tables.transactions, (pTxs) => {
         if (Array.isArray(tx)) {
             tx.forEach((tTx) => {
@@ -57,16 +66,17 @@ let addTransaction = (tx: txLayout | Array<txLayout>): void => {
         } else {
             pTxs.unshift(tx)
         }
-        if (pTxs.length > configs.global.MAX.socketRows) pTxs = pTxs.slice(0, configs.global.MAX.socketRows)
+        if (pTxs.length > socketRows) pTxs = pTxs.slice(0, socketRows)
         let tbKey: (keyof ItableCache) = "transactions"
         tableCache[tbKey] = pTxs
         redis.set(tables.transactions, JSON.stringify(pTxs))
     })
 }
+
 let addBlock = (block: blockLayout) => {
     getArray(tables.blocks, (pBlocks) => {
         pBlocks.unshift(block)
-        if (pBlocks.length > configs.global.MAX.socketRows) pBlocks = pBlocks.slice(0, configs.global.MAX.socketRows)
+        if (pBlocks.length > socketRows) pBlocks = pBlocks.slice(0, socketRows)
         let tbKey: (keyof ItableCache) = "blocks"
         tableCache[tbKey] = pBlocks
         redis.set(tables.blocks, JSON.stringify(pBlocks))
@@ -76,6 +86,7 @@ let addBlock = (block: blockLayout) => {
 let getBlocks = (cb: CallbackFunction) => {
     getArray(tables.blocks, cb)
 }
+
 let getTransactions = (cb: CallbackFunction) => {
     getArray(tables.transactions, cb)
 }
@@ -83,7 +94,8 @@ let getTransactions = (cb: CallbackFunction) => {
 let thisReturnsANumber = (id: number, name: string): number => {
     return 0
 }
-let initialize = ():void => {
+
+let initialize = () => {
     redis.set(tables.transactions, JSON.stringify([]))
     redis.set(tables.blocks, JSON.stringify([]))
 }

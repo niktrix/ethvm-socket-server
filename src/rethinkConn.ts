@@ -1,4 +1,4 @@
-import configs from '@/configs'
+import config from '@/config'
 import ds from '@/datastores'
 import { BlockStats, SmallBlock, SmallTx } from '@/libs'
 import { blockLayout, ChartLayout, txLayout } from '@/typeLayouts'
@@ -9,28 +9,16 @@ import { URL } from 'url'
 import { argv } from 'yargs'
 import { l } from '@/helpers'
 
-export interface RethinkDBConnectionOptions {
-  readonly db?: string
-  readonly host?: string,
-  readonly port?: number,
-  readonly user?: string,
-  readonly password?: string,
-  readonly timeout?: number,
-  readonly ssl?: Object
-}
-
-class RethinkDB {
+export class RethinkDB {
   private dbConn: r.Connection
-  private tempTxs: Array<txLayout> = []
-  private numPendingTxs: number
 
-  constructor(private readonly socketIO: SocketIO.Server, private readonly vmRunner: VmRunner, private readonly opts: RethinkDBConnectionOptions) {
+  constructor(private readonly socketIO: SocketIO.Server, private readonly vmRunner: VmRunner) {
     this.start()
   }
 
   async start() {
     try {
-      this.dbConn = await r.connect(this.opts)
+      this.dbConn = await r.connect({})
       this.setAllEvents()
     } catch (error) {
       l.error(`Can't connect to RethinkDB: ${error}`)
@@ -249,17 +237,6 @@ class RethinkDB {
   }
 
   getChartsData(cb: (err: Error, result: any) => void) {
-    const sendResults = (cursor: any) => {
-      cursor.toArray((err: Error, results: Array<ChartLayout>) => {
-        if (err) {
-          cb(err, null)
-          return
-        }
-
-        cb(null, results)
-      })
-    }
-
     r
       .table('blockscache')
       .between(r.time(2016, 5, 2, 'Z'), r.time(2016, 5, 11, 'Z'), {
@@ -270,13 +247,20 @@ class RethinkDB {
       .map(r.row('accounts').count())
       .reduce((l, r) => l.add(r))
       .default(0)
-      .run(this.dbConn, (err: Error, results: any) => {
+      .run(this.dbConn, (err: Error, cursor: any) => {
         if (err) {
           cb(err, null)
           return
         }
 
-        sendResults(results)
+        cursor.toArray((err: Error, results: Array<ChartLayout>) => {
+          if (err) {
+            cb(err, null)
+            return
+          }
+
+          cb(null, results)
+        })
       })
   }
 
@@ -328,5 +312,3 @@ class RethinkDB {
     ds.addTransaction(tx)
   }
 }
-
-export default RethinkDB
