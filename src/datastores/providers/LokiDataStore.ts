@@ -1,6 +1,6 @@
 import * as loki from 'lokijs'
 import config from '@/config'
-import { txLayout, blockLayout } from '@/typeLayouts'
+import { TxModel, BlockModel } from '@/models'
 
 let lokiDB = new loki(config.get('eth_vm_server.data_stores.loki.db_name'), { autosave: true, autosaveInterval: 5000, autoload: true })
 
@@ -34,7 +34,7 @@ let bufferify = (obj: any) => {
   return _obj
 }
 
-let processTx = (tx: txLayout) => {
+let processTx = (tx: TxModel) => {
   let hexed = hexify(tx)
   let col = lokiDB.getCollection('transactions')
   var obj = col.by('hash', hexed.hash);
@@ -44,7 +44,7 @@ let processTx = (tx: txLayout) => {
   lokiDB.getCollection('transactions').insert(hexed)
 }
 
-let addTransaction = (tx: txLayout | Array<txLayout>) => {
+let addTransaction = (tx: TxModel | Array<TxModel>) => {
   if (Array.isArray(tx)) {
     tx.forEach((tTx) => {
       processTx(tTx)
@@ -54,7 +54,7 @@ let addTransaction = (tx: txLayout | Array<txLayout>) => {
   }
 }
 
-let addBlock = (block: blockLayout) => {
+let addBlock = (block: BlockModel) => {
   let hexed = hexify(block)
   let col = lokiDB.getCollection('blocks')
   var obj = col.by('hash', hexed.hash);

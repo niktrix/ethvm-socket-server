@@ -1,7 +1,7 @@
 import config from '@/config'
 import ds from '@/datastores'
 import { BlockStats, SmallBlock, SmallTx } from '@/libs'
-import { blockLayout, ChartLayout, txLayout } from '@/typeLayouts'
+import { BlockModel, ChartModel, TxModel } from '@/models'
 import VmRunner from '@/vm/vmRunner'
 import * as fs from 'fs'
 import * as r from 'rethinkdb'
@@ -9,16 +9,26 @@ import { URL } from 'url'
 import { argv } from 'yargs'
 import { l } from '@/helpers'
 
-export class RethinkDB {
-  private dbConn: r.Connection
+export default class RethinkDBDataStore {
+  private conn: r.Connection
 
   constructor(private readonly socketIO: SocketIO.Server, private readonly vmRunner: VmRunner) {
-    this.start()
   }
 
   async start() {
     try {
-      this.dbConn = await r.connect({})
+      const c = {
+        host: config.get('eth_vm_server.rethink_db.host'),
+        port: config.get('eth_vm_server.rethink_db.port'),
+        user: config.get('eth_vm_server.rethink_db.user'),
+        password: config.get('eth_vm_server.rethink_db.password'),
+        db: config.get('eth_vm_server.rethink_db.db_name'),
+        ssl: {
+          cert: config.get('eth_vm_server.rethink_db.raw_cert')
+        }
+      }
+
+      this.conn = await r.connect(c)
       this.setAllEvents()
     } catch (error) {
       l.error(`Can't connect to RethinkDB: ${error}`)
@@ -38,8 +48,8 @@ export class RethinkDB {
           }
         }
       })
-      .run(this.dbConn, (err, cursor) => {
-        cursor.each((err: Error, block: blockLayout) => {
+      .run(this.conn, (err, cursor) => {
+        cursor.each((err: Error, block: BlockModel) => {
           if (!err) {
             this.vmRunner.setStateRoot(block.stateRoot)
             const bstats = new BlockStats(block, block.transactions)
@@ -62,10 +72,10 @@ export class RethinkDB {
       .table('transactions')
       .changes()
       .filter(r.row('new_val')('pending').eq(true))
-      .run(this.dbConn, (err, cursor) => {
+      .run(this.conn, (err, cursor) => {
         cursor.each((err, row: r.ChangeSet<any, any>) => {
           if (!err) {
-            const tx: txLayout = row.new_val
+            const tx: TxModel = row.new_val
             if (tx.pending) {
               const sTx = new SmallTx(tx)
               const txHash: string = sTx.hash()
@@ -79,13 +89,13 @@ export class RethinkDB {
 
   getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void) {
     const sendResults = cursor => {
-      cursor.toArray((err: Error, results: Array<txLayout>) => {
+      cursor.toArray((err: Error, results: Array<TxModel>) => {
         if (err) {
           cb(err, null)
           return
         }
 
-        cb(null, results.map((tx: txLayout) => new SmallTx(tx).smallify()))
+        cb(null, results.map((tx: TxModel) => new SmallTx(tx).smallify()))
       })
     }
 
@@ -99,7 +109,7 @@ export class RethinkDB {
             .or(r.row('to')
               .eq(r.args([new Buffer(address)])))
         ).limit(25)
-        .run(this.dbConn, (err, cursor) => {
+        .run(this.conn, (err, cursor) => {
           if (err) {
             cb(err, null)
             return
@@ -119,7 +129,7 @@ export class RethinkDB {
         r.or(r.row('from').eq(r.args([new Buffer(address)])), r.row('to').eq(r.args([new Buffer(address)])))
       )
       .limit(25)
-      .run(this.dbConn, (err, cursor) => {
+      .run(this.conn, (err, cursor) => {
         if (err) {
           cb(err, null)
           return
@@ -131,13 +141,13 @@ export class RethinkDB {
 
   getTransactionPages(hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void) {
     const sendResults = cursor => {
-      cursor.toArray((err: Error, results: Array<txLayout>) => {
+      cursor.toArray((err: Error, results: Array<TxModel>) => {
         if (err) {
           cb(err, null)
           return
         }
 
-        cb(null, results.map((tx: txLayout) => new SmallTx(tx).smallify()))
+        cb(null, results.map((tx: TxModel) => new SmallTx(tx).smallify()))
       })
     }
 
@@ -147,7 +157,7 @@ export class RethinkDB {
         .orderBy({ index: r.desc('numberAndHash') })
         .filter({ pending: false })
         .limit(25)
-        .run(this.dbConn, (err, cursor) => {
+        .run(this.conn, (err, cursor) => {
           if (err) {
             cb(err, null)
             return
@@ -165,7 +175,7 @@ export class RethinkDB {
       .between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: 'open', index: 'numberAndHash' })
       .filter({ pending: false })
       .limit(25)
-      .run(this.dbConn, (err, cursor) => {
+      .run(this.conn, (err, cursor) => {
         if (err) {
           cb(err, null)
           return
@@ -180,13 +190,13 @@ export class RethinkDB {
       .table('blocks')
       .get(r.args([new Buffer(hash)]))
       .do(block => r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array'))
-      .run(this.dbConn, (err: Error, result: any) => {
+      .run(this.conn, (err: Error, result: any) => {
         if (err) {
           cb(err, null)
           return
         }
 
-        cb(null, result.map((tx: txLayout) => new SmallTx(tx).smallify()))
+        cb(null, result.map((tx: TxModel) => new SmallTx(tx).smallify()))
       })
   }
 
@@ -196,7 +206,7 @@ export class RethinkDB {
       .table('transactions')
       .getAll(r.args([bhash]), { index: 'cofrom' })
       .count()
-      .run(this.dbConn, (err: Error, count: any) => {
+      .run(this.conn, (err: Error, count: any) => {
         if (err) {
           cb(err, null)
           return
@@ -208,13 +218,13 @@ export class RethinkDB {
 
   getTxsOfAddress(hash: string, cb: (err: Error, result: any) => void) {
     const sendResults = (cursor: any) => {
-      cursor.toArray((err: Error, results: Array<txLayout>) => {
+      cursor.toArray((err: Error, results: Array<TxModel>) => {
         if (err) {
           cb(err, null)
           return
         }
 
-        cb(null, results.map((tx: txLayout) => {
+        cb(null, results.map((tx: TxModel) => {
           return new SmallTx(tx).smallify()
         }))
       })
@@ -226,7 +236,7 @@ export class RethinkDB {
       .table('transactions')
       .getAll(r.args([bhash]), { index: 'cofrom' })
       .limit(20)
-      .run(this.dbConn, (err: Error, count: any) => {
+      .run(this.conn, (err: Error, count: any) => {
         if (err) {
           cb(err, null)
           return
@@ -247,13 +257,13 @@ export class RethinkDB {
       .map(r.row('accounts').count())
       .reduce((l, r) => l.add(r))
       .default(0)
-      .run(this.dbConn, (err: Error, cursor: any) => {
+      .run(this.conn, (err: Error, cursor: any) => {
         if (err) {
           cb(err, null)
           return
         }
 
-        cursor.toArray((err: Error, results: Array<ChartLayout>) => {
+        cursor.toArray((err: Error, results: Array<ChartModel>) => {
           if (err) {
             cb(err, null)
             return
@@ -268,7 +278,7 @@ export class RethinkDB {
     r
       .table('blocks')
       .get(r.args([new Buffer(hash)]))
-      .run(this.dbConn, (err: Error, result: blockLayout) => {
+      .run(this.conn, (err: Error, result: BlockModel) => {
         if (err) {
           cb(err, null)
           return
@@ -288,7 +298,7 @@ export class RethinkDB {
           logs: r.db('eth_mainnet').table('logs').get(tx('hash'))
         }
       })
-      .run(this.dbConn, (err: Error, result: txLayout) => {
+      .run(this.conn, (err: Error, result: TxModel) => {
         if (err) {
           cb(err, null)
           return
@@ -298,13 +308,13 @@ export class RethinkDB {
       })
   }
 
-  private onNewBlock(block: blockLayout) {
+  private onNewBlock(block: BlockModel) {
     l.debug('got new block', block.hash)
     this.socketIO.to('blocks').emit('newBlock', block)
     ds.addBlock(block)
   }
 
-  private onNewTx(tx: txLayout | Array<txLayout>) {
+  private onNewTx(tx: TxModel | Array<TxModel>) {
     if (Array.isArray(tx) && !tx.length) {
       return
     }

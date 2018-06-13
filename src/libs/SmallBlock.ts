@@ -1,35 +1,32 @@
-import { blockLayout, txLayout } from '@/typeLayouts'
+import { BlockModel } from '@/models'
 import { common } from '@/libs'
 import bn from 'bignumber.js'
 
-class SmallBlock {
-	block: blockLayout
-	constructor(_block: blockLayout) {
-		this.block = _block
-	}
-	hash(): string {
-		return '0x' + new Buffer(this.block.hash).toString('hex')
-	}
-	smallify(): blockLayout {
-		let _block = this.block
-		return {
-			number: _block.number,
-			intNumber: _block.intNumber,
-			hash: _block.hash,
-			miner: _block.miner,
-			timestamp: _block.timestamp,
-			transactionCount: _block.transactionHashes.length,
-			uncleHashes: _block.uncleHashes,
-			isUncle: _block.isUncle,
-			totalBlockReward: Buffer.from(new bn(common.bufferToHex(_block.blockReward)).plus(new bn(common.bufferToHex(_block.txFees))).plus(new bn(common.bufferToHex(_block.uncleReward))).toString(16), 'hex'),
-			blockReward: _block.blockReward,
-			txFees: _block.txFees,
-			stateRoot: _block.stateRoot,
-			uncleReward: _block.uncleReward,
-			difficulty: _block.difficulty,
-			blockStats: _block.blockStats
-		}
-	}
-}
+export class SmallBlock {
+  constructor(private readonly block: BlockModel) {
+  }
 
-export default SmallBlock
+  hash(): string {
+    return '0x' + new Buffer(this.block.hash).toString('hex')
+  }
+
+  smallify(): BlockModel {
+    return {
+      number: this.block.number,
+      intNumber: this.block.intNumber,
+      hash: this.block.hash,
+      miner: this.block.miner,
+      timestamp: this.block.timestamp,
+      transactionCount: this.block.transactionHashes.length,
+      uncleHashes: this.block.uncleHashes,
+      isUncle: this.block.isUncle,
+      totalBlockReward: Buffer.from(new bn(common.bufferToHex(this.block.blockReward)).plus(new bn(common.bufferToHex(this.block.txFees))).plus(new bn(common.bufferToHex(this.block.uncleReward))).toString(16), 'hex'),
+      blockReward: this.block.blockReward,
+      txFees: this.block.txFees,
+      stateRoot: this.block.stateRoot,
+      uncleReward: this.block.uncleReward,
+      difficulty: this.block.difficulty,
+      blockStats: this.block.blockStats
+    }
+  }
+}

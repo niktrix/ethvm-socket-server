@@ -1,8 +1,8 @@
 import addEvents from '@/server/addEvents'
 import ds from '@/datastores'
 import { l } from '@/helpers'
-import { RethinkDB } from '@/rethinkConn'
-import { blockLayout } from '@/typeLayouts'
+import RethinkDBDataStore from '@/datastores/providers/RethinkDBDataStore'
+import { BlockModel } from '@/models'
 import CacheDB from '@/vm/cacheDB'
 import VmEngine from '@/vm/vmEngine'
 import VmRunner from '@/vm/vmRunner'
@@ -16,13 +16,13 @@ export class EthVMServer {
   private readonly server: http.Server
   private readonly io: SocketIO.Server
   private readonly vmRunner: VmRunner
-  private readonly rdb: RethinkDB
+  private readonly rdb: RethinkDBDataStore
 
   constructor() {
     this.server = this.createHttpServer()
     this.io = this.createSocketIO()
     this.vmRunner = this.createVmRunner()
-    this.rdb = this.createRethinkDB(this.io, this.vmRunner)
+    this.rdb = this.createRethinkDBDataStore(this.io, this.vmRunner)
   }
 
   private createHttpServer(): http.Server {
@@ -63,58 +63,23 @@ export class EthVMServer {
     return new VmRunner(cacheDb)
   }
 
-  private createRethinkDB(io: SocketIO.Server, vmR: VmRunner): RethinkDB {
-    l.info('Parsing RethinDB configuration options!')
-
-    // TODO: Finish connectivity
-
-    // const conf = configs.global.RETHINK_DB
-    // const connectWithCert = cert => {
-    //   let url = new URL(process.env[conf.env_url])
-    //   const tempConfig = {
-    //     host: url.hostname,
-    //     port: parseInt(url.port),
-    //     password: url.password,
-    //     ssl: {
-    //       ca: cert
-    //     },
-    //     db: conf.db
-    //   }
-
-    //   if (!cert) {
-    //     delete tempConfig.ssl
-    //   }
-
-    //   connect(tempConfig)
-    // }
-
-    // if (argv.remoteRDB && !argv.rawCert) {
-    //   fs.readFile(process.env[conf.env_cert], (err, caCert) => {
-    //     connectWithCert(caCert)
-    //   })
-    // } else if (argv.remoteRDB && argv.rawCert) {
-    //   connectWithCert(process.env[conf.env_cert_raw])
-    // } else {
-    //   const tempConfig = {
-    //     host: conf.host,
-    //     port: conf.port,
-    //     db: conf.db
-    //   }
-    //   connect(tempConfig)
-    // }
-
-    l.info('Creating RethinkDB')
-    return new RethinkDB(this.io, this.vmRunner)
+  private createRethinkDBDataStore(io: SocketIO.Server, vmR: VmRunner): RethinkDBDataStore {
+    l.info('Creating RethinkDBDataStore')
+    return new RethinkDBDataStore(this.io, this.vmRunner)
   }
 
   async start() {
     l.info('Starting server')
 
+    l.info('Initializing Rethink datastore')
+    await this.rdb.start()
+
+    // TODO: Refactor this initialization
     if (argv.resetDS) {
       l.info('Initializing DataStore')
       ds.initialize()
     }
-    ds.getBlocks((blocks: Array<blockLayout>) => {
+    ds.getBlocks((blocks: Array<BlockModel>) => {
       this.vmRunner.setStateRoot(blocks && blocks[0] && blocks[0].stateRoot ? new Buffer(blocks[0].stateRoot) : new Buffer('d7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544', 'hex')) //genesis state by default
     })
 

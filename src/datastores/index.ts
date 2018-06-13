@@ -1,8 +1,9 @@
-import Redis from '@/datastores/datastore-redis'
-import LokiJS from '@/datastores/datastore-loki'
+import Redis from '@/datastores/providers/RedisDataStore'
+import LokiJS from '@/datastores/providers/LokiDataStore'
+import RethinkDBDataStore from '@/datastores/providers/RethinkDBDataStore'
 import config from '@/config'
 
-const DS_TYPE: string = config.get('eth_vm_server.data_stores.provider')
+const DS_TYPE = config.get('eth_vm_server.data_stores.provider')
 
 const VALID_DS = {
   redis: <any>Redis,

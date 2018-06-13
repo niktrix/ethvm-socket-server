@@ -1,19 +1,22 @@
-import { l } from '@/helpers'
-import ds from '@/datastores'
-import { txLayout, blockLayout } from '@/typeLayouts'
 import config from '@/config'
-import * as SocketIO from 'socket.io'
-import { RethinkDB } from '@/rethinkConn'
-import VmRunner from '@/vm/vmRunner'
-import VmEngine from '@/vm/vmEngine'
+import ds from '@/datastores'
+import RethinkDBDataStore from '@/datastores/providers/RethinkDBDataStore'
+import { l } from '@/helpers'
 import { common } from '@/libs'
+import { BlockModel, TxModel } from '@/models'
 import CacheDb from '@/vm/cacheDB'
+import VmRunner from '@/vm/vmRunner'
 import fetch from 'node-fetch'
+import * as SocketIO from 'socket.io'
+
+const redisUrl = config.get('eth_vm_server.data_stores.redis.url')
+const host = config.get('eth_vm_server.geth.host')
+const port = config.get('eth_vm_server.geth.port')
 
 type CallbackFunction = (err: Error, result: any) => any
 
 interface Iinstances {
-  rdb: RethinkDB;
+  rdb: RethinkDBDataStore;
   vmR: VmRunner;
   vmE: any;
 }
@@ -23,16 +26,12 @@ interface _event {
   onEvent: (_socket: SocketIO.Socket, _msg: string, _glob?: Iinstances, _cb?: CallbackFunction) => void
 }
 
-const redisUrl = config.get('eth_vm_server.data_stores.redis.url')
-const host = config.get('eth_vm_server.geth.host')
-const port = config.get('eth_vm_server.geth.port')
-
 let cacheDB = new CacheDb(redisUrl, {
   port,
   host
 })
 
-let events: Array<_event> = [{
+const events: Array<_event> = [{
   name: "join",
   onEvent: (_socket, _msg): void => {
     if (_msg) {
@@ -55,9 +54,9 @@ let events: Array<_event> = [{
 }, {
   name: "pastBlocks",
   onEvent: (_socket, _msg, _glob, _cb): void => {
-    ds.getBlocks((_blocks: Array<blockLayout>) => {
-      let blocks: Array<blockLayout> = []
-      _blocks.forEach((_block: blockLayout, idx: number): void => {
+    ds.getBlocks((_blocks: Array<BlockModel>) => {
+      let blocks: Array<BlockModel> = []
+      _blocks.forEach((_block: BlockModel, idx: number): void => {
         blocks.unshift(_block)
       })
       _cb(null, blocks)
@@ -66,8 +65,8 @@ let events: Array<_event> = [{
 }, {
   name: "pastTxs",
   onEvent: (_socket, _msg, _glob, _cb) => {
-    ds.getTransactions((_txs: Array<txLayout>) => {
-      let txs: Array<txLayout> = []
+    ds.getTransactions((_txs: Array<TxModel>) => {
+      let txs: Array<TxModel> = []
       _txs.forEach((_tx) => {
         txs.unshift(_tx)
       })
@@ -181,7 +180,7 @@ let events: Array<_event> = [{
   }
 }]
 
-let onConnection = (_socket: SocketIO.Socket, _rdb: RethinkDB, _vmR: VmRunner, _vmE: any) => {
+let onConnection = (_socket: SocketIO.Socket, _rdb: RethinkDBDataStore, _vmR: VmRunner, _vmE: any) => {
   events.forEach((event: _event, idx: number) => {
     _socket.on(event.name, (msg: any, cb: CallbackFunction) => {
       event.onEvent(_socket, msg, {

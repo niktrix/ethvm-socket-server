@@ -90,21 +90,21 @@ const config = convict({
           format: 'port',
           env: 'ETHVM_RETHINK_DB_PORT'
         },
+        user: {
+          default: 'admin',
+          format: String,
+          env: 'ETHVM_RETHINK_DB_USER'
+        },
+        password: {
+          default: '',
+          format: String,
+          env: 'ETHVM_RETHINK_DB_PASSWORD',
+          sensitive: true
+        },
         db_name: {
           default: 'eth_mainnet',
           format: String,
           env: 'ETHVM_RETHINK_DB_NAME'
-        },
-        url: {
-          default: '',
-          format: String,
-          env: 'ETHVM_RETHINK_DB_URL'
-        },
-        cert: {
-          default: '',
-          format: String,
-          env: 'ETHVM_RETHINK_DB_CERT',
-          sensitive: true
         },
         cert_raw: {
           default: '',
