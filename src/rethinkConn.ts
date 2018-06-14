@@ -5,7 +5,7 @@ import { URL } from 'url'
 import { argv } from 'yargs'
 import _ from 'lodash'
 import ds from '@/datastores'
-import { txLayout, blockLayout,chartLayout } from '@/typeLayouts'
+import { txLayout, blockLayout, chartLayout } from '@/typeLayouts'
 import { SmallBlock, SmallTx, BlockStats, common } from '@/libs'
 import VmRunner from '@/vm/vmRunner'
 class RethinkDB {
@@ -195,22 +195,36 @@ class RethinkDB {
         })
     }
 
+
+
     getChartsData(cb: (err: Error, result: any) => void): void {
         let _this = this
-        let sendResults = (_cursor: any) => {
-            _cursor.toArray((err: Error, results: Array<chartLayout>) => {
-                if (err) cb(err, null)
-                else cb(null, results)
-            });
-        }
-        r.table('blockscache').between(r.epochTime(1465556900),
-            r.epochTime(1465656900), { index: 'timestamp' }
-        ).run(this.dbConn, function (err: Error, count: any) {
-            if (err) cb(err, null);
-            else sendResults(count)
 
-        });
+        r.table('blockscache')
+            .between(r.time(2016, 5, 2, 'Z'), r.time(2016, 5, 11, 'Z'), {
+                index: 'timestamp',
+                rightBound: 'closed'
+            })
+            .group(r.row('timestamp').date())
+            .map(r.row('accounts').count())
+            .reduce((l: any, r: any) => l.add(r))
+            .default(0)
+            .run(this.dbConn, function (err: Error, cursor: any) {
+                if (err) {
+                    cb(err, null)
+                    return
+                }
+                cursor.toArray((err: Error, results: Array<chartLayout>) => {
+                    if (err) {
+                        cb(err, null)
+                        return
+                    }
 
+                    cb(null, results)
+
+                });
+
+            })
     }
 
 
