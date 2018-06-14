@@ -52,6 +52,7 @@
         "@types/lokijs": "^1.5.0",
         "@types/lowdb": "^0.15.0",
         "@types/node": "^8.5.1",
+        "@types/node-fetch": "^2.1.1",
         "@types/rethinkdb": "github:types/npm-rethinkdb",
         "@types/socket.io": "^1.4.31",
         "@types/yargs": "^10.0.0",
