@@ -108,9 +108,15 @@ let events: Array<_event> = [{
 },
 
 {
-    name: "getChartsData",
+    name: "getChartAccountsGrowth",
     onEvent: (_socket, _msg, _glob, _cb): void => {
-        _glob.rdb.getChartsData(_cb)
+        _glob.rdb.getChartAccountsGrowth(_msg,_cb)
+    }
+},
+{
+    name: "getChartBlockSize",
+    onEvent: (_socket, _msg, _glob, _cb): void => {
+        _glob.rdb.getChartBlockSize(_msg,_cb)
     }
 },
 {

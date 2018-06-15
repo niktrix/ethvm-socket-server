@@ -196,14 +196,36 @@ class RethinkDB {
 
 
 
-    getChartsData(cb: (err: Error, result: any) => void): void {
-        let _this = this
+    getChartAccountsGrowth(duration: string, cb: (err: Error, result: any) => void): void {
+        var today = new Date();
+        //For testing as db dont have latest data
+        today.setDate(9)
+        today.setMonth(5)
+        today.setFullYear(2016)
+        var startdate:number;
+        var end: number;
+        startdate = today.getTime();
+        switch (duration) {
+            case "LAST_7_DAYS": {
+                 end = today.setDate(today.getDate() - 6);
+            }
+                break;
+            case "LAST_DAY": {
+                end = today.setDate(today.getDate() - 1);
+            }
+                break;
+            case "FROM_BEGIN": {
 
+            }
+
+        }
+        let _this = this
         r.table('blockscache')
-            .between(r.time(2016, 5, 2, 'Z'), r.time(2016, 5, 11, 'Z'), {
+            .between(r.epochTime(end/1000) ,r.epochTime(startdate/1000) , {
                 index: 'timestamp',
                 rightBound: 'closed'
             })
+            // .group(r.row('timestamp').hours())  // use when selector is LAST_DAY
             .group(r.row('timestamp').date())
             .map(r.row('accounts').count())
             .reduce((l: any, r: any) => l.add(r))
@@ -214,11 +236,53 @@ class RethinkDB {
                     return
                 }
                 cursor.toArray((err: Error, results: Array<chartLayout>) => {
-                    if (err) {
-                        cb(err, null)
-                        return
-                    }
+                    cb(null, results)
 
+                });
+
+            })
+    }
+
+    getChartBlockSize(duration: string, cb: (err: Error, result: any) => void): void {
+        console.log("getChartBlockSize")
+        var today = new Date();
+        //For testing as db dont have latest data
+        today.setDate(9)
+        today.setMonth(5)
+        today.setFullYear(2016)
+        var startdate:number;
+        var end: number;
+        startdate = today.getTime();
+        switch (duration) {
+            case "LAST_7_DAYS": {
+                 end = today.setDate(today.getDate() - 6);
+            }
+                break;
+            case "LAST_DAY": {
+                end = today.setDate(today.getDate() - 1);
+            }
+                break;
+            case "FROM_BEGIN": {
+
+            }
+
+        }
+        let _this = this
+        r.table('blockscache')
+            .between(r.epochTime(end/1000) ,r.epochTime(startdate/1000) , {
+                index: 'timestamp',
+                rightBound: 'closed'
+            })
+            // .group(r.row('timestamp').hours())  // use when selector is LAST_DAY
+            .group(r.row('timestamp').date())
+            .map(r.row('size'))
+            .default(0)
+            .run(this.dbConn, function (err: Error, cursor: any) {
+                if (err) {
+                    cb(err, null)
+                    return
+                }
+                cursor.toArray((err: Error, results: Array<chartLayout>) => {
                     cb(null, results)
 
                 });
@@ -260,5 +324,11 @@ class RethinkDB {
         ds.addTransaction(_tx)
     }
 }
+
+
+
+
+
+ 
 
 export default RethinkDB
