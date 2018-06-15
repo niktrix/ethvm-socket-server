@@ -1,0 +1,23 @@
+{
+  "extends": [
+    "tslint:latest",
+    "tslint-config-prettier"
+  ],
+  "rulesDirectory": [
+    "node_modules/vrsource-tslint-rules/rules",
+    "node_modules/tslint-eslint-rules/dist/rules"
+  ],
+  "rules": {
+    "no-console": [true, "log"],
+    "no-duplicate-imports": true,
+    "no-duplicate-variable": true,
+    "no-var-keyword": true,
+    "prefer-const": true,
+    "require-internal-with-underscore": true,
+    "rollup-config": true,
+    "semicolon": [false],
+    "variable-name": [true, "ban-keywords"],
+    "no-inner-declarations": [true, "function"],
+    "no-jasmine-focus": true
+  }
+}
