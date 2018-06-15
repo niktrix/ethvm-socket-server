@@ -5,4 +5,5 @@ export * from '@/models/LogModel'
 export * from '@/models/TxLogModel'
 export * from '@/models/TraceModel'
 export * from '@/models/ChartModel'
-
+export * from '@/models/SmallTxModel'
+export * from '@/models/SmallBlockModel'
