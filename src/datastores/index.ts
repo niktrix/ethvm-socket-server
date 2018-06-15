@@ -1,6 +1,5 @@
 import Redis from '@/datastores/providers/RedisDataStore'
 import LokiJS from '@/datastores/providers/LokiDataStore'
-import RethinkDBDataStore from '@/datastores/providers/RethinkDBDataStore'
 import config from '@/config'
 
 const DS_TYPE = config.get('eth_vm_server.data_stores.provider')
