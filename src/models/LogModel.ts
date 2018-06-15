@@ -1,6 +1,6 @@
 export interface LogModel {
   address: Buffer
-  topics: Array<Buffer>
+  topics: Buffer[]
   data: Buffer
   blockNumber: Buffer
   txHash: Buffer

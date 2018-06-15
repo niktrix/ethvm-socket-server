@@ -13,6 +13,6 @@ export interface TraceModel {
   trace: {
     isError: boolean
     msg: string
-    transfers: Array<TransferModel>
+    transfers: TransferModel[]
   }
 }

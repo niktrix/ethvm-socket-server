@@ -1,12 +1,12 @@
-import * as Redis from 'ioredis'
 import config from '@/config'
-import { TxModel, BlockModel } from '@/models'
+import { BlockModel, TxModel } from '@/models'
+import * as Redis from 'ioredis'
 
-type CallbackFunction = (data: Array<any>) => void
+type CallbackFunction = (data: any[]) => void
 
 interface ItableCache {
-  transactions: Array<TxModel>
-  blocks: Array<BlockModel>
+  transactions: TxModel[]
+  blocks: BlockModel[]
 }
 
 const redis = new Redis()
@@ -22,8 +22,8 @@ const tables = {
   blocks: 'blocks'
 }
 
-let bufferify = (obj: any): any => {
-  for (let key in obj) {
+const bufferify = (obj: any): any => {
+  for (const key in obj) {
     if (obj.hasOwnProperty(key) && obj[key]) {
       if (obj[key].type && obj[key].type === 'Buffer') {
         obj[key] = new Buffer(obj[key])
@@ -40,14 +40,14 @@ let bufferify = (obj: any): any => {
   return obj
 }
 
-let getArray = (tbName: any, cb: CallbackFunction) => {
-  let tbKey: keyof ItableCache = tbName
+const getArray = (tbName: any, cb: CallbackFunction) => {
+  const tbKey: keyof ItableCache = tbName
   if (tableCache[tbKey].length) {
     cb(tableCache[tbKey])
   } else {
-    let vals = redis.get(tbName, (err, result) => {
+    const vals = redis.get(tbName, (err, result) => {
       if (!err && result) {
-        let bufferedArr = JSON.parse(result).map((_item: any) => {
+        const bufferedArr = JSON.parse(result).map((_item: any) => {
           return bufferify(_item)
         })
         tableCache[tbKey] = bufferedArr
@@ -59,7 +59,7 @@ let getArray = (tbName: any, cb: CallbackFunction) => {
   }
 }
 
-let addTransaction = (tx: TxModel | Array<TxModel>) => {
+const addTransaction = (tx: TxModel | TxModel[]) => {
   getArray(tables.transactions, pTxs => {
     if (Array.isArray(tx)) {
       tx.forEach(tTx => {
@@ -68,32 +68,36 @@ let addTransaction = (tx: TxModel | Array<TxModel>) => {
     } else {
       pTxs.unshift(tx)
     }
-    if (pTxs.length > socketRows) pTxs = pTxs.slice(0, socketRows)
-    let tbKey: keyof ItableCache = 'transactions'
+    if (pTxs.length > socketRows) {
+      pTxs = pTxs.slice(0, socketRows)
+    }
+    const tbKey: keyof ItableCache = 'transactions'
     tableCache[tbKey] = pTxs
     redis.set(tables.transactions, JSON.stringify(pTxs))
   })
 }
 
-let addBlock = (block: BlockModel) => {
+const addBlock = (block: BlockModel) => {
   getArray(tables.blocks, pBlocks => {
     pBlocks.unshift(block)
-    if (pBlocks.length > socketRows) pBlocks = pBlocks.slice(0, socketRows)
-    let tbKey: keyof ItableCache = 'blocks'
+    if (pBlocks.length > socketRows) {
+      pBlocks = pBlocks.slice(0, socketRows)
+    }
+    const tbKey: keyof ItableCache = 'blocks'
     tableCache[tbKey] = pBlocks
     redis.set(tables.blocks, JSON.stringify(pBlocks))
   })
 }
 
-let getBlocks = (cb: CallbackFunction) => {
+const getBlocks = (cb: CallbackFunction) => {
   getArray(tables.blocks, cb)
 }
 
-let getTransactions = (cb: CallbackFunction) => {
+const getTransactions = (cb: CallbackFunction) => {
   getArray(tables.transactions, cb)
 }
 
-let initialize = () => {
+const initialize = () => {
   redis.set(tables.transactions, JSON.stringify([]))
   redis.set(tables.blocks, JSON.stringify([]))
 }

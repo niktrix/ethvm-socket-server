@@ -1,13 +1,13 @@
 import ds from '@/datastores'
-import RethinkDBDataStore from '@/datastores/providers/RethinkDBDataStore'
 import { CacheDB } from '@/datastores/cache'
+import RethinkDBDataStore from '@/datastores/providers/RethinkDBDataStore'
 import { l } from '@/helpers'
+import { Callback } from '@/interfaces'
 import { common } from '@/libs'
 import { BlockModel, TxModel } from '@/models'
 import { VmRunner } from '@/vm/'
 import fetch from 'node-fetch'
 import * as SocketIO from 'socket.io'
-import { Callback } from '@/interfaces'
 
 interface Instances {
   rdb: RethinkDBDataStore
@@ -21,7 +21,7 @@ interface SocketIOEvent {
   onEvent: (socket: SocketIO.Socket, msg: string, glob?: Instances, cb?: Callback) => void
 }
 
-const events: Array<SocketIOEvent> = [
+const events: SocketIOEvent[] = [
   {
     name: 'join',
     onEvent: (socket, msg): void => {
@@ -49,8 +49,8 @@ const events: Array<SocketIOEvent> = [
   {
     name: 'pastBlocks',
     onEvent: (socket, msg, glob, cb): void => {
-      ds.getBlocks((_blocks: Array<BlockModel>) => {
-        let blocks: Array<BlockModel> = []
+      ds.getBlocks((_blocks: BlockModel[]) => {
+        const blocks: BlockModel[] = []
         blocks.forEach(
           (block: BlockModel, idx: number): void => {
             blocks.unshift(block)
@@ -63,8 +63,8 @@ const events: Array<SocketIOEvent> = [
   {
     name: 'pastTxs',
     onEvent: (socket, msg, glob, cb): void => {
-      ds.getTransactions((_txs: Array<TxModel>) => {
-        let txs: Array<TxModel> = []
+      ds.getTransactions((_txs: TxModel[]) => {
+        const txs: TxModel[] = []
         _txs.forEach(_tx => {
           txs.unshift(_tx)
         })
@@ -93,7 +93,7 @@ const events: Array<SocketIOEvent> = [
   {
     name: 'getBalance',
     onEvent: (socket, msg, glob, cb): void => {
-      //_glob.vmR.getAccount(_msg, _cb)
+      // _glob.vmR.getAccount(_msg, _cb)
       glob.vmE.getBalance(msg, cb)
     }
   },
@@ -140,7 +140,7 @@ const events: Array<SocketIOEvent> = [
   {
     name: 'getCurrentStateRoot',
     onEvent: (socket, msg: any, glob, cb): void => {
-      if (msg != '') {
+      if (msg !== '') {
         cb(common.newError(common.errors.invalidInput), null)
         return
       }
@@ -211,7 +211,7 @@ const events: Array<SocketIOEvent> = [
   }
 ]
 
-let onConnection = (socket: SocketIO.Socket, rdb: RethinkDBDataStore, cacheDB: CacheDB, vmR: VmRunner, vmE: any) => {
+const onConnection = (socket: SocketIO.Socket, rdb: RethinkDBDataStore, cacheDB: CacheDB, vmR: VmRunner, vmE: any) => {
   events.forEach((event: SocketIOEvent, idx: number) => {
     socket.on(event.name, (msg: any, cb: Callback) => {
       event.onEvent(

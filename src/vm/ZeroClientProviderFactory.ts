@@ -1,14 +1,14 @@
 import * as Web3ProviderEngine from 'web3-provider-engine'
-import * as DefaultFixture from 'web3-provider-engine/subproviders/default-fixture'
-import * as NonceTrackerSubprovider from 'web3-provider-engine/subproviders/nonce-tracker'
 import * as BlockCacheProvider from 'web3-provider-engine/subproviders/cache'
-import * as FilterSubprovider from 'web3-provider-engine/subproviders/filters'
-import * as SubscriptionSubprovider from 'web3-provider-engine/subproviders/subscriptions'
-import * as InflightCacheSubprovider from 'web3-provider-engine/subproviders/inflight-cache'
-import * as HookedWalletSubprovider from 'web3-provider-engine/subproviders/hooked-wallet'
-import * as SanitizerSubprovider from 'web3-provider-engine/subproviders/sanitizer'
-import * as InfuraSubprovider from 'web3-provider-engine/subproviders/infura'
+import * as DefaultFixture from 'web3-provider-engine/subproviders/default-fixture'
 import * as RpcSource from 'web3-provider-engine/subproviders/fetch'
+import * as FilterSubprovider from 'web3-provider-engine/subproviders/filters'
+import * as HookedWalletSubprovider from 'web3-provider-engine/subproviders/hooked-wallet'
+import * as InflightCacheSubprovider from 'web3-provider-engine/subproviders/inflight-cache'
+import * as InfuraSubprovider from 'web3-provider-engine/subproviders/infura'
+import * as NonceTrackerSubprovider from 'web3-provider-engine/subproviders/nonce-tracker'
+import * as SanitizerSubprovider from 'web3-provider-engine/subproviders/sanitizer'
+import * as SubscriptionSubprovider from 'web3-provider-engine/subproviders/subscriptions'
 import * as WebSocketSubprovider from 'web3-provider-engine/subproviders/websocket'
 
 export interface ZeroClientOptions {
@@ -16,7 +16,7 @@ export interface ZeroClientOptions {
 }
 
 export class ZeroClientProviderFactory {
-  static create(opts: ZeroClientOptions): Web3ProviderEngine {
+  public static create(opts: ZeroClientOptions): Web3ProviderEngine {
     const connectionType = getConnectionType(opts as any)
     const engine = new Web3ProviderEngine(opts.engineParams)
 

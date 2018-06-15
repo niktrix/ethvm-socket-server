@@ -1,5 +1,5 @@
-import { ZeroClientProviderFactory } from '@/vm/ZeroClientProviderFactory'
 import { l } from '@/helpers'
+import { ZeroClientProviderFactory } from '@/vm/ZeroClientProviderFactory'
 
 const createPayload = require('web3-provider-engine/util/create-payload.js')
 const utils = require('../libs/utils.js')
@@ -10,7 +10,7 @@ const VmEngine = ZeroClientProviderFactory.create({
 
 VmEngine.getBalance = (args: any, a: any) => {
   l.debug('getbalance====== ==================')
-  var payload = createPayload({
+  const payload = createPayload({
     jsonrpc: '2.0',
     method: 'eth_getBalance',
     params: [args, 'latest'],

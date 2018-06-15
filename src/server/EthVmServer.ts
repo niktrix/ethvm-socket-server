@@ -1,14 +1,14 @@
-import addEvents from '@/server/addEvents'
+import config from '@/config'
 import ds from '@/datastores'
-import { l } from '@/helpers'
-import RethinkDBDataStore from '@/datastores/providers/RethinkDBDataStore'
-import { BlockModel } from '@/models'
 import { CacheDB } from '@/datastores/cache'
+import RethinkDBDataStore from '@/datastores/providers/RethinkDBDataStore'
+import { l } from '@/helpers'
+import { BlockModel } from '@/models'
+import addEvents from '@/server/addEvents'
 import { VmEngine, VmRunner } from '@/vm'
 import * as http from 'http'
 import * as SocketIO from 'socket.io'
 import { argv } from 'yargs'
-import config from '@/config'
 
 export class EthVMServer {
   private readonly server: http.Server
@@ -69,7 +69,7 @@ export class EthVMServer {
     return new RethinkDBDataStore(this.io, this.vmRunner)
   }
 
-  async start() {
+  public async start() {
     l.info('Starting server')
 
     l.info('Initializing Rethink datastore')
@@ -80,12 +80,12 @@ export class EthVMServer {
       l.info('Initializing DataStore')
       ds.initialize()
     }
-    ds.getBlocks((blocks: Array<BlockModel>) => {
+    ds.getBlocks((blocks: BlockModel[]) => {
       const stateRoot =
         blocks && blocks[0] && blocks[0].stateRoot
           ? new Buffer(blocks[0].stateRoot)
           : new Buffer('d7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544', 'hex')
-      this.vmRunner.setStateRoot(stateRoot) //genesis state by default
+      this.vmRunner.setStateRoot(stateRoot) // genesis state by default
     })
 
     l.info('Starting VmEngine')

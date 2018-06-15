@@ -3,11 +3,11 @@ import { TxModel } from '@/models'
 export class SmallTxModel {
   constructor(private readonly tx: TxModel) {}
 
-  hash(): string {
+  public hash(): string {
     return '0x' + new Buffer(this.tx.hash).toString('hex')
   }
 
-  smallify(): TxModel {
+  public smallify(): TxModel {
     return {
       blockNumber: this.tx.blockNumber,
       blockHash: this.tx.blockHash,

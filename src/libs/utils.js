@@ -13,14 +13,14 @@ function trim(str) {
 }
 
 function getAscii(hex) {
-  hex = hex.substring(0, 2) == '0x' ? hex : '0x' + hex;
+  hex = hex.substring(0, 2) === '0x' ? hex : '0x' + hex;
   return trim(web3.utils.toAscii(hex))
 }
 
 module.exports = {
   decode: (hex) => {
     const tokens = []
-    hex = hex.substring(0, 2) == '0x' ? hex.substring(2) : hex;
+    hex = hex.substring(0, 2) === '0x' ? hex.substring(2) : hex;
     hex = hex.substring(0, (hex.lastIndexOf("1") - 1)) //starting point
 
     const offset = hex.length

@@ -1,17 +1,17 @@
 import config from '@/config'
 import ds from '@/datastores'
+import { l } from '@/helpers'
 import { BlockStats } from '@/libs'
-import { BlockModel, ChartModel, TxModel, SmallTxModel, SmallBlockModel } from '@/models'
+import { BlockModel, ChartModel, SmallBlockModel, SmallTxModel, TxModel } from '@/models'
 import { VmRunner } from '@/vm/vmRunner'
 import * as r from 'rethinkdb'
-import { l } from '@/helpers'
 
 export default class RethinkDBDataStore {
   private conn: r.Connection
 
   constructor(private readonly socketIO: SocketIO.Server, private readonly vmRunner: VmRunner) {}
 
-  async start() {
+  public async start() {
     try {
       const c = {
         host: config.get('eth_vm_server.rethink_db.host'),
@@ -31,7 +31,7 @@ export default class RethinkDBDataStore {
     }
   }
 
-  setAllEvents() {
+  public setAllEvents() {
     r.table('blocks')
       .changes()
       .map(change => change('new_val'))
@@ -59,7 +59,7 @@ export default class RethinkDBDataStore {
           this.vmRunner.setStateRoot(block.stateRoot)
 
           const bstats = new BlockStats(block, block.transactions)
-          block.blockStats = Object.assign({}, bstats.getBlockStats(), block.blockStats)
+          block.blockStats = { ...bstats.getBlockStats(), ...block.blockStats }
 
           const sBlock = new SmallBlockModel(block)
           const blockHash = sBlock.hash()
@@ -106,9 +106,9 @@ export default class RethinkDBDataStore {
       })
   }
 
-  getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void) {
+  public getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void) {
     const sendResults = cursor => {
-      cursor.toArray((err: Error, results: Array<TxModel>) => {
+      cursor.toArray((err: Error, results: TxModel[]) => {
         if (err) {
           cb(err, null)
           return
@@ -155,9 +155,9 @@ export default class RethinkDBDataStore {
       })
   }
 
-  getTransactionPages(hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void) {
+  public getTransactionPages(hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void) {
     const sendResults = cursor => {
-      cursor.toArray((err: Error, results: Array<TxModel>) => {
+      cursor.toArray((err: Error, results: TxModel[]) => {
         if (err) {
           cb(err, null)
           return
@@ -199,7 +199,7 @@ export default class RethinkDBDataStore {
       })
   }
 
-  getBlockTransactions(hash: string, cb: (err: Error, result: any) => void) {
+  public getBlockTransactions(hash: string, cb: (err: Error, result: any) => void) {
     r.table('blocks')
       .get(r.args([new Buffer(hash)]))
       .do(block =>
@@ -218,7 +218,7 @@ export default class RethinkDBDataStore {
       })
   }
 
-  getTotalTxs(hash: string, cb: (err: Error, result: any) => void) {
+  public getTotalTxs(hash: string, cb: (err: Error, result: any) => void) {
     const bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex')
     r.table('transactions')
       .getAll(r.args([bhash]), { index: 'cofrom' })
@@ -233,9 +233,9 @@ export default class RethinkDBDataStore {
       })
   }
 
-  getTxsOfAddress(hash: string, cb: (err: Error, result: any) => void) {
+  public getTxsOfAddress(hash: string, cb: (err: Error, result: any) => void) {
     const sendResults = (cursor: any) => {
-      cursor.toArray((err: Error, results: Array<TxModel>) => {
+      cursor.toArray((err: Error, results: TxModel[]) => {
         if (err) {
           cb(err, null)
           return
@@ -265,7 +265,7 @@ export default class RethinkDBDataStore {
       })
   }
 
-  getChartsData(cb: (err: Error, result: any) => void) {
+  public getChartsData(cb: (err: Error, result: any) => void) {
     r.table('blockscache')
       .between(r.time(2016, 5, 2, 'Z'), r.time(2016, 5, 11, 'Z'), {
         index: 'timestamp',
@@ -281,7 +281,7 @@ export default class RethinkDBDataStore {
           return
         }
 
-        cursor.toArray((err: Error, results: Array<ChartModel>) => {
+        cursor.toArray((err: Error, results: ChartModel[]) => {
           if (err) {
             cb(err, null)
             return
@@ -292,7 +292,7 @@ export default class RethinkDBDataStore {
       })
   }
 
-  getBlock(hash: string, cb: (err: Error, result: any) => void) {
+  public getBlock(hash: string, cb: (err: Error, result: any) => void) {
     r.table('blocks')
       .get(r.args([new Buffer(hash)]))
       .run(this.conn, (err: Error, result: BlockModel) => {
@@ -305,7 +305,7 @@ export default class RethinkDBDataStore {
       })
   }
 
-  getTx(hash: string, cb: (err: Error, result: any) => void) {
+  public getTx(hash: string, cb: (err: Error, result: any) => void) {
     r.table('transactions')
       .get(r.args([new Buffer(hash)]))
       .merge(tx => {
@@ -336,7 +336,7 @@ export default class RethinkDBDataStore {
     ds.addBlock(block)
   }
 
-  private onNewTx(tx: TxModel | Array<TxModel>) {
+  private onNewTx(tx: TxModel | TxModel[]) {
     if (Array.isArray(tx) && !tx.length) {
       return
     }

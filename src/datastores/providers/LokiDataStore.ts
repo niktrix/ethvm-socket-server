@@ -1,8 +1,8 @@
-import * as Loki from 'lokijs'
 import config from '@/config'
-import { TxModel, BlockModel } from '@/models'
+import { BlockModel, TxModel } from '@/models'
+import * as Loki from 'lokijs'
 
-type CallbackFunction = (data: Array<any>) => void
+type CallbackFunction = (data: any[]) => void
 
 const lokiDB = new Loki(config.get('eth_vm_server.data_stores.loki.db_name'), {
   autosave: true,
@@ -22,21 +22,24 @@ const setCollections = () => {
 }
 
 const hexify = (obj: any) => {
-  const o = Object.assign({}, obj)
-  for (var key in o) {
+  const o = { ...obj }
+  for (const key in o) {
     if (o.hasOwnProperty(key)) {
-      if (Buffer.isBuffer(o[key])) o[key] = '0x' + o[key].toString('hex')
+      if (Buffer.isBuffer(o[key])) {
+        o[key] = '0x' + o[key].toString('hex')
+      }
     }
   }
   return o
 }
 
 const bufferify = (obj: any) => {
-  const _obj = Object.assign({}, obj)
-  for (var key in _obj) {
+  const _obj = { ...obj }
+  for (const key in _obj) {
     if (_obj.hasOwnProperty(key)) {
-      if ((typeof _obj[key] === 'string' || _obj[key] instanceof String) && _obj[key].substring(0, 2) == '0x')
+      if ((typeof _obj[key] === 'string' || _obj[key] instanceof String) && _obj[key].substring(0, 2) === '0x') {
         _obj[key] = new Buffer(_obj[key].substring(2).toUpperCase(), 'hex')
+      }
     }
   }
   return _obj
@@ -52,7 +55,7 @@ const processTx = (tx: TxModel) => {
   lokiDB.getCollection('transactions').insert(hexed)
 }
 
-let addTransaction = (tx: TxModel | Array<TxModel>) => {
+const addTransaction = (tx: TxModel | TxModel[]) => {
   if (Array.isArray(tx)) {
     tx.forEach(tTx => {
       processTx(tTx)
@@ -85,7 +88,7 @@ const getBlocks = (cb: CallbackFunction) => {
   )
 }
 
-let getTransactions = (cb: CallbackFunction) => {
+const getTransactions = (cb: CallbackFunction) => {
   cb(
     lokiDB
       .getCollection('transactions')
@@ -98,7 +101,7 @@ let getTransactions = (cb: CallbackFunction) => {
   )
 }
 
-let initialize = (): void => {
+const initialize = (): void => {
   setCollections()
   lokiDB.getCollection('transactions').clear()
   lokiDB.getCollection('blocks').clear()

@@ -72,7 +72,7 @@ const config = convict({
             env: 'ETHVM_LOKI_TTL_INTERVAL'
           },
           age: {
-            default: 5 * 60 * 1000, //5 mins
+            default: 5 * 60 * 1000, // 5 mins
             format: 'duration',
             env: 'ETHVM_LOKI_TTL_AGE'
           }

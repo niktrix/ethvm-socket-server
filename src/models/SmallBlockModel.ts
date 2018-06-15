@@ -1,15 +1,15 @@
-import { BlockModel } from '@/models'
 import { common } from '@/libs'
+import { BlockModel } from '@/models'
 import bn from 'bignumber.js'
 
 export class SmallBlockModel {
   constructor(private readonly block: BlockModel) {}
 
-  hash(): string {
+  public hash(): string {
     return '0x' + new Buffer(this.block.hash).toString('hex')
   }
 
-  smallify(): BlockModel {
+  public smallify(): BlockModel {
     return {
       number: this.block.number,
       intNumber: this.block.intNumber,

@@ -1,6 +1,6 @@
+import { Callback } from '@/interfaces'
 import * as Redis from 'ioredis'
 import * as rpc from 'json-rpc2'
-import { Callback } from '@/interfaces'
 
 interface IencOptions {
   keyEncoding: string
@@ -22,7 +22,7 @@ export class CacheDB {
     this.rpc = rpc.Client.$create(opts.rpcPort, opts.rpcHost)
   }
 
-  get(key: Buffer, options: IencOptions, cb: Callback) {
+  public get(key: Buffer, options: IencOptions, cb: Callback) {
     this.r.get(key, (err: Error, result: string) => {
       if (!err && result) {
         cb(null, new Buffer(result, 'hex'))
@@ -40,7 +40,7 @@ export class CacheDB {
     })
   }
 
-  put(key: Buffer, val: Buffer, options: IencOptions, cb: Callback) {
+  public put(key: Buffer, val: Buffer, options: IencOptions, cb: Callback) {
     this.r.set(key, val, (err: Error, result: string) => {
       if (!err && result) {
         cb(null, new Buffer(result, 'hex'))
@@ -50,7 +50,7 @@ export class CacheDB {
     })
   }
 
-  getString(key: Buffer, options: IencOptions, cb: Callback) {
+  public getString(key: Buffer, options: IencOptions, cb: Callback) {
     this.r.get(key, (err: Error, result: string) => {
       if (!err && result) {
         cb(null, result)

@@ -1,4 +1,4 @@
-import { TxModel, BlockModel, BlockStatsModel } from '@/models'
+import { BlockModel, BlockStatsModel, TxModel } from '@/models'
 
 export interface BlockModel {
   number: Buffer
@@ -21,11 +21,11 @@ export interface BlockModel {
   timestamp: Buffer
   transactionsRoot?: Buffer
   receiptsRoot?: Buffer
-  transactions?: Array<TxModel>
-  transactionHashes?: Array<Buffer>
+  transactions?: TxModel[]
+  transactionHashes?: Buffer[]
   transactionCount?: number
-  uncleHashes?: Array<Buffer>
-  uncles?: Array<BlockModel>
+  uncleHashes?: Buffer[]
+  uncles?: BlockModel[]
   isUncle: boolean
   txFees?: Buffer
   blockReward?: Buffer
