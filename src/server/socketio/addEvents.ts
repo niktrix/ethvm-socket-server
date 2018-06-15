@@ -1,11 +1,10 @@
-import ds from '@/datastores'
-import { CacheDB } from '@/datastores/cache'
-import RethinkDBDataStore from '@/datastores/providers/RethinkDBDataStore'
-import { l } from '@/helpers'
-import { Callback } from '@/interfaces'
-import { common } from '@/libs'
-import { BlockModel, TxModel } from '@/models'
-import { VmRunner } from '@/vm/'
+import { CacheDB, ds } from '@app/datastores'
+import RethinkDBDataStore from '@app/datastores/providers/RethinkDBDataStore'
+import { l } from '@app/helpers'
+import { Callback } from '@app/interfaces'
+import { common } from '@app/libs'
+import { BlockModel, TxModel } from '@app/models'
+import { VmRunner } from '@app/vm/'
 import fetch from 'node-fetch'
 import * as SocketIO from 'socket.io'
 
@@ -162,7 +161,7 @@ const events: SocketIOEvent[] = [
             cb(err, result)
           } else {
             l.debug('EthtoUSD getting from api')
-            getEthToUSD((err, data) => {
+            getEthToUSD((er, data) => {
               l.debug('data', data[0].price_usd)
               glob.cacheDB.put(
                 new Buffer('Iethtousd'),
@@ -171,11 +170,11 @@ const events: SocketIOEvent[] = [
                   keyEncoding: 'binary',
                   valueEncoding: 'binary'
                 },
-                (err: Error, result: any) => {
-                  cb(err, result)
+                (e: Error, res: any) => {
+                  cb(e, res)
                 }
               )
-              cb(err, result)
+              cb(er, result)
             })
           }
         }

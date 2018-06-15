@@ -1,4 +1,4 @@
-import { BlockModel } from '@/models'
+import { BlockModel } from '@app/models'
 
 // TODO: Finish interface implementation
 export interface DataStore {

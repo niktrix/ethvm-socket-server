@@ -1,1 +1,1 @@
-export * from '@/interfaces/callbacks'
+export * from '@app/interfaces/callbacks'

@@ -1,6 +1,8 @@
-import config from '@/config'
-import LokiJS from '@/datastores/providers/LokiDataStore'
-import Redis from '@/datastores/providers/RedisDataStore'
+import config from '@app/config'
+import LokiJS from '@app/datastores/providers/LokiDataStore'
+import Redis from '@app/datastores/providers/RedisDataStore'
+
+export * from '@app/datastores/cache/CacheDB'
 
 const DS_TYPE = config.get('eth_vm_server.data_stores.provider')
 
@@ -9,7 +11,7 @@ const VALID_DS = {
   loki: LokiJS as any
 }
 
-export default {
+export const ds = {
   initialize: VALID_DS[DS_TYPE].initialize,
   addBlock: VALID_DS[DS_TYPE].addBlock,
   addTransaction: VALID_DS[DS_TYPE].addTransaction,

@@ -7,6 +7,31 @@ const config = convict({
     env: 'NODE_ENV'
   },
 
+  general: {
+    app_id: {
+      default: 'ethvm-socket',
+      format: String,
+      env: 'ETHVM_APP_ID'
+    },
+    logs: {
+      level: {
+        default: 'debug',
+        format: String,
+        env: 'ETHVM_LOG_LEVEL'
+      },
+      enabled: {
+        default: 'true',
+        format: String,
+        env: 'ETHVM_LOGS_ENABLED'
+      }
+    },
+    block_time: {
+      default: '14 seconds',
+      format: 'duration',
+      env: 'ETHVM_BLOCK_TIME'
+    }
+  },
+
   eth_vm_server: {
     socket_io: {
       host: {
@@ -28,14 +53,6 @@ const config = convict({
         default: 5000,
         format: 'duration',
         env: 'ETHVM_SOCKETIO_PING_TIMEOUT'
-      }
-    },
-
-    general: {
-      block_time: {
-        default: '14 seconds',
-        format: 'duration',
-        env: 'ETHVM_BLOCK_TIME'
       }
     },
 

@@ -1,9 +1,9 @@
-import config from '@/config'
-import ds from '@/datastores'
-import { l } from '@/helpers'
-import { BlockStats } from '@/libs'
-import { BlockModel, ChartModel, SmallBlockModel, SmallTxModel, TxModel } from '@/models'
-import { VmRunner } from '@/vm/vmRunner'
+import config from '@app/config'
+import ds from '@app/datastores'
+import { l } from '@app/helpers'
+import { BlockStats } from '@app/libs'
+import { BlockModel, ChartModel, SmallBlockModel, SmallTxModel, TxModel } from '@app/models'
+import { VmRunner } from '@app/vm/vmRunner'
 import * as r from 'rethinkdb'
 
 export default class RethinkDBDataStore {
@@ -50,8 +50,8 @@ export default class RethinkDBDataStore {
         }
       })
       .run(this.conn, (err, cursor) => {
-        cursor.each((err: Error, block: BlockModel) => {
-          if (err) {
+        cursor.each((e: Error, block: BlockModel) => {
+          if (e) {
             l.error('Error while listening events in blocks')
             return
           }
@@ -88,8 +88,8 @@ export default class RethinkDBDataStore {
           .eq(true)
       )
       .run(this.conn, (err, cursor) => {
-        cursor.each((err, row: r.ChangeSet<any, any>) => {
-          if (err) {
+        cursor.each((e, row: r.ChangeSet<any, any>) => {
+          if (e) {
             l.error('Error while listening events in transactions')
             return
           }
@@ -273,7 +273,7 @@ export default class RethinkDBDataStore {
       })
       .group(r.row('timestamp').date())
       .map(r.row('accounts').count())
-      .reduce((l, r) => l.add(r))
+      .reduce((lf, rt) => lf.add(rt))
       .default(0)
       .run(this.conn, (err: Error, cursor: any) => {
         if (err) {
@@ -281,9 +281,9 @@ export default class RethinkDBDataStore {
           return
         }
 
-        cursor.toArray((err: Error, results: ChartModel[]) => {
-          if (err) {
-            cb(err, null)
+        cursor.toArray((e: Error, results: ChartModel[]) => {
+          if (e) {
+            cb(e, null)
             return
           }
 

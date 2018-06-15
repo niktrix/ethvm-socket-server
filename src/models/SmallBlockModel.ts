@@ -1,5 +1,5 @@
-import { common } from '@/libs'
-import { BlockModel } from '@/models'
+import { common } from '@app/libs'
+import { BlockModel } from '@app/models'
 import bn from 'bignumber.js'
 
 export class SmallBlockModel {

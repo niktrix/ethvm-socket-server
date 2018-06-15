@@ -1,8 +1,7 @@
-import { l } from '@/helpers'
-import { ZeroClientProviderFactory } from '@/vm/ZeroClientProviderFactory'
-
-const createPayload = require('web3-provider-engine/util/create-payload.js')
-const utils = require('../libs/utils.js')
+import { l } from '@app/helpers'
+import { encodeCall } from '@app/libs/utils'
+import { ZeroClientProviderFactory } from '@app/vm/ZeroClientProviderFactory'
+import * as createPayload from 'web3-provider-engine/util/create-payload.js'
 
 const VmEngine = ZeroClientProviderFactory.create({
   rpcUrl: 'https://api.myetherwallet.com/eth'
@@ -38,7 +37,7 @@ VmEngine.getAllTokens = (args: any, a: any) => {
   const argss = ['address', 'bool', 'bool', 'bool', 'uint256']
   l.debug('Get Token Balance for : ', args)
   const vals = [args, 'true', 'true', 'true', 0]
-  const encoded = utils.encodeCall('getAllBalance', argss, vals)
+  const encoded = encodeCall('getAllBalance', argss, vals)
   const pl = createPayload({
     jsonrpc: '2.0',
     method: 'eth_call',

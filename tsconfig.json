@@ -14,7 +14,7 @@
     "inlineSourceMap": true,
     "allowJs": true,
     "paths": {
-      "@/*": ["*"]
+      "@app/*": ["*"]
     }
   },
   "include": [

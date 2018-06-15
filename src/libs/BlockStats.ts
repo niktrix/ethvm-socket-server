@@ -1,6 +1,6 @@
-import config from '@/config'
-import { common } from '@/libs'
-import { BlockModel, BlockStatsModel, TxModel } from '@/models'
+import config from '@app/config'
+import { common } from '@app/libs'
+import { BlockModel, BlockStatsModel, TxModel } from '@app/models'
 import bn from 'bignumber.js'
 
 const BLOCK_TIME: number = config.get('eth_vm_server.general.block_time')

@@ -1,4 +1,4 @@
-import { TxModel } from '@/models'
+import { TxModel } from '@app/models'
 
 export class SmallTxModel {
   constructor(private readonly tx: TxModel) {}

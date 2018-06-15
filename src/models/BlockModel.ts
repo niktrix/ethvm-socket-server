@@ -1,4 +1,4 @@
-import { BlockModel, BlockStatsModel, TxModel } from '@/models'
+import { BlockModel, BlockStatsModel, TxModel } from '@app/models'
 
 export interface BlockModel {
   number: Buffer

@@ -1,5 +1,5 @@
-import config from '@/config'
-import { BlockModel, TxModel } from '@/models'
+import config from '@app/config'
+import { BlockModel, TxModel } from '@app/models'
 import * as Loki from 'lokijs'
 
 type CallbackFunction = (data: any[]) => void

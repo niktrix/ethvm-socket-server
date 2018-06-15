@@ -1,4 +1,4 @@
-import { LogModel } from '@/models'
+import { LogModel } from '@app/models'
 
 export interface TxLogModel {
   hash: Buffer

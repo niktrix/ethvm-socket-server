@@ -1,4 +1,4 @@
-import { Callback } from '@/interfaces'
+import { Callback } from '@app/interfaces'
 import * as Redis from 'ioredis'
 import * as rpc from 'json-rpc2'
 
@@ -27,14 +27,14 @@ export class CacheDB {
       if (!err && result) {
         cb(null, new Buffer(result, 'hex'))
       } else {
-        this.rpc.call('eth_getKeyValue', ['0x' + key.toString('hex')], function(err: Error, result: string) {
-          if (err) {
+        this.rpc.call('eth_getKeyValue', ['0x' + key.toString('hex')], (e: Error, res: string) => {
+          if (e) {
             cb(err, null)
-          } else {
-            const resBuf: Buffer = new Buffer(result.substring(2), 'hex')
-            this.r.set(key, resBuf.toString('hex'))
-            cb(null, resBuf)
+            return
           }
+          const resBuf: Buffer = new Buffer(res.substring(2), 'hex')
+          this.r.set(key, resBuf.toString('hex'))
+          cb(null, resBuf)
         })
       }
     })

@@ -1,3 +1,3 @@
-import l from '@/helpers/logger'
+import l from '@app/helpers/logger'
 
 export { l }

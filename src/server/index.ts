@@ -1,1 +1,1 @@
-export * from '@/server/EthVmServer'
+export * from '@app/server/EthVmServer'
