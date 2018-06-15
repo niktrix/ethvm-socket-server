@@ -1,55 +1,54 @@
-const ProviderEngine = require('web3-provider-engine')
-const CacheSubprovider = require('web3-provider-engine/subproviders/cache.js')
-const FixtureSubprovider = require('web3-provider-engine/subproviders/fixture.js')
-const FilterSubprovider = require('web3-provider-engine/subproviders/filters.js')
-const VmSubprovider = require('web3-provider-engine/subproviders/vm.js')
-const HookedWalletSubprovider = require('web3-provider-engine/subproviders/hooked-wallet.js')
-const NonceSubprovider = require('web3-provider-engine/subproviders/nonce-tracker.js')
-const RpcSubprovider = require('web3-provider-engine/subproviders/rpc.js')
-const createPayload = require("web3-provider-engine/util/create-payload.js")
-const ZeroClientProvider = require("./Zeroclient.js")
-const abi = require('ethereumjs-abi')
+import { ZeroClientProviderFactory } from '@/vm/ZeroClientProviderFactory'
+import { l } from '@/helpers'
+
+const createPayload = require('web3-provider-engine/util/create-payload.js')
 const utils = require('../libs/utils.js')
 
-var tokenAbi = [{ "constant": true, "inputs": [{ "name": "", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "", "type": "uint256" }], "type": "function" }, { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "success", "type": "bool" }], "type": "function" }, { "inputs": [], "type": "constructor" }]
-var BN = require('bn.js')
-// var ethereum_address = require('ethereum-address');
-
-var VmEngine = ZeroClientProvider({
-  // supports http and websockets
-  // but defaults to infura's mainnet rest api
-  //srpcUrl: 'https://mainnet.infura.io',
-  //rpcUrl: 'http://35.227.70.36:8545',
-  // rpcUrl: 'http://35.225.202.139:9545',  // all synced
-  // rpcUrl: 'wss://mainnet.infura.io/ws',
-  // rpcUrl: 'ws://localhost:8545/ws',
-  rpcUrl: 'https://api.myetherwallet.com/eth',
+const VmEngine = ZeroClientProviderFactory.create({
+  rpcUrl: 'https://api.myetherwallet.com/eth'
 })
-// VmEngine.addProvider(new CacheSubprovider())
-// VmEngine.addProvider(new RpcSubprovider({
-//     rpcUrl: 'https://testrpc.metamask.io/',
-//   }))
 
-VmEngine.getBalance = function (args: any, a: any) {
-  console.log("getbalance====== ==================")
-  var payload = createPayload({ jsonrpc: '2.0', method: 'eth_getBalance', params: [args, "latest"], id: 1 })
-  console.log(JSON.stringify(payload))
-  VmEngine.sendAsync(payload, a);
-}
-
-VmEngine.getAccount = function (args: any, a: any) {
-  VmEngine.sendAsync(createPayload({ jsonrpc: '2.0', method: 'eth_getKeyValue', params: ['0x2a65aca4d5fc5b5c859090a6c34d164135398226'], id: 1 }), function (err: any, response: any) {
-    console.log("response", response)
+VmEngine.getBalance = (args: any, a: any) => {
+  l.debug('getbalance====== ==================')
+  var payload = createPayload({
+    jsonrpc: '2.0',
+    method: 'eth_getBalance',
+    params: [args, 'latest'],
+    id: 1
   })
+  l.debug(JSON.stringify(payload))
+  VmEngine.sendAsync(payload, a)
 }
 
-VmEngine.getAllTokens = function (args: any, a: any) {
-  var argss = ["address", "bool", "bool", "bool", "uint256"]
-  console.log("Get Token Balance for : ", args)
-  var vals = [args, "true", "true", "true", 0]
-  var encoded = utils.encodeCall("getAllBalance", argss, vals)
-  var pl = createPayload({ jsonrpc: '2.0', method: 'eth_call', params: [{ to: "0xbe1ecf8e340f13071761e0eef054d9a511e1cb56", data: encoded }, "pending"], id: 1 })
-  VmEngine.sendAsync(pl, a);
+VmEngine.getAccount = (args: any, a: any) => {
+  VmEngine.sendAsync(
+    createPayload({
+      jsonrpc: '2.0',
+      method: 'eth_getKeyValue',
+      params: ['0x2a65aca4d5fc5b5c859090a6c34d164135398226'],
+      id: 1
+    }),
+    (err: any, response: any) => {
+      l.debug('response', response)
+    }
+  )
 }
 
-export default VmEngine
+VmEngine.getAllTokens = (args: any, a: any) => {
+  const argss = ['address', 'bool', 'bool', 'bool', 'uint256']
+  l.debug('Get Token Balance for : ', args)
+  const vals = [args, 'true', 'true', 'true', 0]
+  const encoded = utils.encodeCall('getAllBalance', argss, vals)
+  const pl = createPayload({
+    jsonrpc: '2.0',
+    method: 'eth_call',
+    params: [
+      { to: '0xbe1ecf8e340f13071761e0eef054d9a511e1cb56', data: encoded },
+      'pending'
+    ],
+    id: 1
+  })
+  VmEngine.sendAsync(pl, a)
+}
+
+export { VmEngine }
