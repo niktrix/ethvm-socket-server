@@ -1,6 +1,6 @@
 import config from '@/config'
 import { common } from '@/libs'
-import { BlockModel, TxModel } from '@/models'
+import { BlockModel, TxModel, BlockStatsModel } from '@/models'
 import bn from 'bignumber.js'
 
 const BLOCK_TIME: number = config.get('eth_vm_server.general.block_time')
@@ -22,14 +22,16 @@ export class BlockStats {
     }
   }
 
-  getBlockStats(): BlockModel['blockStats'] {
-    if (!this.txs.length) return {
-      blockTime: '0x0',
-      failed: '0x0',
-      success: '0x0',
-      avgGasPrice: '0x0',
-      avgTxFees: '0x0'
+  getBlockStats(): BlockStatsModel {
+    if (!this.txs.length) {
+      return {
+        blockTime: '0x0',
+        failed: '0x0',
+        success: '0x0',
+        avgGasPrice: '0x0',
+        avgTxFees: '0x0'
     }
+  }
 
     const txStatus = {
       blockTime: new bn(0),
