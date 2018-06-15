@@ -12,6 +12,11 @@
     "lint:fix": "tslint -c tslint.json --project . --fix",
     "prettier": "prettier --write src/**/*.ts"
   },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run format"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/enKryptIO/ethvm-socket-server.git"
@@ -76,6 +81,17 @@
     "tsconfig-paths": "^3.3.2",
     "tslint": "^5.10.0",
     "tslint-config-prettier": "^1.13.0",
+    "tslint-consistent-codestyle": "^1.13.1",
     "typescript": "^2.8.4"
+  },
+  "optionalDependencies": {
+    "@app/config": "tslint-import-local-hack",
+    "@app/datastores": "tslint-import-local-hack",
+    "@app/helpers": "tslint-import-local-hack",
+    "@app/interfaces": "tslint-import-local-hack",
+    "@app/libs": "tslint-import-local-hack",
+    "@app/models": "tslint-import-local-hack",
+    "@app/server": "tslint-import-local-hack",
+    "@app/vm": "tslint-import-local-hack"
   }
 }
