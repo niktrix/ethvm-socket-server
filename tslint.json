@@ -3,17 +3,22 @@
     "tslint:latest",
     "tslint-config-prettier"
   ],
+  "rulesDirectory": ["tslint-consistent-codestyle"],
   "rules": {
     "no-console": [true, "log"],
     "no-duplicate-imports": true,
     "no-duplicate-variable": true,
     "no-var-keyword": true,
     "prefer-const": true,
-    "require-internal-with-underscore": true,
     "semicolon": [false],
     "variable-name": [true, "ban-keywords"],
-    "no-inner-declarations": [true, "function"],
     "interface-name": [true, "never-prefix"],
-    "object-literal-sort-keys": false
+    "object-literal-sort-keys": false,
+    "no-implicit-dependencies": [true, "optional"],
+    "no-unnecessary-else": ["error", {
+      "allowElseIf": true
+    }],
+    "no-submodule-imports": [true, "@app", "web3-provider-engine", "merkle-patricia-tree"],
+    "radix": false
   }
 }
