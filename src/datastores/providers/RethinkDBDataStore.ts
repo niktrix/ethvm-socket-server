@@ -1,12 +1,9 @@
 import config from '@/config'
 import ds from '@/datastores'
-import { BlockStats, SmallBlock, SmallTx } from '@/libs'
-import { BlockModel, ChartModel, TxModel } from '@/models'
-import VmRunner from '@/vm/vmRunner'
-import * as fs from 'fs'
+import { BlockStats } from '@/libs'
+import { BlockModel, ChartModel, TxModel, SmallTxModel, SmallBlockModel } from '@/models'
+import { VmRunner } from '@/vm/vmRunner'
 import * as r from 'rethinkdb'
-import { URL } from 'url'
-import { argv } from 'yargs'
 import { l } from '@/helpers'
 
 export default class RethinkDBDataStore {
@@ -50,21 +47,30 @@ export default class RethinkDBDataStore {
       })
       .run(this.conn, (err, cursor) => {
         cursor.each((err: Error, block: BlockModel) => {
-          if (!err) {
-            this.vmRunner.setStateRoot(block.stateRoot)
-            const bstats = new BlockStats(block, block.transactions)
-            block.blockStats = Object.assign({}, bstats.getBlockStats(), block.blockStats)
-            const sBlock = new SmallBlock(block)
-            const blockHash = sBlock.hash()
-            this.socketIO.to(blockHash).emit(blockHash + '_update', block)
-            this.onNewBlock(sBlock.smallify())
-            this.onNewTx(block.transactions.map((tx) => {
-              const sTx = new SmallTx(tx)
-              const txHash: string = sTx.hash()
-              this.socketIO.to(txHash).emit(txHash + '_update', tx)
-              return sTx.smallify()
-            }))
+          if (err) {
+            l.error('Error while listening events in blocks')
+            return
           }
+
+          this.vmRunner.setStateRoot(block.stateRoot)
+
+          const bstats = new BlockStats(block, block.transactions)
+          block.blockStats = Object.assign({}, bstats.getBlockStats(), block.blockStats)
+
+          const sBlock = new SmallBlockModel(block)
+          const blockHash = sBlock.hash()
+
+          this.socketIO.to(blockHash).emit(blockHash + '_update', block)
+
+          this.onNewBlock(sBlock.smallify())
+          this.onNewTx(block.transactions.map((tx) => {
+            const sTx = new SmallTxModel(tx)
+            const txHash: string = sTx.hash()
+
+            this.socketIO.to(txHash).emit(txHash + '_update', tx)
+
+            return sTx.smallify()
+          }))
         })
       })
 
@@ -74,14 +80,18 @@ export default class RethinkDBDataStore {
       .filter(r.row('new_val')('pending').eq(true))
       .run(this.conn, (err, cursor) => {
         cursor.each((err, row: r.ChangeSet<any, any>) => {
-          if (!err) {
-            const tx: TxModel = row.new_val
-            if (tx.pending) {
-              const sTx = new SmallTx(tx)
-              const txHash: string = sTx.hash()
-              this.socketIO.to(txHash).emit(txHash + '_update', tx)
-              this.socketIO.to('pendingTxs').emit('newPendingTx', sTx.smallify())
-            }
+          if (err) {
+            l.error('Error while listening events in transactions')
+            return
+          }
+
+          const tx: TxModel = row.new_val
+          if (tx.pending) {
+            const sTx = new SmallTxModel(tx)
+            const txHash: string = sTx.hash()
+
+            this.socketIO.to(txHash).emit(txHash + '_update', tx)
+            this.socketIO.to('pendingTxs').emit('newPendingTx', sTx.smallify())
           }
         })
       })
@@ -95,7 +105,7 @@ export default class RethinkDBDataStore {
           return
         }
 
-        cb(null, results.map((tx: TxModel) => new SmallTx(tx).smallify()))
+        cb(null, results.map((tx: TxModel) => new SmallTxModel(tx).smallify()))
       })
     }
 
@@ -147,7 +157,7 @@ export default class RethinkDBDataStore {
           return
         }
 
-        cb(null, results.map((tx: TxModel) => new SmallTx(tx).smallify()))
+        cb(null, results.map((tx: TxModel) => new SmallTxModel(tx).smallify()))
       })
     }
 
@@ -196,7 +206,7 @@ export default class RethinkDBDataStore {
           return
         }
 
-        cb(null, result.map((tx: TxModel) => new SmallTx(tx).smallify()))
+        cb(null, result.map((tx: TxModel) => new SmallTxModel(tx).smallify()))
       })
   }
 
@@ -225,7 +235,7 @@ export default class RethinkDBDataStore {
         }
 
         cb(null, results.map((tx: TxModel) => {
-          return new SmallTx(tx).smallify()
+          return new SmallTxModel(tx).smallify()
         }))
       })
     }

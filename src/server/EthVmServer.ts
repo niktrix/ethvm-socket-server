@@ -3,24 +3,24 @@ import ds from '@/datastores'
 import { l } from '@/helpers'
 import RethinkDBDataStore from '@/datastores/providers/RethinkDBDataStore'
 import { BlockModel } from '@/models'
-import CacheDB from '@/vm/cacheDB'
-import VmEngine from '@/vm/vmEngine'
-import VmRunner from '@/vm/vmRunner'
+import { CacheDB } from '@/datastores/cache'
+import { VmEngine, VmRunner } from '@/vm'
 import * as http from 'http'
 import * as SocketIO from 'socket.io'
 import { argv } from 'yargs'
 import config from '@/config'
 
 export class EthVMServer {
-
   private readonly server: http.Server
   private readonly io: SocketIO.Server
+  private readonly cacheDB: CacheDB
   private readonly vmRunner: VmRunner
   private readonly rdb: RethinkDBDataStore
 
   constructor() {
     this.server = this.createHttpServer()
     this.io = this.createSocketIO()
+    this.cacheDB = this.createCacheDB()
     this.vmRunner = this.createVmRunner()
     this.rdb = this.createRethinkDBDataStore(this.io, this.vmRunner)
   }
@@ -47,23 +47,27 @@ export class EthVMServer {
     return SocketIO(this.server as any, { port } as SocketIO.ServerOptions)
   }
 
-  private createVmRunner(): VmRunner {
+  private createCacheDB(): CacheDB {
     l.info('Creating DataStores')
 
-    const redisUrl = config.get('eth_vm_server.data_stores.redis.url')
-    const host = config.get('eth_vm_server.geth.host')
-    const port = config.get('eth_vm_server.geth.port')
+    const opts = {
+      redisUrl: config.get('eth_vm_server.data_stores.redis.url'),
+      rpcHost: config.get('eth_vm_server.geth.host'),
+      rpcPort: config.get('eth_vm_server.geth.port')
+    }
 
-    const cacheDb = new CacheDB(redisUrl, {
-      host,
-      port
-    })
-
-    l.info('Creating VmRunner')
-    return new VmRunner(cacheDb)
+    return new CacheDB(opts)
   }
 
-  private createRethinkDBDataStore(io: SocketIO.Server, vmR: VmRunner): RethinkDBDataStore {
+  private createVmRunner(): VmRunner {
+    l.info('Creating VmRunner')
+    return new VmRunner(this.cacheDB)
+  }
+
+  private createRethinkDBDataStore(
+    io: SocketIO.Server,
+    vmR: VmRunner
+  ): RethinkDBDataStore {
     l.info('Creating RethinkDBDataStore')
     return new RethinkDBDataStore(this.io, this.vmRunner)
   }
@@ -80,7 +84,14 @@ export class EthVMServer {
       ds.initialize()
     }
     ds.getBlocks((blocks: Array<BlockModel>) => {
-      this.vmRunner.setStateRoot(blocks && blocks[0] && blocks[0].stateRoot ? new Buffer(blocks[0].stateRoot) : new Buffer('d7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544', 'hex')) //genesis state by default
+      const stateRoot =
+        blocks && blocks[0] && blocks[0].stateRoot
+          ? new Buffer(blocks[0].stateRoot)
+          : new Buffer(
+              'd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544',
+              'hex'
+            )
+      this.vmRunner.setStateRoot(stateRoot) //genesis state by default
     })
 
     l.info('Starting VmEngine')
@@ -88,7 +99,7 @@ export class EthVMServer {
 
     l.info('Starting listening on connection in SocketIO')
     this.io.on('connection', (socket: SocketIO.Socket) => {
-      addEvents(socket, this.rdb, this.vmRunner, VmEngine)
+      addEvents(socket, this.rdb, this.cacheDB, this.vmRunner, VmEngine)
     })
   }
 }
