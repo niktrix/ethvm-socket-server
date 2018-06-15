@@ -2,7 +2,7 @@ import { BlockModel } from '@/models'
 import { common } from '@/libs'
 import bn from 'bignumber.js'
 
-export class SmallBlock {
+export class SmallBlockModel {
   constructor(private readonly block: BlockModel) {
   }
 

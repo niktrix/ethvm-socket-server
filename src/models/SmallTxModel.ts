@@ -1,8 +1,6 @@
 import { TxModel } from '@/models'
-import { common } from '@/libs'
-import bn from 'bignumber.js'
 
-export class SmallTx {
+export class SmallTxModel {
 
 	constructor(private readonly tx: TxModel) {
   }
