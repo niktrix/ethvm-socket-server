@@ -26,6 +26,8 @@
     },
     "homepage": "https://github.com/enKryptIO/ethvm-socket-server#readme",
     "dependencies": {
+        "@types/json-schema": "^6.0.1",
+        "@types/redis": "^2.8.6",
         "bignumber.js": "^5.0.0",
         "convict": "^4.3.0",
         "ethereumjs-abi": "^0.6.5",
