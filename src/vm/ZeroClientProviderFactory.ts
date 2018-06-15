@@ -83,8 +83,7 @@ export class ZeroClientProviderFactory {
     engine.addProvider(idmgmtSubprovider)
 
     // data source
-    const dataSubprovider =
-      opts.dataSubprovider || createDataSubprovider(connectionType, opts)
+    const dataSubprovider = opts.dataSubprovider || createDataSubprovider(connectionType, opts)
 
     // for websockets, forward subscription events through provider
     if (connectionType === 'ws') {
@@ -112,9 +111,7 @@ function getConnectionType({ rpcUrl }) {
     case 'wss':
       return 'ws'
     default:
-      throw new Error(
-        `Web3ProviderEngine - unrecognized protocol in '${rpcUrl}'`
-      )
+      throw new Error(`Web3ProviderEngine - unrecognized protocol in '${rpcUrl}'`)
   }
 }
 
@@ -140,7 +137,5 @@ function createDataSubprovider(connectionType, opts) {
     })
   }
 
-  throw new Error(
-    `Web3ProviderEngine - unrecognized connectionType '${connectionType}'`
-  )
+  throw new Error(`Web3ProviderEngine - unrecognized connectionType '${connectionType}'`)
 }

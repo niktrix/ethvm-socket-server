@@ -16,9 +16,7 @@ const setCollections = () => {
     if (!lokiDB.getCollection(item)) {
       const ttlAge = config.get('eth_vm_server.data_stores.loki.ttl.age')
       const ttlInterval = config.get('eth_vm_server.data_stores.loki.ttl.interval')
-      lokiDB
-        .addCollection(item, { unique: ['hash'] })
-        .setTTL(ttlAge, ttlInterval)
+      lokiDB.addCollection(item, { unique: ['hash'] }).setTTL(ttlAge, ttlInterval)
     }
   })
 }
@@ -37,10 +35,7 @@ const bufferify = (obj: any) => {
   const _obj = Object.assign({}, obj)
   for (var key in _obj) {
     if (_obj.hasOwnProperty(key)) {
-      if (
-        (typeof _obj[key] === 'string' || _obj[key] instanceof String) &&
-        _obj[key].substring(0, 2) == '0x'
-      )
+      if ((typeof _obj[key] === 'string' || _obj[key] instanceof String) && _obj[key].substring(0, 2) == '0x')
         _obj[key] = new Buffer(_obj[key].substring(2).toUpperCase(), 'hex')
     }
   }

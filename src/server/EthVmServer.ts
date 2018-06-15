@@ -64,10 +64,7 @@ export class EthVMServer {
     return new VmRunner(this.cacheDB)
   }
 
-  private createRethinkDBDataStore(
-    io: SocketIO.Server,
-    vmR: VmRunner
-  ): RethinkDBDataStore {
+  private createRethinkDBDataStore(io: SocketIO.Server, vmR: VmRunner): RethinkDBDataStore {
     l.info('Creating RethinkDBDataStore')
     return new RethinkDBDataStore(this.io, this.vmRunner)
   }
@@ -87,10 +84,7 @@ export class EthVMServer {
       const stateRoot =
         blocks && blocks[0] && blocks[0].stateRoot
           ? new Buffer(blocks[0].stateRoot)
-          : new Buffer(
-              'd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544',
-              'hex'
-            )
+          : new Buffer('d7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544', 'hex')
       this.vmRunner.setStateRoot(stateRoot) //genesis state by default
     })
 

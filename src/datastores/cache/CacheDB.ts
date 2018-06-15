@@ -1,6 +1,6 @@
 import * as Redis from 'ioredis'
 import * as rpc from 'json-rpc2'
-import { Callback } from "@/interfaces"
+import { Callback } from '@/interfaces'
 
 interface IencOptions {
   keyEncoding: string
@@ -8,16 +8,16 @@ interface IencOptions {
 }
 
 export interface CacheDBOptions {
-  redisUrl: string,
-  rpcHost: string,
-  rpcPort: number,
+  redisUrl: string
+  rpcHost: string
+  rpcPort: number
 }
 
 export class CacheDB {
   private readonly r: any
   private readonly rpc: any
 
-  constructor(opts : CacheDBOptions) {
+  constructor(opts: CacheDBOptions) {
     this.r = new Redis(opts.redisUrl)
     this.rpc = rpc.Client.$create(opts.rpcPort, opts.rpcHost)
   }
@@ -27,19 +27,15 @@ export class CacheDB {
       if (!err && result) {
         cb(null, new Buffer(result, 'hex'))
       } else {
-        this.rpc.call(
-          'eth_getKeyValue',
-          ['0x' + key.toString('hex')],
-          function(err: Error, result: string) {
-            if (err) {
-              cb(err, null)
-            } else {
-              const resBuf: Buffer = new Buffer(result.substring(2), 'hex')
-              this.r.set(key, resBuf.toString('hex'))
-              cb(null, resBuf)
-            }
+        this.rpc.call('eth_getKeyValue', ['0x' + key.toString('hex')], function(err: Error, result: string) {
+          if (err) {
+            cb(err, null)
+          } else {
+            const resBuf: Buffer = new Buffer(result.substring(2), 'hex')
+            this.r.set(key, resBuf.toString('hex'))
+            cb(null, resBuf)
           }
-        )
+        })
       }
     })
   }

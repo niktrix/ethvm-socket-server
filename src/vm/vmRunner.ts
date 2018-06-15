@@ -16,7 +16,6 @@ const hexToBuffer = (hex: string): Buffer => {
 }
 
 export class VmRunner {
-
   stateTrie: any
   codeCache: any
 
@@ -33,14 +32,7 @@ export class VmRunner {
     console.log('eth call ====================')
     let _this = this
     let _trie = _this.stateTrie.copy()
-    let runCode = (
-      sTree: any,
-      to: Buffer,
-      code: Buffer,
-      gasLimit: string,
-      data: Buffer,
-      _cb: (err: Error, result: any) => void
-    ) => {
+    let runCode = (sTree: any, to: Buffer, code: Buffer, gasLimit: string, data: Buffer, _cb: (err: Error, result: any) => void) => {
       let vm = new VM({
         state: sTree
       })
@@ -56,20 +48,9 @@ export class VmRunner {
         }
       )
     }
-    let getResult = (
-      tx: Itx,
-      treeClone: any,
-      cb: (err: Error, result: Buffer) => void
-    ) => {
+    let getResult = (tx: Itx, treeClone: any, cb: (err: Error, result: Buffer) => void) => {
       if (_this.codeCache.peek(tx.to)) {
-        runCode(
-          treeClone,
-          hexToBuffer(tx.to),
-          _this.codeCache.get(tx.to),
-          GAS_LIMIT,
-          hexToBuffer(tx.data),
-          cb
-        )
+        runCode(treeClone, hexToBuffer(tx.to), _this.codeCache.get(tx.to), GAS_LIMIT, hexToBuffer(tx.data), cb)
         return
       }
       treeClone.get(hexToBuffer(tx.to), (err: Error, val: Buffer) => {
@@ -84,19 +65,12 @@ export class VmRunner {
             return
           }
           _this.codeCache.set(tx.to, code)
-          runCode(
-            treeClone,
-            hexToBuffer(tx.to),
-            code ? code : new Buffer('00', 'hex'),
-            GAS_LIMIT,
-            hexToBuffer(tx.data),
-            cb
-          )
+          runCode(treeClone, hexToBuffer(tx.to), code ? code : new Buffer('00', 'hex'), GAS_LIMIT, hexToBuffer(tx.data), cb)
         })
       })
     }
     if (Array.isArray(txs)) {
-      let returnArr: Array<{ error: Error, result: any }> = []
+      let returnArr: Array<{ error: Error; result: any }> = []
       let counter = 0
       txs.forEach((_tx, _idx) => {
         getResult(_tx, _trie.copy(), (err: Error, result: any) => {

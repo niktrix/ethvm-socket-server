@@ -18,12 +18,7 @@ interface Instances {
 
 interface SocketIOEvent {
   name: string
-  onEvent: (
-    socket: SocketIO.Socket,
-    msg: string,
-    glob?: Instances,
-    cb?: Callback
-  ) => void
+  onEvent: (socket: SocketIO.Socket, msg: string, glob?: Instances, cb?: Callback) => void
 }
 
 const events: Array<SocketIOEvent> = [
@@ -145,7 +140,7 @@ const events: Array<SocketIOEvent> = [
   {
     name: 'getCurrentStateRoot',
     onEvent: (socket, msg: any, glob, cb): void => {
-      if (msg != '')  {
+      if (msg != '') {
         cb(common.newError(common.errors.invalidInput), null)
         return
       }
@@ -190,10 +185,7 @@ const events: Array<SocketIOEvent> = [
   {
     name: 'getTransactionPages',
     onEvent: (socket, msg: any, glob, cb): void => {
-      if (
-        msg.hash &&
-        (!common.check.isBufferObject(msg.hash, 32) || !common.check.isNumber(msg.number))
-      ) {
+      if (msg.hash && (!common.check.isBufferObject(msg.hash, 32) || !common.check.isNumber(msg.number))) {
         cb(common.newError(common.errors.notBuffer), null)
         return
       }
@@ -204,10 +196,7 @@ const events: Array<SocketIOEvent> = [
   {
     name: 'getAddressTransactionPages',
     onEvent: (socket, msg: any, glob, cb): void => {
-      if (
-        msg.hash &&
-        (!common.check.isBufferObject(msg.hash, 32) || !common.check.isNumber(msg.number))
-      ) {
+      if (msg.hash && (!common.check.isBufferObject(msg.hash, 32) || !common.check.isNumber(msg.number))) {
         cb(common.newError(common.errors.notBuffer), null)
         return
       }
@@ -217,23 +206,12 @@ const events: Array<SocketIOEvent> = [
         return
       }
 
-      glob.rdb.getAddressTransactionPages(
-        msg.address,
-        msg.hash,
-        msg.number,
-        cb
-      )
+      glob.rdb.getAddressTransactionPages(msg.address, msg.hash, msg.number, cb)
     }
   }
 ]
 
-let onConnection = (
-  socket: SocketIO.Socket,
-  rdb: RethinkDBDataStore,
-  cacheDB: CacheDB,
-  vmR: VmRunner,
-  vmE: any
-) => {
+let onConnection = (socket: SocketIO.Socket, rdb: RethinkDBDataStore, cacheDB: CacheDB, vmR: VmRunner, vmE: any) => {
   events.forEach((event: SocketIOEvent, idx: number) => {
     socket.on(event.name, (msg: any, cb: Callback) => {
       event.onEvent(

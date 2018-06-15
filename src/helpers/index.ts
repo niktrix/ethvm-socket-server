@@ -1,5 +1,3 @@
 import l from '@/helpers/logger'
 
-export {
-  l
-}
+export { l }

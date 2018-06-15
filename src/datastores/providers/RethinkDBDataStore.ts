@@ -9,8 +9,7 @@ import { l } from '@/helpers'
 export default class RethinkDBDataStore {
   private conn: r.Connection
 
-  constructor(private readonly socketIO: SocketIO.Server, private readonly vmRunner: VmRunner) {
-  }
+  constructor(private readonly socketIO: SocketIO.Server, private readonly vmRunner: VmRunner) {}
 
   async start() {
     try {
@@ -33,15 +32,20 @@ export default class RethinkDBDataStore {
   }
 
   setAllEvents() {
-    r
-      .table('blocks')
+    r.table('blocks')
       .changes()
       .map(change => change('new_val'))
       .merge(block => {
         return {
-          transactions: r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array'),
+          transactions: r
+            .table('transactions')
+            .getAll(r.args(block('transactionHashes')))
+            .coerceTo('array'),
           blockStats: {
-            pendingTxs: r.table('data').get('cached').getField('pendingTxs')
+            pendingTxs: r
+              .table('data')
+              .get('cached')
+              .getField('pendingTxs')
           }
         }
       })
@@ -63,21 +67,26 @@ export default class RethinkDBDataStore {
           this.socketIO.to(blockHash).emit(blockHash + '_update', block)
 
           this.onNewBlock(sBlock.smallify())
-          this.onNewTx(block.transactions.map((tx) => {
-            const sTx = new SmallTxModel(tx)
-            const txHash: string = sTx.hash()
+          this.onNewTx(
+            block.transactions.map(tx => {
+              const sTx = new SmallTxModel(tx)
+              const txHash: string = sTx.hash()
 
-            this.socketIO.to(txHash).emit(txHash + '_update', tx)
+              this.socketIO.to(txHash).emit(txHash + '_update', tx)
 
-            return sTx.smallify()
-          }))
+              return sTx.smallify()
+            })
+          )
         })
       })
 
-    r
-      .table('transactions')
+    r.table('transactions')
       .changes()
-      .filter(r.row('new_val')('pending').eq(true))
+      .filter(
+        r
+          .row('new_val')('pending')
+          .eq(true)
+      )
       .run(this.conn, (err, cursor) => {
         cursor.each((err, row: r.ChangeSet<any, any>) => {
           if (err) {
@@ -110,15 +119,15 @@ export default class RethinkDBDataStore {
     }
 
     if (!hash) {
-      r
-        .table('transactions')
+      r.table('transactions')
         .orderBy({ index: r.desc('numberAndHash') })
         .filter(
-          r.row('from')
+          r
+            .row('from')
             .eq(r.args([new Buffer(address)]))
-            .or(r.row('to')
-              .eq(r.args([new Buffer(address)])))
-        ).limit(25)
+            .or(r.row('to').eq(r.args([new Buffer(address)])))
+        )
+        .limit(25)
         .run(this.conn, (err, cursor) => {
           if (err) {
             cb(err, null)
@@ -131,13 +140,10 @@ export default class RethinkDBDataStore {
       return
     }
 
-    r
-      .table('transactions')
+    r.table('transactions')
       .orderBy({ index: r.desc('numberAndHash') })
       .between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: 'open', index: 'numberAndHash' })
-      .filter(
-        r.or(r.row('from').eq(r.args([new Buffer(address)])), r.row('to').eq(r.args([new Buffer(address)])))
-      )
+      .filter(r.or(r.row('from').eq(r.args([new Buffer(address)])), r.row('to').eq(r.args([new Buffer(address)]))))
       .limit(25)
       .run(this.conn, (err, cursor) => {
         if (err) {
@@ -162,8 +168,7 @@ export default class RethinkDBDataStore {
     }
 
     if (!hash) {
-      r
-        .table('transactions')
+      r.table('transactions')
         .orderBy({ index: r.desc('numberAndHash') })
         .filter({ pending: false })
         .limit(25)
@@ -179,8 +184,7 @@ export default class RethinkDBDataStore {
       return
     }
 
-    r
-      .table('transactions')
+    r.table('transactions')
       .orderBy({ index: r.desc('numberAndHash') })
       .between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: 'open', index: 'numberAndHash' })
       .filter({ pending: false })
@@ -196,10 +200,14 @@ export default class RethinkDBDataStore {
   }
 
   getBlockTransactions(hash: string, cb: (err: Error, result: any) => void) {
-    r
-      .table('blocks')
+    r.table('blocks')
       .get(r.args([new Buffer(hash)]))
-      .do(block => r.table('transactions').getAll(r.args(block('transactionHashes'))).coerceTo('array'))
+      .do(block =>
+        r
+          .table('transactions')
+          .getAll(r.args(block('transactionHashes')))
+          .coerceTo('array')
+      )
       .run(this.conn, (err: Error, result: any) => {
         if (err) {
           cb(err, null)
@@ -212,8 +220,7 @@ export default class RethinkDBDataStore {
 
   getTotalTxs(hash: string, cb: (err: Error, result: any) => void) {
     const bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex')
-    r
-      .table('transactions')
+    r.table('transactions')
       .getAll(r.args([bhash]), { index: 'cofrom' })
       .count()
       .run(this.conn, (err: Error, count: any) => {
@@ -234,16 +241,18 @@ export default class RethinkDBDataStore {
           return
         }
 
-        cb(null, results.map((tx: TxModel) => {
-          return new SmallTxModel(tx).smallify()
-        }))
+        cb(
+          null,
+          results.map((tx: TxModel) => {
+            return new SmallTxModel(tx).smallify()
+          })
+        )
       })
     }
 
     const bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex')
 
-    r
-      .table('transactions')
+    r.table('transactions')
       .getAll(r.args([bhash]), { index: 'cofrom' })
       .limit(20)
       .run(this.conn, (err: Error, count: any) => {
@@ -257,8 +266,7 @@ export default class RethinkDBDataStore {
   }
 
   getChartsData(cb: (err: Error, result: any) => void) {
-    r
-      .table('blockscache')
+    r.table('blockscache')
       .between(r.time(2016, 5, 2, 'Z'), r.time(2016, 5, 11, 'Z'), {
         index: 'timestamp',
         rightBound: 'closed'
@@ -285,8 +293,7 @@ export default class RethinkDBDataStore {
   }
 
   getBlock(hash: string, cb: (err: Error, result: any) => void) {
-    r
-      .table('blocks')
+    r.table('blocks')
       .get(r.args([new Buffer(hash)]))
       .run(this.conn, (err: Error, result: BlockModel) => {
         if (err) {
@@ -299,13 +306,18 @@ export default class RethinkDBDataStore {
   }
 
   getTx(hash: string, cb: (err: Error, result: any) => void) {
-    r
-      .table('transactions')
+    r.table('transactions')
       .get(r.args([new Buffer(hash)]))
       .merge(tx => {
         return {
-          trace: r.db('eth_mainnet').table('traces').get(tx('hash')),
-          logs: r.db('eth_mainnet').table('logs').get(tx('hash'))
+          trace: r
+            .db('eth_mainnet')
+            .table('traces')
+            .get(tx('hash')),
+          logs: r
+            .db('eth_mainnet')
+            .table('logs')
+            .get(tx('hash'))
         }
       })
       .run(this.conn, (err: Error, result: TxModel) => {

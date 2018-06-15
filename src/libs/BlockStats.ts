@@ -7,7 +7,6 @@ const BLOCK_TIME: number = config.get('eth_vm_server.general.block_time')
 let previousBlockTime = new bn(0)
 
 export class BlockStats {
-
   private blockTime
 
   constructor(private readonly block: BlockModel, private readonly txs: Array<TxModel>) {
@@ -30,8 +29,8 @@ export class BlockStats {
         success: '0x0',
         avgGasPrice: '0x0',
         avgTxFees: '0x0'
+      }
     }
-  }
 
     const txStatus = {
       blockTime: new bn(0),

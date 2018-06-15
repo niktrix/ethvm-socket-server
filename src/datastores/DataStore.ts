@@ -1,14 +1,14 @@
-import { BlockModel } from "@/models"
+import { BlockModel } from '@/models'
 
 // TODO: Finish interface implementation
 export interface DataStore {
-  initialize(): Promise<boolean>,
+  initialize(): Promise<boolean>
 
-  putBlock(block: BlockModel),
+  putBlock(block: BlockModel)
 
-  getBlocks(),
+  getBlocks()
 
-  putTransaction(),
+  putTransaction()
 
   getTransactions()
 }

@@ -12,10 +12,7 @@ let bnToHex = (bn: any): string => {
 
 let validateHexString = (str: string) => {
   if (str == '') return true
-  str =
-    str.substring(0, 2) == '0x'
-      ? str.substring(2).toUpperCase()
-      : str.toUpperCase()
+  str = str.substring(0, 2) == '0x' ? str.substring(2).toUpperCase() : str.toUpperCase()
   var re = /^[0-9A-F]+$/g
   return re.test(str)
 }
@@ -34,11 +31,7 @@ let check = {
   },
 
   isHashString(_item: string): boolean {
-    return (
-      _item.substr(0, 2) == '0x' &&
-      validateHexString(_item.substring(2).toUpperCase()) &&
-      _item.length === 66
-    )
+    return _item.substr(0, 2) == '0x' && validateHexString(_item.substring(2).toUpperCase()) && _item.length === 66
   },
 
   isHashBuffer(_item: Buffer): boolean {
@@ -46,11 +39,7 @@ let check = {
   },
 
   isAddressString(_item: string): boolean {
-    return (
-      _item.substr(0, 2) == '0x' &&
-      validateHexString(_item.substring(2).toUpperCase()) &&
-      _item.length === 42
-    )
+    return _item.substr(0, 2) == '0x' && validateHexString(_item.substring(2).toUpperCase()) && _item.length === 42
   },
 
   isAddressBuffer(_item: string): boolean {
@@ -58,14 +47,7 @@ let check = {
   },
 
   isBufferObject(_item: any, length: number): boolean {
-    return (
-      _item.type &&
-      _item.type == 'Buffer' &&
-      _item.data &&
-      _.isArray(_item.data) &&
-      validateByteArray(_item.data) &&
-      _item.data.length == length
-    )
+    return _item.type && _item.type == 'Buffer' && _item.data && _.isArray(_item.data) && validateByteArray(_item.data) && _item.data.length == length
   }
 }
 

@@ -133,6 +133,6 @@ const config = convict({
 const env = config.get('env')
 
 config.loadFile(`${__dirname}/${env}.config.json`)
-config.validate({allowed: 'strict'})
+config.validate({ allowed: 'strict' })
 
 export default config

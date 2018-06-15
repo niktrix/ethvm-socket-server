@@ -9,10 +9,10 @@ interface TransferModel {
 }
 
 export interface TraceModel {
-  hash: Buffer;
+  hash: Buffer
   trace: {
-    isError: boolean;
-    msg: string;
+    isError: boolean
+    msg: string
     transfers: Array<TransferModel>
   }
 }
