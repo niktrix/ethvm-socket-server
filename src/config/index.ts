@@ -136,7 +136,7 @@ const config = convict({
       port: {
         default: 8545,
         format: 'port',
-        env: 'ETHVM_ETH_PORT'
+        env: 'ETHVM_RPC_ETH_PORT'
       }
     },
     block_time: {
