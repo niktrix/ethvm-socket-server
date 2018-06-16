@@ -1,16 +1,16 @@
 import config from '@app/config'
-import { BlockModel, TxModel } from '@app/models'
+import { Block, Tx } from '@app/models'
 import * as Redis from 'ioredis'
 
 type CallbackFunction = (data: any[]) => void
 
 interface ItableCache {
-  transactions: TxModel[]
-  blocks: BlockModel[]
+  transactions: Tx[]
+  blocks: Block[]
 }
 
 const redis = new Redis()
-const socketRows = config.get('eth_vm_server.data_stores.redis.socket_rows')
+const socketRows = config.get('data_stores.redis.socket_rows')
 
 const tableCache: ItableCache = {
   transactions: [],
@@ -59,7 +59,7 @@ const getArray = (tbName: any, cb: CallbackFunction) => {
   }
 }
 
-const addTransaction = (tx: TxModel | TxModel[]) => {
+const addTransaction = (tx: Tx | Tx[]) => {
   getArray(tables.transactions, pTxs => {
     if (Array.isArray(tx)) {
       tx.forEach(tTx => {
@@ -77,7 +77,7 @@ const addTransaction = (tx: TxModel | TxModel[]) => {
   })
 }
 
-const addBlock = (block: BlockModel) => {
+const addBlock = (block: Block) => {
   getArray(tables.blocks, pBlocks => {
     pBlocks.unshift(block)
     if (pBlocks.length > socketRows) {

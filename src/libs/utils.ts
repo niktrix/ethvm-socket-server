@@ -1,8 +1,6 @@
 import bn from 'bignumber.js'
 import * as abi from 'ethereumjs-abi'
-import Web3 from 'web3'
-
-const web3 = new Web3()
+import * as web3 from 'web3-utils'
 
 function sizeHex(bytes) {
   return bytes * 2

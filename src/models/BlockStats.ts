@@ -1,4 +1,4 @@
-export interface BlockStatsModel {
+export interface BlockStats {
   blockTime: string
   failed: string
   success: string

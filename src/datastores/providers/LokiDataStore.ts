@@ -1,10 +1,10 @@
 import config from '@app/config'
-import { BlockModel, TxModel } from '@app/models'
+import { Block, Tx } from '@app/models'
 import * as Loki from 'lokijs'
 
 type CallbackFunction = (data: any[]) => void
 
-const lokiDB = new Loki(config.get('eth_vm_server.data_stores.loki.db_name'), {
+const lokiDB = new Loki(config.get('data_stores.loki.db_name'), {
   autosave: true,
   autosaveInterval: 5000,
   autoload: true
@@ -14,8 +14,8 @@ const tables = ['transactions', 'blocks']
 const setCollections = () => {
   tables.forEach((item: string) => {
     if (!lokiDB.getCollection(item)) {
-      const ttlAge = config.get('eth_vm_server.data_stores.loki.ttl.age')
-      const ttlInterval = config.get('eth_vm_server.data_stores.loki.ttl.interval')
+      const ttlAge = config.get('data_stores.loki.ttl.age')
+      const ttlInterval = config.get('data_stores.loki.ttl.interval')
       lokiDB.addCollection(item, { unique: ['hash'] }).setTTL(ttlAge, ttlInterval)
     }
   })
@@ -45,7 +45,7 @@ const bufferify = (obj: any) => {
   return _obj
 }
 
-const processTx = (tx: TxModel) => {
+const processTx = (tx: Tx) => {
   const hexed = hexify(tx)
   const col = lokiDB.getCollection('transactions')
   const obj = col.by('hash', hexed.hash)
@@ -55,7 +55,7 @@ const processTx = (tx: TxModel) => {
   lokiDB.getCollection('transactions').insert(hexed)
 }
 
-const addTransaction = (tx: TxModel | TxModel[]) => {
+const addTransaction = (tx: Tx | Tx[]) => {
   if (Array.isArray(tx)) {
     tx.forEach(tTx => {
       processTx(tTx)
@@ -65,7 +65,7 @@ const addTransaction = (tx: TxModel | TxModel[]) => {
   }
 }
 
-const addBlock = (block: BlockModel) => {
+const addBlock = (block: Block) => {
   const hexed = hexify(block)
   const col = lokiDB.getCollection('blocks')
   const obj = col.by('hash', hexed.hash)

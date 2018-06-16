@@ -1,1 +1,23 @@
-{}
+{
+  "env": "dev",
+  "general": {
+    "logs": {
+      "enabled": "true",
+      "app_id": "ethvm-socket",
+      "level": "debug"
+    }
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 3000,
+    "ping_interval": 10000,
+    "ping_timeout": 5000
+  },
+  "data_stores": {
+    "provider": "redis",
+    "redis": {
+      "url": "redis://localhost:6379",
+      "socket_rows": 64
+    }
+  }
+}

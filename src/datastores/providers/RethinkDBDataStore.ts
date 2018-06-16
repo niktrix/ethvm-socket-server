@@ -1,8 +1,8 @@
 import config from '@app/config'
-import ds from '@app/datastores'
 import { l } from '@app/helpers'
-import { BlockStats } from '@app/libs'
-import { BlockModel, ChartModel, SmallBlockModel, SmallTxModel, TxModel } from '@app/models'
+import { BlockTxStats } from '@app/libs'
+import { ds } from '@app/datastores'
+import { Block, Chart, SmallBlock, SmallTx, Tx } from '@app/models'
 import { VmRunner } from '@app/vm/vmRunner'
 import * as r from 'rethinkdb'
 
@@ -14,13 +14,13 @@ export default class RethinkDBDataStore {
   public async start() {
     try {
       const c = {
-        host: config.get('eth_vm_server.rethink_db.host'),
-        port: config.get('eth_vm_server.rethink_db.port'),
-        user: config.get('eth_vm_server.rethink_db.user'),
-        password: config.get('eth_vm_server.rethink_db.password'),
-        db: config.get('eth_vm_server.rethink_db.db_name'),
+        host: config.get('server.rethink_db.host'),
+        port: config.get('server.rethink_db.port'),
+        user: config.get('server.rethink_db.user'),
+        password: config.get('server.rethink_db.password'),
+        db: config.get('server.rethink_db.db_name'),
         ssl: {
-          cert: config.get('eth_vm_server.rethink_db.raw_cert')
+          cert: config.get('server.rethink_db.raw_cert')
         }
       }
 
@@ -50,7 +50,7 @@ export default class RethinkDBDataStore {
         }
       })
       .run(this.conn, (err, cursor) => {
-        cursor.each((e: Error, block: BlockModel) => {
+        cursor.each((e: Error, block: Block) => {
           if (e) {
             l.error('Error while listening events in blocks')
             return
@@ -58,10 +58,10 @@ export default class RethinkDBDataStore {
 
           this.vmRunner.setStateRoot(block.stateRoot)
 
-          const bstats = new BlockStats(block, block.transactions)
+          const bstats = new BlockTxStats(block, block.transactions)
           block.blockStats = { ...bstats.getBlockStats(), ...block.blockStats }
 
-          const sBlock = new SmallBlockModel(block)
+          const sBlock = new SmallBlock(block)
           const blockHash = sBlock.hash()
 
           this.socketIO.to(blockHash).emit(blockHash + '_update', block)
@@ -69,7 +69,7 @@ export default class RethinkDBDataStore {
           this.onNewBlock(sBlock.smallify())
           this.onNewTx(
             block.transactions.map(tx => {
-              const sTx = new SmallTxModel(tx)
+              const sTx = new SmallTx(tx)
               const txHash: string = sTx.hash()
 
               this.socketIO.to(txHash).emit(txHash + '_update', tx)
@@ -94,9 +94,9 @@ export default class RethinkDBDataStore {
             return
           }
 
-          const tx: TxModel = row.new_val
+          const tx: Tx = row.new_val
           if (tx.pending) {
-            const sTx = new SmallTxModel(tx)
+            const sTx = new SmallTx(tx)
             const txHash: string = sTx.hash()
 
             this.socketIO.to(txHash).emit(txHash + '_update', tx)
@@ -108,13 +108,13 @@ export default class RethinkDBDataStore {
 
   public getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void) {
     const sendResults = cursor => {
-      cursor.toArray((err: Error, results: TxModel[]) => {
+      cursor.toArray((err: Error, results: Tx[]) => {
         if (err) {
           cb(err, null)
           return
         }
 
-        cb(null, results.map((tx: TxModel) => new SmallTxModel(tx).smallify()))
+        cb(null, results.map((tx: Tx) => new SmallTx(tx).smallify()))
       })
     }
 
@@ -157,13 +157,13 @@ export default class RethinkDBDataStore {
 
   public getTransactionPages(hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void) {
     const sendResults = cursor => {
-      cursor.toArray((err: Error, results: TxModel[]) => {
+      cursor.toArray((err: Error, results: Tx[]) => {
         if (err) {
           cb(err, null)
           return
         }
 
-        cb(null, results.map((tx: TxModel) => new SmallTxModel(tx).smallify()))
+        cb(null, results.map((tx: Tx) => new SmallTx(tx).smallify()))
       })
     }
 
@@ -214,7 +214,7 @@ export default class RethinkDBDataStore {
           return
         }
 
-        cb(null, result.map((tx: TxModel) => new SmallTxModel(tx).smallify()))
+        cb(null, result.map((tx: Tx) => new SmallTx(tx).smallify()))
       })
   }
 
@@ -235,7 +235,7 @@ export default class RethinkDBDataStore {
 
   public getTxsOfAddress(hash: string, cb: (err: Error, result: any) => void) {
     const sendResults = (cursor: any) => {
-      cursor.toArray((err: Error, results: TxModel[]) => {
+      cursor.toArray((err: Error, results: Tx[]) => {
         if (err) {
           cb(err, null)
           return
@@ -243,8 +243,8 @@ export default class RethinkDBDataStore {
 
         cb(
           null,
-          results.map((tx: TxModel) => {
-            return new SmallTxModel(tx).smallify()
+          results.map((tx: Tx) => {
+            return new SmallTx(tx).smallify()
           })
         )
       })
@@ -281,7 +281,7 @@ export default class RethinkDBDataStore {
           return
         }
 
-        cursor.toArray((e: Error, results: ChartModel[]) => {
+        cursor.toArray((e: Error, results: Chart[]) => {
           if (e) {
             cb(e, null)
             return
@@ -295,7 +295,7 @@ export default class RethinkDBDataStore {
   public getBlock(hash: string, cb: (err: Error, result: any) => void) {
     r.table('blocks')
       .get(r.args([new Buffer(hash)]))
-      .run(this.conn, (err: Error, result: BlockModel) => {
+      .run(this.conn, (err: Error, result: Block) => {
         if (err) {
           cb(err, null)
           return
@@ -320,7 +320,7 @@ export default class RethinkDBDataStore {
             .get(tx('hash'))
         }
       })
-      .run(this.conn, (err: Error, result: TxModel) => {
+      .run(this.conn, (err: Error, result: Tx) => {
         if (err) {
           cb(err, null)
           return
@@ -330,13 +330,13 @@ export default class RethinkDBDataStore {
       })
   }
 
-  private onNewBlock(block: BlockModel) {
+  private onNewBlock(block: Block) {
     l.debug('got new block', block.hash)
     this.socketIO.to('blocks').emit('newBlock', block)
     ds.addBlock(block)
   }
 
-  private onNewTx(tx: TxModel | TxModel[]) {
+  private onNewTx(tx: Tx | Tx[]) {
     if (Array.isArray(tx) && !tx.length) {
       return
     }

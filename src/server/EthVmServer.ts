@@ -2,7 +2,7 @@ import config from '@app/config'
 import { CacheDB, ds } from '@app/datastores'
 import RethinkDBDataStore from '@app/datastores/providers/RethinkDBDataStore'
 import { l } from '@app/helpers'
-import { BlockModel } from '@app/models'
+import { Block } from '@app/models'
 import addEvents from '@app/server/socketio/addEvents'
 import { VmEngine, VmRunner } from '@app/vm'
 import * as http from 'http'
@@ -10,14 +10,12 @@ import * as SocketIO from 'socket.io'
 import { argv } from 'yargs'
 
 export class EthVMServer {
-  private readonly server: http.Server
   private readonly io: SocketIO.Server
   private readonly cacheDB: CacheDB
   private readonly vmRunner: VmRunner
   private readonly rdb: RethinkDBDataStore
 
   constructor() {
-    this.server = this.createHttpServer()
     this.io = this.createSocketIO()
     this.cacheDB = this.createCacheDB()
     this.vmRunner = this.createVmRunner()
@@ -35,11 +33,13 @@ export class EthVMServer {
       l.info('Initializing DataStore')
       ds.initialize()
     }
-    ds.getBlocks((blocks: BlockModel[]) => {
+    ds.getBlocks((blocks: Block[]) => {
+      const configStateRoot = config.get('eth.state_root')
+      const hasStateRoot = blocks && blocks[0] && blocks[0].stateRoot
       const stateRoot =
-        blocks && blocks[0] && blocks[0].stateRoot
+        hasStateRoot
           ? new Buffer(blocks[0].stateRoot)
-          : new Buffer('d7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544', 'hex')
+          : new Buffer(configStateRoot, 'hex')
       this.vmRunner.setStateRoot(stateRoot) // genesis state by default
     })
 
@@ -52,32 +52,28 @@ export class EthVMServer {
     })
   }
 
-  private createHttpServer(): http.Server {
+  private createSocketIO(): SocketIO.Server {
     l.info('Creating Http server')
     const server = http.createServer()
 
-    const host = config.get('eth_vm_server.socket_io.host')
-    const port = config.get('eth_vm_server.socket_io.port')
+    const host = config.get('server.host')
+    const port = config.get('server.port')
 
     server.listen(port, host, () => {
       l.info(`Listening on ${host}:${port}`)
     })
 
-    return server
-  }
-
-  private createSocketIO(): SocketIO.Server {
     l.info('Creating SocketIO server')
-    return SocketIO(this.server)
+    return SocketIO(server)
   }
 
   private createCacheDB(): CacheDB {
     l.info('Creating DataStores')
 
     const opts = {
-      redisUrl: config.get('eth_vm_server.data_stores.redis.url'),
-      rpcHost: config.get('eth_vm_server.geth.host'),
-      rpcPort: config.get('eth_vm_server.geth.port')
+      redisUrl: config.get('data_stores.redis.url'),
+      rpcHost: config.get('eth.rpc.host'),
+      rpcPort: config.get('eth.rpc.port')
     }
 
     return new CacheDB(opts)

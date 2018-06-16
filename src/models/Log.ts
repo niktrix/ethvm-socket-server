@@ -1,4 +1,4 @@
-export interface LogModel {
+export interface Log {
   address: Buffer
   topics: Buffer[]
   data: Buffer

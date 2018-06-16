@@ -1,4 +1,4 @@
-export interface TxModel {
+export interface Tx {
   root?: Buffer
   blockHash: Buffer
   blockNumber?: Buffer

@@ -1,13 +1,13 @@
-import { TxModel } from '@app/models'
+import { Tx } from '@app/models'
 
-export class SmallTxModel {
-  constructor(private readonly tx: TxModel) {}
+export class SmallTx {
+  constructor(private readonly tx: Tx) {}
 
   public hash(): string {
     return '0x' + new Buffer(this.tx.hash).toString('hex')
   }
 
-  public smallify(): TxModel {
+  public smallify(): Tx {
     return {
       blockNumber: this.tx.blockNumber,
       blockHash: this.tx.blockHash,

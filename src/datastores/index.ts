@@ -4,7 +4,7 @@ import Redis from '@app/datastores/providers/RedisDataStore'
 
 export * from '@app/datastores/cache/CacheDB'
 
-const DS_TYPE = config.get('eth_vm_server.data_stores.provider')
+const DS_TYPE = config.get('data_stores.provider')
 
 const VALID_DS = {
   redis: Redis as any,

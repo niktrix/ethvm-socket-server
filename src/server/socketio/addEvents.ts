@@ -3,7 +3,7 @@ import RethinkDBDataStore from '@app/datastores/providers/RethinkDBDataStore'
 import { l } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { common } from '@app/libs'
-import { BlockModel, TxModel } from '@app/models'
+import { Block, Tx } from '@app/models'
 import { VmRunner } from '@app/vm/'
 import fetch from 'node-fetch'
 import * as SocketIO from 'socket.io'
@@ -48,10 +48,10 @@ const events: SocketIOEvent[] = [
   {
     name: 'pastBlocks',
     onEvent: (socket, msg, glob, cb): void => {
-      ds.getBlocks((_blocks: BlockModel[]) => {
-        const blocks: BlockModel[] = []
+      ds.getBlocks((_blocks: Block[]) => {
+        const blocks: Block[] = []
         blocks.forEach(
-          (block: BlockModel, idx: number): void => {
+          (block: Block, idx: number): void => {
             blocks.unshift(block)
           }
         )
@@ -62,8 +62,8 @@ const events: SocketIOEvent[] = [
   {
     name: 'pastTxs',
     onEvent: (socket, msg, glob, cb): void => {
-      ds.getTransactions((_txs: TxModel[]) => {
-        const txs: TxModel[] = []
+      ds.getTransactions((_txs: Tx[]) => {
+        const txs: Tx[] = []
         _txs.forEach(_tx => {
           txs.unshift(_tx)
         })

@@ -1,15 +1,15 @@
 import config from '@app/config'
 import { common } from '@app/libs'
-import { BlockModel, BlockStatsModel, TxModel } from '@app/models'
+import { Block, BlockStats, Tx } from '@app/models'
 import bn from 'bignumber.js'
 
-const BLOCK_TIME: number = config.get('eth_vm_server.general.block_time')
+const BLOCK_TIME: number = config.get('eth.block_time')
 let previousBlockTime = new bn(0)
 
-export class BlockStats {
+export class BlockTxStats {
   private blockTime
 
-  constructor(private readonly block: BlockModel, private readonly txs: TxModel[]) {
+  constructor(private readonly block: Block, private readonly txs: Tx[]) {
     const ts = new bn(common.bufferToHex(this.block.timestamp))
     if (!previousBlockTime) {
       previousBlockTime = ts.sub(BLOCK_TIME)
@@ -21,7 +21,7 @@ export class BlockStats {
     }
   }
 
-  public getBlockStats(): BlockStatsModel {
+  public getBlockStats(): BlockStats {
     if (!this.txs.length) {
       return {
         blockTime: '0x0',
