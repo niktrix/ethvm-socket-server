@@ -1,6 +1,6 @@
 import { CacheDB } from '@app/datastores'
+import * as VM from '@enkrypt.io/ethereumjs-vm'
 import * as Account from 'ethereumjs-account'
-import * as VM from 'ethereumjs-vm'
 import * as LRU from 'lru'
 import * as Trie from 'merkle-patricia-tree/secure'
 

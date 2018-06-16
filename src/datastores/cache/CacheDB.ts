@@ -1,6 +1,6 @@
 import { Callback } from '@app/interfaces'
+import * as rpc from '@enkrypt.io/json-rpc2'
 import * as Redis from 'ioredis'
-import * as rpc from 'json-rpc2'
 
 interface IencOptions {
   keyEncoding: string
