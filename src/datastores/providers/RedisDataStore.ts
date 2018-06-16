@@ -9,7 +9,7 @@ interface ItableCache {
   blocks: Block[]
 }
 
-const redis = new Redis()
+const redis = new Redis(config.get('data_stores.redis.url'))
 const socketRows = config.get('data_stores.redis.socket_rows')
 
 const tableCache: ItableCache = {

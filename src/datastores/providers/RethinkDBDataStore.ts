@@ -7,24 +7,29 @@ import { VmRunner } from '@app/vm/vmRunner'
 import * as r from 'rethinkdb'
 
 export default class RethinkDBDataStore {
+  private readonly opts: any
   private conn: r.Connection
 
-  constructor(private readonly socketIO: SocketIO.Server, private readonly vmRunner: VmRunner) {}
+  constructor(private readonly socketIO: SocketIO.Server, private readonly vmRunner: VmRunner) {
+    this.opts = {
+      host: config.get('rethink_db.host'),
+      port: config.get('rethink_db.port'),
+      user: config.get('rethink_db.user'),
+      password: config.get('rethink_db.password'),
+      db: config.get('rethink_db.db_name'),
+      ssl: {
+        cert: config.get('rethink_db.cert_raw')
+      }
+    }
+
+    if (!this.opts.ssl.cert) {
+      delete this.opts.ssl
+    }
+  }
 
   public async start() {
     try {
-      const c = {
-        host: config.get('server.rethink_db.host'),
-        port: config.get('server.rethink_db.port'),
-        user: config.get('server.rethink_db.user'),
-        password: config.get('server.rethink_db.password'),
-        db: config.get('server.rethink_db.db_name'),
-        ssl: {
-          cert: config.get('server.rethink_db.raw_cert')
-        }
-      }
-
-      this.conn = await r.connect(c)
+      this.conn = await r.connect(this.opts)
       this.setAllEvents()
     } catch (error) {
       l.error(`Can't connect to RethinkDB: ${error}`)
@@ -49,10 +54,15 @@ export default class RethinkDBDataStore {
           }
         }
       })
-      .run(this.conn, (err, cursor) => {
+      .run(this.conn)
+      .then(cursor => {
+        if (!cursor) {
+          return
+        }
+
         cursor.each((e: Error, block: Block) => {
           if (e) {
-            l.error('Error while listening events in blocks')
+            l.error(`Error while listening events in blocks: ${e}`)
             return
           }
 
@@ -79,6 +89,9 @@ export default class RethinkDBDataStore {
           )
         })
       })
+      .catch(error => {
+        l.error(`Error while listening events in blocks: ${error}`)
+      })
 
     r.table('transactions')
       .changes()
@@ -87,10 +100,15 @@ export default class RethinkDBDataStore {
           .row('new_val')('pending')
           .eq(true)
       )
-      .run(this.conn, (err, cursor) => {
+      .run(this.conn)
+      .then(cursor => {
+        if (!cursor) {
+          return
+        }
+
         cursor.each((e, row: r.ChangeSet<any, any>) => {
           if (e) {
-            l.error('Error while listening events in transactions')
+            l.error(`Error while listening events in transactions. Error: ${e}`)
             return
           }
 
@@ -103,6 +121,9 @@ export default class RethinkDBDataStore {
             this.socketIO.to('pendingTxs').emit('newPendingTx', sTx.smallify())
           }
         })
+      })
+      .catch(error => {
+        l.error(`Error while listening events in transactions: ${error}`)
       })
   }
 
@@ -311,11 +332,11 @@ export default class RethinkDBDataStore {
       .merge(tx => {
         return {
           trace: r
-            .db('eth_mainnet')
+            .db(this.opts.db_name)
             .table('traces')
             .get(tx('hash')),
           logs: r
-            .db('eth_mainnet')
+            .db(this.opts.db_name)
             .table('logs')
             .get(tx('hash'))
         }

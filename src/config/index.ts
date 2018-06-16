@@ -3,7 +3,7 @@ import * as convict from 'convict'
 const config = convict({
   env: {
     default: 'dev',
-    format: ['prod', 'dev', 'test'],
+    format: ['production', 'dev', 'test'],
     env: 'NODE_ENV'
   },
 
@@ -88,41 +88,41 @@ const config = convict({
           env: 'ETHVM_LOKI_TTL_AGE'
         }
       }
-    },
+    }
+  },
 
-    rethink_db: {
-      host: {
-        default: 'localhost',
-        format: String,
-        env: 'ETHVM_RETHINK_DB_HOST'
-      },
-      port: {
-        default: 28015,
-        format: 'port',
-        env: 'ETHVM_RETHINK_DB_PORT'
-      },
-      user: {
-        default: 'admin',
-        format: String,
-        env: 'ETHVM_RETHINK_DB_USER'
-      },
-      password: {
-        default: '',
-        format: String,
-        env: 'ETHVM_RETHINK_DB_PASSWORD',
-        sensitive: true
-      },
-      db_name: {
-        default: 'eth_mainnet',
-        format: String,
-        env: 'ETHVM_RETHINK_DB_NAME'
-      },
-      cert_raw: {
-        default: '',
-        format: String,
-        env: 'ETHVM_RETHINK_DB_CERT_RAW',
-        sensitive: true
-      }
+  rethink_db: {
+    db_name: {
+      default: 'eth_mainnet',
+      format: String,
+      env: 'ETHVM_RETHINK_DB_NAME'
+    },
+    host: {
+      default: 'localhost',
+      format: String,
+      env: 'ETHVM_RETHINK_DB_HOST'
+    },
+    port: {
+      default: 28015,
+      format: 'port',
+      env: 'ETHVM_RETHINK_DB_PORT'
+    },
+    user: {
+      default: 'admin',
+      format: String,
+      env: 'ETHVM_RETHINK_DB_USER'
+    },
+    password: {
+      default: '',
+      format: String,
+      env: 'ETHVM_RETHINK_DB_PASSWORD',
+      sensitive: true
+    },
+    cert_raw: {
+      default: '',
+      format: String,
+      env: 'ETHVM_RETHINK_DB_CERT_RAW',
+      sensitive: true
     }
   },
 
