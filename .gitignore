@@ -41,6 +41,7 @@ typings/
 # dotenv environment variables file
 .env
 
-# Other
+# Project
 loki.json
 dist/
+docker/volumes/
