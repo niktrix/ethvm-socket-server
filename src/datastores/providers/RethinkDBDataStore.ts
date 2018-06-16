@@ -1,7 +1,7 @@
 import config from '@app/config'
+import { ds } from '@app/datastores'
 import { l } from '@app/helpers'
 import { BlockTxStats } from '@app/libs'
-import { ds } from '@app/datastores'
 import { Block, Chart, SmallBlock, SmallTx, Tx } from '@app/models'
 import { VmRunner } from '@app/vm/vmRunner'
 import * as r from 'rethinkdb'

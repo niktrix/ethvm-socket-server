@@ -36,10 +36,7 @@ export class EthVMServer {
     ds.getBlocks((blocks: Block[]) => {
       const configStateRoot = config.get('eth.state_root')
       const hasStateRoot = blocks && blocks[0] && blocks[0].stateRoot
-      const stateRoot =
-        hasStateRoot
-          ? new Buffer(blocks[0].stateRoot)
-          : new Buffer(configStateRoot, 'hex')
+      const stateRoot = hasStateRoot ? new Buffer(blocks[0].stateRoot) : new Buffer(configStateRoot, 'hex')
       this.vmRunner.setStateRoot(stateRoot) // genesis state by default
     })
 
