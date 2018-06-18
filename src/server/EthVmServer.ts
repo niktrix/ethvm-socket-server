@@ -13,12 +13,14 @@ export class EthVMServer {
   private readonly io: SocketIO.Server
   private readonly cacheDB: CacheDB
   private readonly vmRunner: VmRunner
+  private readonly vmEngine: VmEngine
   private readonly rdb: RethinkDBDataStore
 
   constructor() {
     this.io = this.createSocketIO()
     this.cacheDB = this.createCacheDB()
     this.vmRunner = this.createVmRunner()
+    this.vmEngine = this.createVmEngine()
     this.rdb = this.createRethinkDBDataStore(this.io, this.vmRunner)
   }
 
@@ -41,7 +43,7 @@ export class EthVMServer {
     })
 
     l.info('Starting VmEngine')
-    VmEngine.start()
+    this.vmEngine.start()
 
     l.info('Starting listening on connection in SocketIO')
     this.io.on('connection', (socket: SocketIO.Socket) => {
@@ -74,6 +76,11 @@ export class EthVMServer {
     }
 
     return new CacheDB(opts)
+  }
+
+  private createVmEngine(): VmEngine {
+    l.info('Creating VmEngine')
+    return new VmEngine()
   }
 
   private createVmRunner(): VmRunner {
