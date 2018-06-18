@@ -148,6 +148,27 @@ const config = convict({
       default: 'd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544',
       format: String,
       env: 'ETHVM_ETH_STATE_ROOT'
+    },
+    vm: {
+      engine: {
+        rpc_url: {
+          default: 'https://api.myetherwallet.com/eth',
+          format: String,
+          env: 'ETHVM_ETH_VM_ENGINE_RPC_URL'
+        },
+        tokens_smart_contract: {
+          address: {
+            default: '0xbe1ecf8e340f13071761e0eef054d9a511e1cb56',
+            format: String,
+            env: 'ETHVM_ETH_VM_ENGINE_TOKENS_SMART_CONTRACT_ADDRESS'
+          }
+        },
+        gas_limit: {
+          default: '0x4c4b40', // 50000000
+          format: String,
+          env: 'ETHVM_ETH_VM_ENGINE_GAS_LIMIT'
+        }
+      }
     }
   }
 })
