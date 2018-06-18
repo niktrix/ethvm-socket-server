@@ -92,7 +92,6 @@ const events: SocketIOEvent[] = [
   {
     name: 'getBalance',
     onEvent: (socket, msg, glob, cb): void => {
-      // _glob.vmR.getAccount(_msg, _cb)
       glob.vmE.getBalance(msg, cb)
     }
   },
@@ -133,7 +132,15 @@ const events: SocketIOEvent[] = [
         cb(common.newError(common.errors.notBuffer), null)
         return
       }
-      glob.vmR.getKeyValue(msg, cb)
+
+      glob.cacheDB.get(
+        new Buffer(msg),
+        {
+          keyEncoding: 'binary',
+          valueEncoding: 'binary'
+        },
+        cb
+      )
     }
   },
   {
@@ -143,7 +150,10 @@ const events: SocketIOEvent[] = [
         cb(common.newError(common.errors.invalidInput), null)
         return
       }
-      glob.vmR.getCurrentStateRoot(cb)
+
+      glob.vmR.getCurrentStateRoot().then(result => {
+        cb(null, result)
+      })
     }
   },
   {
