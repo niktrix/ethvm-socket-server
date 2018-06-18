@@ -1,26 +1,26 @@
-export interface Tx {
-  root?: Buffer
-  blockHash: Buffer
-  blockNumber?: Buffer
-  transactionIndex?: Buffer
-  from: Buffer
-  fromBalance?: Buffer
-  to: Buffer
-  toBalance?: Buffer
-  gasUsed: Buffer
-  cumulativeGasUsed?: Buffer
-  contractAddress: Buffer
-  logsBloom?: Buffer
-  gas: Buffer
-  gasPrice: Buffer
-  hash: Buffer
-  input: Buffer
-  nonce?: Buffer
-  value: Buffer
-  v?: Buffer
-  r?: Buffer
-  s?: Buffer
-  status: boolean
-  pending?: boolean
-  timestamp: Buffer
+export class Tx {
+  public root?: Buffer
+  public blockHash: Buffer
+  public blockNumber?: Buffer
+  public transactionIndex?: Buffer
+  public from: Buffer
+  public fromBalance?: Buffer
+  public to: Buffer
+  public toBalance?: Buffer
+  public gasUsed: Buffer
+  public cumulativeGasUsed?: Buffer
+  public contractAddress: Buffer
+  public logsBloom?: Buffer
+  public gas: Buffer
+  public gasPrice: Buffer
+  public hash: Buffer
+  public input: Buffer
+  public nonce?: Buffer
+  public value: Buffer
+  public v?: Buffer
+  public r?: Buffer
+  public s?: Buffer
+  public status: boolean
+  public pending?: boolean
+  public timestamp: Buffer
 }

@@ -1,6 +1,6 @@
 import { Log } from '@app/models'
 
-export interface TxLog {
-  hash: Buffer
-  logs: Log[]
+export class TxLog {
+  public hash: Buffer
+  public logs: Log[]
 }

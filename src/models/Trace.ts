@@ -1,8 +1,8 @@
 import { Transfer } from '@app/models'
 
-export interface TraceModel {
-  hash: Buffer
-  trace: {
+export class TraceModel {
+  public hash: Buffer
+  public trace: {
     isError: boolean
     msg: string
     transfers: Transfer[]

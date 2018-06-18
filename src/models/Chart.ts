@@ -1,4 +1,4 @@
-export interface Chart {
-  timestamp: Buffer
-  newaccounts: Buffer
+export class Chart {
+  public timestamp: Buffer
+  public newaccounts: Buffer
 }
