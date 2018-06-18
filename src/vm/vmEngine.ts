@@ -1,50 +1,86 @@
-import { l } from '@app/helpers'
+import config from '@app/config'
 import { encodeCall } from '@app/libs/utils'
 import { ZeroClientProviderFactory } from '@app/vm/ZeroClientProviderFactory'
-import * as createPayload from 'web3-provider-engine/util/create-payload.js'
+import * as Web3ProviderEngine from 'web3-provider-engine'
+import * as createPayload from 'web3-provider-engine/util/create-payload'
 
-const VmEngine = ZeroClientProviderFactory.create({
-  rpcUrl: 'https://api.myetherwallet.com/eth'
-})
+export class VmEngine {
+  private readonly opts: any
+  private readonly proxy: Web3ProviderEngine
 
-VmEngine.getBalance = (args: any, a: any) => {
-  l.debug('getbalance====== ==================')
-  const payload = createPayload({
-    jsonrpc: '2.0',
-    method: 'eth_getBalance',
-    params: [args, 'latest'],
-    id: 1
-  })
-  l.debug(JSON.stringify(payload))
-  VmEngine.sendAsync(payload, a)
-}
-
-VmEngine.getAccount = (args: any, a: any) => {
-  VmEngine.sendAsync(
-    createPayload({
-      jsonrpc: '2.0',
-      method: 'eth_getKeyValue',
-      params: ['0x2a65aca4d5fc5b5c859090a6c34d164135398226'],
-      id: 1
-    }),
-    (err: any, response: any) => {
-      l.debug('response', response)
+  constructor() {
+    this.opts = {
+      rpcUrl: config.get('eth.vm.engine.rpcUrl'),
+      tokensAddress: config.get('eth.vm.engine.tokens_smart_contract')
     }
-  )
-}
+    this.proxy = ZeroClientProviderFactory.create(this.opts)
+  }
 
-VmEngine.getAllTokens = (args: any, a: any) => {
-  const argss = ['address', 'bool', 'bool', 'bool', 'uint256']
-  l.debug('Get Token Balance for : ', args)
-  const vals = [args, 'true', 'true', 'true', 0]
-  const encoded = encodeCall('getAllBalance', argss, vals)
-  const pl = createPayload({
-    jsonrpc: '2.0',
-    method: 'eth_call',
-    params: [{ to: '0xbe1ecf8e340f13071761e0eef054d9a511e1cb56', data: encoded }, 'pending'],
-    id: 1
-  })
-  VmEngine.sendAsync(pl, a)
-}
+  public getBalance(args: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const payload = createPayload({
+        jsonrpc: '2.0',
+        method: 'eth_getBalance',
+        params: [args, 'latest'],
+        id: 1
+      })
 
-export { VmEngine }
+      this.proxy.sendAsync(payload, (err: Error, response: any) => {
+        if (err) {
+          reject(err)
+          return
+        }
+
+        resolve(response)
+      })
+    })
+  }
+
+  public getAccount(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const payload = createPayload({
+        jsonrpc: '2.0',
+        method: 'eth_getKeyValue',
+        params: ['0x2a65aca4d5fc5b5c859090a6c34d164135398226'],
+        id: 1
+      })
+
+      this.proxy.sendAsync(payload, (err: Error, response: any) => {
+        if (err) {
+          reject(err)
+          return
+        }
+
+        resolve(response)
+      })
+    })
+  }
+
+  public getAllTokens(args: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const argss = ['address', 'bool', 'bool', 'bool', 'uint256']
+      const vals = [args, 'true', 'true', 'true', 0]
+      const encoded = encodeCall('getAllBalance', argss, vals)
+
+      const payload = createPayload({
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [{ to: this.opts.tokensAddress, data: encoded }, 'pending'],
+        id: 1
+      })
+
+      this.proxy.sendAsync(payload, (err: Error, response: any) => {
+        if (err) {
+          reject(err)
+          return
+        }
+
+        resolve(response)
+      })
+    })
+  }
+
+  public start() {
+    this.proxy.start()
+  }
+}
