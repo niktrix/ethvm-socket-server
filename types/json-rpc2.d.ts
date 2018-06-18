@@ -1,4 +1,4 @@
-declare module 'json-rpc2' {
+declare module '@enkrypt.io/json-rpc2' {
   export interface RPCConnection {
     call<T>(command: string, args: any[], callback: (err: Error, result: T) => void): void
   }
