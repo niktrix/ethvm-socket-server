@@ -1,10 +1,11 @@
 import config from '@app/config'
 import { Block, Tx } from '@app/models'
 import * as Redis from 'ioredis'
+import { CacheDataStore } from '@app/datastores'
 
 type CallbackFunction = (data: any[]) => void
 
-interface ItableCache {
+interface TableCache {
   transactions: Tx[]
   blocks: Block[]
 }
@@ -12,7 +13,7 @@ interface ItableCache {
 const redis = new Redis(config.get('data_stores.redis.url'))
 const socketRows = config.get('data_stores.redis.socket_rows')
 
-const tableCache: ItableCache = {
+const tableCache: TableCache = {
   transactions: [],
   blocks: []
 }
@@ -41,22 +42,24 @@ const bufferify = (obj: any): any => {
 }
 
 const getArray = (tbName: any, cb: CallbackFunction) => {
-  const tbKey: keyof ItableCache = tbName
+  const tbKey: keyof TableCache = tbName
   if (tableCache[tbKey].length) {
     cb(tableCache[tbKey])
-  } else {
-    const vals = redis.get(tbName, (err, result) => {
-      if (!err && result) {
-        const bufferedArr = JSON.parse(result).map((_item: any) => {
-          return bufferify(_item)
-        })
-        tableCache[tbKey] = bufferedArr
-        cb(bufferedArr)
-      } else {
-        cb([])
-      }
-    })
+    return
   }
+
+  redis.get(tbName, (err, result) => {
+    if (!err && result) {
+      const bufferedArr = JSON.parse(result).map((_item: any) => {
+        return bufferify(_item)
+      })
+      tableCache[tbKey] = bufferedArr
+      cb(bufferedArr)
+      return
+    }
+
+    cb([])
+  })
 }
 
 const addTransaction = (tx: Tx | Tx[]) => {
@@ -80,11 +83,14 @@ const addTransaction = (tx: Tx | Tx[]) => {
 const addBlock = (block: Block) => {
   getArray(tables.blocks, pBlocks => {
     pBlocks.unshift(block)
+
     if (pBlocks.length > socketRows) {
       pBlocks = pBlocks.slice(0, socketRows)
     }
-    const tbKey: keyof ItableCache = 'blocks'
+
+    const tbKey: keyof TableCache = 'blocks'
     tableCache[tbKey] = pBlocks
+
     redis.set(tables.blocks, JSON.stringify(pBlocks))
   })
 }
@@ -100,6 +106,49 @@ const getTransactions = (cb: CallbackFunction) => {
 const initialize = () => {
   redis.set(tables.transactions, JSON.stringify([]))
   redis.set(tables.blocks, JSON.stringify([]))
+}
+
+class RedisDataStore implements CacheDataStore {
+  private readonly r: any
+  private readonly tables: any
+  private readonly socketRows: any
+
+  constructor() {
+    const redisUrl = config.get('data_stores.redis.url')
+    this.r = new Redis(redisUrl)
+    this.tables = {
+      transactions: 'transactions',
+      blocks: 'blocks'
+    }
+    this.socketRows = config.get('data_stores.redis.socket_rows')
+  }
+
+  initialize(): Promise<boolean> {
+    return new Promise(resolve => {
+      const empty = JSON.stringify([])
+
+      this.r.set(tables.transactions, empty)
+      this.r.set(tables.blocks, empty)
+
+      resolve(true)
+    })
+  }
+
+  putBlock(block: Block): Promise<boolean> {
+    throw new Error('Method not implemented.')
+  }
+
+  getBlocks(): Promise<Block[]> {
+    throw new Error('Method not implemented.')
+  }
+
+  putTransaction(tx: Tx | Tx[]): Promise<boolean> {
+    throw new Error('Method not implemented.')
+  }
+
+  getTransactions(): Promise<Tx[]> {
+    throw new Error('Method not implemented.')
+  }
 }
 
 export default {

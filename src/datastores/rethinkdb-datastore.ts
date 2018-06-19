@@ -1,12 +1,12 @@
 import config from '@app/config'
 import { ds } from '@app/datastores'
-import { l } from '@app/helpers'
+import { logger } from '@app/helpers'
 import { BlockTxStats } from '@app/libs'
 import { Block, Chart, SmallBlock, SmallTx, Tx } from '@app/models'
 import { VmRunner } from '@app/vm/vmRunner'
 import * as r from 'rethinkdb'
 
-export default class RethinkDBDataStore {
+export class RethinkDBDataStore {
   private readonly opts: any
   private conn: r.Connection
 
@@ -27,16 +27,16 @@ export default class RethinkDBDataStore {
     }
   }
 
-  public async start() {
+  public async initialize() {
     try {
       this.conn = await r.connect(this.opts)
       this.setAllEvents()
     } catch (error) {
-      l.error(`Can't connect to RethinkDB: ${error}`)
+      logger.error(`Error issued while initializing RethinkDB: ${error}`)
     }
   }
 
-  public setAllEvents() {
+  private setAllEvents() {
     r.table('blocks')
       .changes()
       .map(change => change('new_val'))
@@ -352,7 +352,7 @@ export default class RethinkDBDataStore {
   }
 
   private onNewBlock(block: Block) {
-    l.debug('got new block', block.hash)
+    logger.debug('got new block', block.hash)
     this.socketIO.to('blocks').emit('newBlock', block)
     ds.addBlock(block)
   }

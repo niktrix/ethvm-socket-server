@@ -1,18 +1,19 @@
-import { CacheDB, ds } from '@app/datastores'
-import RethinkDBDataStore from '@app/datastores/providers/RethinkDBDataStore'
+import { ds } from '@app/datastores'
+import RethinkDBDataStore from '@app/datastores/rethinkdb-datastore'
 import { l } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { common } from '@app/libs'
 import { Block, Tx } from '@app/models'
-import { VmRunner } from '@app/vm/'
+import { VmRunner, VmEngine } from '@app/vm/'
 import fetch from 'node-fetch'
 import * as SocketIO from 'socket.io'
+import { TrieDB } from '@app/vm/trie/db/triedb-interface'
 
 interface Instances {
   rdb: RethinkDBDataStore
   vmR: VmRunner
-  vmE: any
-  cacheDB: CacheDB
+  vmE: VmEngine
+  cacheDB: TrieDB
 }
 
 interface SocketIOEvent {
@@ -50,11 +51,13 @@ const events: SocketIOEvent[] = [
     onEvent: (socket, msg, glob, cb): void => {
       ds.getBlocks((_blocks: Block[]) => {
         const blocks: Block[] = []
-        blocks.forEach(
+
+        _blocks.forEach(
           (block: Block, idx: number): void => {
             blocks.unshift(block)
           }
         )
+
         cb(null, blocks)
       })
     }
@@ -64,9 +67,11 @@ const events: SocketIOEvent[] = [
     onEvent: (socket, msg, glob, cb): void => {
       ds.getTransactions((_txs: Tx[]) => {
         const txs: Tx[] = []
+
         _txs.forEach(_tx => {
           txs.unshift(_tx)
         })
+
         cb(null, txs)
       })
     }
@@ -92,13 +97,19 @@ const events: SocketIOEvent[] = [
   {
     name: 'getBalance',
     onEvent: (socket, msg, glob, cb): void => {
-      glob.vmE.getBalance(msg, cb)
+      glob.vmE
+        .getBalance(msg)
+        .then(result => cb(null, result))
+        .catch(error => cb(error, null))
     }
   },
   {
     name: 'getTokenBalance',
     onEvent: (socket, msg, glob, cb): void => {
-      glob.vmE.getAllTokens(msg, cb)
+      glob.vmE
+        .getAllTokens(msg)
+        .then(result => cb(null, result))
+        .catch(error => cb(error, null))
     }
   },
   {
@@ -220,8 +231,8 @@ const events: SocketIOEvent[] = [
   }
 ]
 
-const onConnection = (socket: SocketIO.Socket, rdb: RethinkDBDataStore, cacheDB: CacheDB, vmR: VmRunner, vmE: any) => {
-  events.forEach((event: SocketIOEvent, idx: number) => {
+const onConnection = (socket: SocketIO.Socket, rdb: RethinkDBDataStore, cacheDB: TrieDB, vmR: VmRunner, vmE: any) => {
+  events.forEach((event: SocketIOEvent) => {
     socket.on(event.name, (msg: any, cb: Callback) => {
       event.onEvent(
         socket,

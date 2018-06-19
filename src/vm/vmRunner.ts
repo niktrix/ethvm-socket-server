@@ -111,29 +111,4 @@ export class VmRunner {
       cb(null, buffer)
     })
   }
-
-  private executeOnVm(tree: any, to: Buffer, code: Buffer, gasLimit: string, data: Buffer): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const vm = new VM({
-        state: sTree
-      })
-
-      vm.runCode(
-        {
-          address: to,
-          code,
-          gasLimit,
-          data
-        },
-        (err: Error, result: any) => {
-          if (err) {
-            reject(err)
-            return
-          }
-
-          resolve(result)
-        }
-      )
-    })
-  }
 }

@@ -1,8 +1,9 @@
-import config from '@app/config'
-import LokiJS from '@app/datastores/providers/LokiDataStore'
-import Redis from '@app/datastores/providers/RedisDataStore'
+export * from '@app/datastores/interfaces'
+export * from '@app/datastores/rethinkdb-datastore'
 
-export * from '@app/datastores/cache/CacheDB'
+import config from '@app/config'
+import LokiJS from '@app/datastores/loki-datastore'
+import Redis from '@app/datastores/redis-datastore'
 
 const DS_TYPE = config.get('data_stores.provider')
 
