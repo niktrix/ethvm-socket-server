@@ -199,8 +199,8 @@ class RethinkDB {
     getChartAccountsGrowth(duration: string, cb: (err: Error, result: any) => void): void {
         var today = new Date();
         //For testing as db dont have latest data
-        today.setDate(21)
-        today.setMonth(5)
+        today.setDate(1)
+        today.setMonth(6)
         today.setFullYear(2016)
         var startdate:number;
         var end: number;
@@ -246,8 +246,9 @@ class RethinkDB {
     getChartBlockSize(duration: string, cb: (err: Error, result: any) => void): void {
         console.log("getChartBlockSize")
         var today = new Date();
+        duration = "LAST_DAY";
         //For testing as db dont have latest data
-        today.setDate(21)
+        today.setDate(18)
         today.setMonth(5)
         today.setFullYear(2016)
         var startdate:number;
@@ -275,8 +276,8 @@ class RethinkDB {
                 index: 'timestamp',
                 rightBound: 'closed'
             })
-            // .group(r.row('timestamp').hours())  // use when selector is LAST_DAY
-            .group(r.row('timestamp').date())
+             .group(r.row('timestamp').hours())  // use when selector is LAST_DAY
+            //.group(r.row('timestamp').date())
             .avg(r.row('size'))
             .run(this.dbConn, function (err: Error, cursor: any) {
                 if (err) {
