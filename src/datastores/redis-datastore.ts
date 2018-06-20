@@ -1,7 +1,7 @@
 import config from '@app/config'
+import { CacheDataStore } from '@app/datastores'
 import { Block, Tx } from '@app/models'
 import * as Redis from 'ioredis'
-import { CacheDataStore } from '@app/datastores'
 
 type CallbackFunction = (data: any[]) => void
 
@@ -123,7 +123,7 @@ class RedisDataStore implements CacheDataStore {
     this.socketRows = config.get('data_stores.redis.socket_rows')
   }
 
-  initialize(): Promise<boolean> {
+  public initialize(): Promise<boolean> {
     return new Promise(resolve => {
       const empty = JSON.stringify([])
 
@@ -134,19 +134,19 @@ class RedisDataStore implements CacheDataStore {
     })
   }
 
-  putBlock(block: Block): Promise<boolean> {
+  public putBlock(block: Block): Promise<boolean> {
     throw new Error('Method not implemented.')
   }
 
-  getBlocks(): Promise<Block[]> {
+  public getBlocks(): Promise<Block[]> {
     throw new Error('Method not implemented.')
   }
 
-  putTransaction(tx: Tx | Tx[]): Promise<boolean> {
+  public putTransaction(tx: Tx | Tx[]): Promise<boolean> {
     throw new Error('Method not implemented.')
   }
 
-  getTransactions(): Promise<Tx[]> {
+  public getTransactions(): Promise<Tx[]> {
     throw new Error('Method not implemented.')
   }
 }

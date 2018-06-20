@@ -36,97 +36,6 @@ export class RethinkDBDataStore {
     }
   }
 
-  private setAllEvents() {
-    r.table('blocks')
-      .changes()
-      .map(change => change('new_val'))
-      .merge(block => {
-        return {
-          transactions: r
-            .table('transactions')
-            .getAll(r.args(block('transactionHashes')))
-            .coerceTo('array'),
-          blockStats: {
-            pendingTxs: r
-              .table('data')
-              .get('cached')
-              .getField('pendingTxs')
-          }
-        }
-      })
-      .run(this.conn)
-      .then(cursor => {
-        if (!cursor) {
-          return
-        }
-
-        cursor.each((e: Error, block: Block) => {
-          if (e) {
-            l.error(`Error while listening events in blocks: ${e}`)
-            return
-          }
-
-          this.vmRunner.setStateRoot(block.stateRoot)
-
-          const bstats = new BlockTxStats(block, block.transactions)
-          block.blockStats = { ...bstats.getBlockStats(), ...block.blockStats }
-
-          const sBlock = new SmallBlock(block)
-          const blockHash = sBlock.hash()
-
-          this.socketIO.to(blockHash).emit(blockHash + '_update', block)
-
-          this.onNewBlock(sBlock.smallify())
-          this.onNewTx(
-            block.transactions.map(tx => {
-              const sTx = new SmallTx(tx)
-              const txHash: string = sTx.hash()
-
-              this.socketIO.to(txHash).emit(txHash + '_update', tx)
-
-              return sTx.smallify()
-            })
-          )
-        })
-      })
-      .catch(error => {
-        l.error(`Error while listening events in blocks: ${error}`)
-      })
-
-    r.table('transactions')
-      .changes()
-      .filter(
-        r
-          .row('new_val')('pending')
-          .eq(true)
-      )
-      .run(this.conn)
-      .then(cursor => {
-        if (!cursor) {
-          return
-        }
-
-        cursor.each((e, row: r.ChangeSet<any, any>) => {
-          if (e) {
-            l.error(`Error while listening events in transactions. Error: ${e}`)
-            return
-          }
-
-          const tx: Tx = row.new_val
-          if (tx.pending) {
-            const sTx = new SmallTx(tx)
-            const txHash: string = sTx.hash()
-
-            this.socketIO.to(txHash).emit(txHash + '_update', tx)
-            this.socketIO.to('pendingTxs').emit('newPendingTx', sTx.smallify())
-          }
-        })
-      })
-      .catch(error => {
-        l.error(`Error while listening events in transactions: ${error}`)
-      })
-  }
-
   public getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void) {
     const sendResults = cursor => {
       cursor.toArray((err: Error, results: Tx[]) => {
@@ -363,5 +272,96 @@ export class RethinkDBDataStore {
     }
     this.socketIO.to('txs').emit('newTx', tx)
     ds.addTransaction(tx)
+  }
+
+  private setAllEvents() {
+    r.table('blocks')
+      .changes()
+      .map(change => change('new_val'))
+      .merge(block => {
+        return {
+          transactions: r
+            .table('transactions')
+            .getAll(r.args(block('transactionHashes')))
+            .coerceTo('array'),
+          blockStats: {
+            pendingTxs: r
+              .table('data')
+              .get('cached')
+              .getField('pendingTxs')
+          }
+        }
+      })
+      .run(this.conn)
+      .then(cursor => {
+        if (!cursor) {
+          return
+        }
+
+        cursor.each((e: Error, block: Block) => {
+          if (e) {
+            logger.error(`Error while listening events in blocks: ${e}`)
+            return
+          }
+
+          this.vmRunner.setStateRoot(block.stateRoot)
+
+          const bstats = new BlockTxStats(block, block.transactions)
+          block.blockStats = { ...bstats.getBlockStats(), ...block.blockStats }
+
+          const sBlock = new SmallBlock(block)
+          const blockHash = sBlock.hash()
+
+          this.socketIO.to(blockHash).emit(blockHash + '_update', block)
+
+          this.onNewBlock(sBlock.smallify())
+          this.onNewTx(
+            block.transactions.map(tx => {
+              const sTx = new SmallTx(tx)
+              const txHash: string = sTx.hash()
+
+              this.socketIO.to(txHash).emit(txHash + '_update', tx)
+
+              return sTx.smallify()
+            })
+          )
+        })
+      })
+      .catch(error => {
+        logger.error(`Error while listening events in blocks: ${error}`)
+      })
+
+    r.table('transactions')
+      .changes()
+      .filter(
+        r
+          .row('new_val')('pending')
+          .eq(true)
+      )
+      .run(this.conn)
+      .then(cursor => {
+        if (!cursor) {
+          return
+        }
+
+        cursor.each((e, row: r.ChangeSet<any, any>) => {
+          if (e) {
+            logger.error(`Error while listening events in transactions. Error: ${e}`)
+            return
+          }
+
+          const tx: Tx = row.new_val
+          if (tx.pending) {
+            const sTx = new SmallTx(tx)
+            const txHash: string = sTx.hash()
+
+            this.socketIO.to(txHash).emit(txHash + '_update', tx)
+            this.socketIO.to('pendingTxs').emit('newPendingTx', sTx.smallify())
+          }
+        })
+      })
+      .catch(error => {
+        logger.error(`Error while listening events in transactions: ${error}`)
+      })
   }
 }

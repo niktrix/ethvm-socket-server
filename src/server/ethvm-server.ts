@@ -1,10 +1,10 @@
 import config from '@app/config'
 import { RethinkDBDataStore } from '@app/datastores'
 import { logger } from '@app/helpers'
-import { VmEngine, VmRunner } from '@app/vm'
+import { SocketIOEvent } from '@app/server/events'
+import { TrieDB, VmEngine, VmRunner } from '@app/vm'
 import * as http from 'http'
 import * as SocketIO from 'socket.io'
-import { TrieDB } from 'vm/trie/db/triedb-interface'
 
 export class EthVMServer {
   private readonly io: SocketIO.Server

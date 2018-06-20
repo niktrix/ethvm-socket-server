@@ -1,13 +1,13 @@
 import { ds } from '@app/datastores'
-import RethinkDBDataStore from '@app/datastores/rethinkdb-datastore'
-import { l } from '@app/helpers'
+import { RethinkDBDataStore} from '@app/datastores/rethinkdb-datastore'
+import { logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { common } from '@app/libs'
 import { Block, Tx } from '@app/models'
-import { VmRunner, VmEngine } from '@app/vm/'
+import { VmEngine, VmRunner } from '@app/vm/'
+import { TrieDB } from '@app/vm/trie/db/triedb-interface'
 import fetch from 'node-fetch'
 import * as SocketIO from 'socket.io'
-import { TrieDB } from '@app/vm/trie/db/triedb-interface'
 
 interface Instances {
   rdb: RethinkDBDataStore
@@ -16,7 +16,7 @@ interface Instances {
   cacheDB: TrieDB
 }
 
-interface SocketIOEvent {
+export interface SocketIOEvent {
   name: string
   onEvent: (socket: SocketIO.Socket, msg: string, glob?: Instances, cb?: Callback) => void
 }
@@ -26,24 +26,24 @@ const events: SocketIOEvent[] = [
     name: 'join',
     onEvent: (socket, msg): void => {
       if (!msg) {
-        l.error(socket.id, 'tried to join invalid room', msg)
+        logger.error(socket.id, 'tried to join invalid room', msg)
         return
       }
 
       socket.join(msg)
-      l.info(socket.id, 'joined', msg)
+      logger.debug(socket.id, 'joined', msg)
     }
   },
   {
     name: 'leave',
     onEvent: (socket, msg): void => {
       if (!msg) {
-        l.error(socket.id, 'tried to leave invalid room', msg)
+        logger.error(socket.id, 'tried to leave invalid room', msg)
         return
       }
 
       socket.leave(msg)
-      l.info(socket.id, 'Left', msg)
+      logger.info(socket.id, 'Left', msg)
     }
   },
   {
@@ -170,36 +170,36 @@ const events: SocketIOEvent[] = [
   {
     name: 'getEthToUSD',
     onEvent: (socket, msg, glob, cb): void => {
-      glob.cacheDB.getString(
-        new Buffer('Iethtousd'),
-        {
-          keyEncoding: 'binary',
-          valueEncoding: 'binary'
-        },
-        (err: Error, result: any) => {
-          if (err == null) {
-            l.debug('EthtoUSD is in cache get')
-            cb(err, result)
-          } else {
-            l.debug('EthtoUSD getting from api')
-            getEthToUSD((er, data) => {
-              l.debug('data', data[0].price_usd)
-              glob.cacheDB.put(
-                new Buffer('Iethtousd'),
-                new Buffer(data[0].price_usd),
-                {
-                  keyEncoding: 'binary',
-                  valueEncoding: 'binary'
-                },
-                (e: Error, res: any) => {
-                  cb(e, res)
-                }
-              )
-              cb(er, result)
-            })
-          }
-        }
-      )
+      // glob.cacheDB.getString(
+      //   new Buffer('Iethtousd'),
+      //   {
+      //     keyEncoding: 'binary',
+      //     valueEncoding: 'binary'
+      //   },
+      //   (err: Error, result: any) => {
+      //     if (err == null) {
+      //       l.debug('EthtoUSD is in cache get')
+      //       cb(err, result)
+      //     } else {
+      //       l.debug('EthtoUSD getting from api')
+      //       getEthToUSD((er, data) => {
+      //         l.debug('data', data[0].price_usd)
+      //         glob.cacheDB.put(
+      //           new Buffer('Iethtousd'),
+      //           new Buffer(data[0].price_usd),
+      //           {
+      //             keyEncoding: 'binary',
+      //             valueEncoding: 'binary'
+      //           },
+      //           (e: Error, res: any) => {
+      //             cb(e, res)
+      //           }
+      //         )
+      //         cb(er, result)
+      //       })
+      //     }
+      //   }
+      // )
     }
   },
   {

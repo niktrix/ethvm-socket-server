@@ -13,5 +13,5 @@ export interface TrieDB {
 
   del(key: Buffer, cb: Callback)
 
-  batch(ops: Array<any>, opts: TrieDBOptions, cb: Callback)
+  batch(ops: any[], opts: TrieDBOptions, cb: Callback)
 }

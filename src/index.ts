@@ -1,8 +1,8 @@
-import { EthVMServer } from '@app/server'
+import { ds, RethinkDBDataStore } from '@app/datastores'
 import { logger } from '@app/helpers'
+import { EthVMServer } from '@app/server'
+import { VmEngine, VmRunner } from '@app/vm'
 import { RedisTrieDb } from '@app/vm/trie/db'
-import { VmRunner, VmEngine } from '@app/vm'
-import { RethinkDBDataStore, ds } from '@app/datastores'
 
 // Bootstrap app
 async function bootstrap() {

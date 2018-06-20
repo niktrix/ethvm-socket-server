@@ -1,9 +1,10 @@
 import config from '@app/config'
-import { CacheDB } from '@app/datastores'
+import { TrieDB } from '@app/datastores'
 import * as VM from '@enkrypt.io/ethereumjs-vm'
 import * as Account from 'ethereumjs-account'
 import * as LRU from 'lru'
 import * as Trie from 'merkle-patricia-tree/secure'
+import { TrieDB } from './trie/db/triedb.interface'
 
 const GAS_LIMIT = config.get('eth.vm.engine.gas_limit')
 
@@ -20,7 +21,7 @@ export class VmRunner {
   private readonly codeCache: any
   private stateTrie: Trie
 
-  constructor(private readonly db: CacheDB) {
+  constructor(private readonly db: TrieDB) {
     this.codeCache = new LRU(2000)
   }
 
@@ -102,13 +103,13 @@ export class VmRunner {
     const trie = this.stateTrie.copy()
     const buffer = hexToBuffer(to)
 
-    trie.get(buffer, (err: Error, buffer: Buffer) => {
+    trie.get(buffer, (err: Error, b: Buffer) => {
       if (err) {
         cb(err, null)
         return
       }
 
-      cb(null, buffer)
+      cb(null, b)
     })
   }
 }

@@ -1,8 +1,8 @@
+import config from '@app/config'
 import { Callback } from '@app/interfaces'
+import { TrieDB, TrieDBOptions } from '@app/vm/trie/db/triedb-interface'
 import * as rpc from '@enkrypt.io/json-rpc2'
 import * as Redis from 'ioredis'
-import { TrieDB, TrieDBOptions } from '@app/vm/trie/db/triedb-interface'
-import config from '@app/config'
 
 export class RedisTrieDb implements TrieDB {
   private readonly redis: any
