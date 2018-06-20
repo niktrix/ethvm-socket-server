@@ -228,6 +228,7 @@ class RethinkDB {
             // .group(r.row('timestamp').hours())  // use when selector is LAST_DAY
             .group(r.row('timestamp').date())
             .map(r.row('accounts').count())
+ 
             .reduce((l: any, r: any) => l.add(r))
             .default(0)
             .run(this.dbConn, function (err: Error, cursor: any) {
@@ -248,8 +249,8 @@ class RethinkDB {
         var today = new Date();
         duration = "LAST_DAY";
         //For testing as db dont have latest data
-        today.setDate(18)
-        today.setMonth(5)
+        today.setDate(1)
+        today.setMonth(6)
         today.setFullYear(2016)
         var startdate:number;
         var end: number;
@@ -276,8 +277,8 @@ class RethinkDB {
                 index: 'timestamp',
                 rightBound: 'closed'
             })
-             .group(r.row('timestamp').hours())  // use when selector is LAST_DAY
-            //.group(r.row('timestamp').date())
+            // .group(r.row('timestamp').hours())  // use when selector is LAST_DAY
+            .group(r.row('timestamp').date())
             .avg(r.row('size'))
             .run(this.dbConn, function (err: Error, cursor: any) {
                 if (err) {
@@ -291,6 +292,57 @@ class RethinkDB {
 
             })
     }
+
+    getChartGasLimit(duration: string, cb: (err: Error, result: any) => void): void {
+        console.log("getChartBlockSize")
+        var today = new Date();
+        duration = "LAST_DAY";
+        //For testing as db dont have latest data
+        today.setDate(1)
+        today.setMonth(6)
+        today.setFullYear(2016)
+        var startdate:number;
+        var end: number;
+        startdate = today.getTime();
+        switch (duration) {
+            case "LAST_7_DAYS": {
+                 end = today.setDate(today.getDate() - 6);
+                 console.log("start",startdate)
+                 console.log("end",end)
+
+            }
+                break;
+            case "LAST_DAY": {
+                end = today.setDate(today.getDate() - 1);
+            }
+                break;
+            case "FROM_BEGIN": {
+
+            }
+        }
+        let _this = this
+        r.table('blockscache')
+            .between(r.epochTime(end/1000) ,r.epochTime(startdate/1000) , {
+                index: 'timestamp',
+                rightBound: 'closed'
+            })
+            // .group(r.row('timestamp').hours())  // use when selector is LAST_DAY
+            .group(r.row('timestamp').date())
+            .avg(r.row('gasLimit'))
+            .run(this.dbConn, function (err: Error, cursor: any) {
+                if (err) {
+                    cb(err, null)
+                    return
+                }
+                cursor.toArray((err: Error, results: Array<chartLayout>) => {
+                    cb(null, results)
+
+                });
+
+            })
+    }
+
+
 
 
 

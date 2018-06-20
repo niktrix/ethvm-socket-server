@@ -119,6 +119,15 @@ let events: Array<_event> = [{
         _glob.rdb.getChartBlockSize(_msg,_cb)
     }
 },
+
+{
+    name: "getChartGasLimit",
+    onEvent: (_socket, _msg, _glob, _cb): void => {
+        _glob.rdb.getChartGasLimit(_msg,_cb)
+    }
+},
+
+
 {
     name: "ethCall",
     onEvent: (_socket, _msg: any, _glob, _cb): void => {
