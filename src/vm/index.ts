@@ -1,3 +1,3 @@
-export * from '@app/vm/VmEngine'
-export * from '@app/vm/VmRunner'
+export * from '@app/vm/vm-engine'
+export * from '@app/vm/vm-runner'
 export * from '@app/vm/trie/db'

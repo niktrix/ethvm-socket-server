@@ -1,49 +1,71 @@
 import config from '@app/config'
-import { RethinkDBDataStore } from '@app/datastores'
+import { CacheDataStore, RethinkDBDataStore } from '@app/datastores'
 import { logger } from '@app/helpers'
-import { SocketIOEvent } from '@app/server/events'
+import { Callback } from '@app/interfaces'
 import { TrieDB, VmEngine, VmRunner } from '@app/vm'
 import * as http from 'http'
 import * as SocketIO from 'socket.io'
 
+export interface SocketEvent {
+  name: string
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback) => void
+}
+
 export class EthVMServer {
-  private readonly io: SocketIO.Server
+  public readonly io: SocketIO.Server
+  public readonly events: Map<string, SocketEvent>
 
   constructor(
-    private readonly trieDB: TrieDB,
-    private readonly vmRunner: VmRunner,
-    private readonly vmEngine: VmEngine,
-    private readonly rdb: RethinkDBDataStore,
-    private readonly events: SocketIOEvent[]
+    readonly trieDB: TrieDB,
+    readonly vmRunner: VmRunner,
+    readonly vmEngine: VmEngine,
+    readonly ds: CacheDataStore,
+    readonly rdb: RethinkDBDataStore
   ) {
-    this.io = this.createSocketIO()
-    this.events = this.registerEvents()
+    this.io = this.createWSServer()
+    this.events = this.loadEvents()
   }
 
   public async start() {
-    logger.info('Starting listening on connection in SocketIO')
-    this.io.on('connection', (socket: SocketIO.Socket) => {
-      // addEvents(socket, this.rdb, this.trieDB, this.vmRunner, VmEngine)
-      this.registerEvents()
+    logger.debug('Starging to listen realtime events on RethinkDBDataStore')
+    this.rdb.startListeningToEvents()
+
+    logger.debug('Starting listening WS events on SocketIO')
+    this.io.on(
+      'connection',
+      (socket: SocketIO.Socket): void => {
+        this.registerEventsOnConnection(socket)
+      }
+    )
+  }
+
+  private loadEvents(): Map<string, SocketEvent> {
+    return new Map()
+  }
+
+  private registerEventsOnConnection(socket: SocketIO.Socket): void {
+    this.events.forEach((event: SocketEvent) => {
+      socket.on(
+        event.name,
+        (msg: any, cb: Callback): void => {
+          event.onEvent(this, socket, msg, cb)
+        }
+      )
     })
   }
 
-  private registerEvents(): SocketIOEvent[] {
-    return []
-  }
-
-  private createSocketIO(): SocketIO.Server {
-    logger.debug('Creating Http server')
+  private createWSServer(): SocketIO.Server {
+    logger.debug('Creating WebSocket server')
     const server = http.createServer()
 
     const host = config.get('server.host')
     const port = config.get('server.port')
 
     server.listen(port, host, () => {
-      logger.info(`Listening on ${host}:${port}`)
+      logger.debug(`Listening on ${host}:${port}`)
     })
 
-    logger.info('Creating SocketIO server')
+    logger.debug('Creating SocketIO server')
     return SocketIO(server)
   }
 }

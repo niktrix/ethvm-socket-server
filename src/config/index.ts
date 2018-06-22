@@ -58,15 +58,20 @@ const config = convict({
     },
 
     redis: {
-      url: {
-        default: 'redis://localhost:6379',
+      host: {
+        default: 'localhost',
         format: String,
-        env: 'ETHVM_REDIS_URL'
+        env: 'ETHVM_DATA_STORE_REDIS_HOST'
+      },
+      port: {
+        default: 6379,
+        format: 'port',
+        env: 'ETHVM_DATA_STORE_REDIS_PORT'
       },
       socket_rows: {
         default: 64,
         format: 'int',
-        env: 'ETHVM_REDIS_SOCKET_ROWS'
+        env: 'ETHVM_DATA_STORE_REDIS_SOCKET_ROWS'
       }
     },
 
@@ -74,18 +79,18 @@ const config = convict({
       db_name: {
         default: 'loki.json',
         format: String,
-        env: 'ETHVM_LOKI_DB_NAME'
+        env: 'ETHVM_DATA_STORE_LOKI_DB_NAME'
       },
       ttl: {
         interval: {
           default: 5000, // 5 secs,
           format: 'duration',
-          env: 'ETHVM_LOKI_TTL_INTERVAL'
+          env: 'ETHVM_DATA_STORE_LOKI_TTL_INTERVAL'
         },
         age: {
           default: 5 * 60 * 1000, // 5 mins
           format: 'duration',
-          env: 'ETHVM_LOKI_TTL_AGE'
+          env: 'ETHVM_DATA_STORE_LOKI_TTL_AGE'
         }
       }
     }

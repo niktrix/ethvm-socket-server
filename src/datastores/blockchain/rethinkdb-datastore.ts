@@ -1,43 +1,41 @@
 import config from '@app/config'
-import { ds } from '@app/datastores'
 import { logger } from '@app/helpers'
-import { BlockTxStats } from '@app/libs'
-import { Block, Chart, SmallBlock, SmallTx, Tx } from '@app/models'
-import { VmRunner } from '@app/vm/vmRunner'
+import { Block, Chart, SmallTx, Tx } from '@app/models'
+import EventEmitter from 'eventemitter3'
 import * as r from 'rethinkdb'
 
 export class RethinkDBDataStore {
+  public readonly emitter: EventEmitter
+
   private readonly opts: any
   private conn: r.Connection
 
-  constructor(private readonly socketIO: SocketIO.Server, private readonly vmRunner: VmRunner) {
+  constructor() {
     this.opts = {
       host: config.get('rethink_db.host'),
       port: config.get('rethink_db.port'),
       user: config.get('rethink_db.user'),
       password: config.get('rethink_db.password'),
-      db: config.get('rethink_db.db_name'),
-      ssl: {
+      db: config.get('rethink_db.db_name')
+    }
+    if (this.opts.ssl.cert) {
+      this.opts.ssl = {
         cert: config.get('rethink_db.cert_raw')
       }
     }
-
-    if (!this.opts.ssl.cert) {
-      delete this.opts.ssl
-    }
+    this.emitter = new EventEmitter()
   }
 
   public async initialize() {
     try {
       this.conn = await r.connect(this.opts)
-      this.setAllEvents()
     } catch (error) {
       logger.error(`Error issued while initializing RethinkDB: ${error}`)
     }
   }
 
-  public getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void) {
-    const sendResults = cursor => {
+  public getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number, cb: (err: any, result: any) => void) {
+    const sendResults = (cursor: r.cursor): void => {
       cursor.toArray((err: Error, results: Tx[]) => {
         if (err) {
           cb(err, null)
@@ -85,7 +83,7 @@ export class RethinkDBDataStore {
       })
   }
 
-  public getTransactionPages(hash: Buffer, bNumber: number, cb: (err: Error, result: any) => void) {
+  public getTransactionPages(hash: Buffer, bNumber: number, cb: (err: any, result: any) => void) {
     const sendResults = cursor => {
       cursor.toArray((err: Error, results: Tx[]) => {
         if (err) {
@@ -129,7 +127,7 @@ export class RethinkDBDataStore {
       })
   }
 
-  public getBlockTransactions(hash: string, cb: (err: Error, result: any) => void) {
+  public getBlockTransactions(hash: string, cb: (err: any, result: any) => void) {
     r.table('blocks')
       .get(r.args([new Buffer(hash)]))
       .do(block =>
@@ -148,7 +146,7 @@ export class RethinkDBDataStore {
       })
   }
 
-  public getTotalTxs(hash: string, cb: (err: Error, result: any) => void) {
+  public getTotalTxs(hash: string, cb: (err: any, result: any) => void) {
     const bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex')
     r.table('transactions')
       .getAll(r.args([bhash]), { index: 'cofrom' })
@@ -163,7 +161,7 @@ export class RethinkDBDataStore {
       })
   }
 
-  public getTxsOfAddress(hash: string, cb: (err: Error, result: any) => void) {
+  public getTxsOfAddress(hash: string, cb: (err: any, result: any) => void) {
     const sendResults = (cursor: any) => {
       cursor.toArray((err: Error, results: Tx[]) => {
         if (err) {
@@ -195,7 +193,7 @@ export class RethinkDBDataStore {
       })
   }
 
-  public getChartsData(cb: (err: Error, result: any) => void) {
+  public getChartsData(cb: (err: any, result: any) => void) {
     r.table('blockscache')
       .between(r.time(2016, 5, 2, 'Z'), r.time(2016, 5, 11, 'Z'), {
         index: 'timestamp',
@@ -211,7 +209,7 @@ export class RethinkDBDataStore {
           return
         }
 
-        cursor.toArray((e: Error, results: Chart[]) => {
+        cursor.toArray((e: any, results: Chart[]) => {
           if (e) {
             cb(e, null)
             return
@@ -222,7 +220,7 @@ export class RethinkDBDataStore {
       })
   }
 
-  public getBlock(hash: string, cb: (err: Error, result: any) => void) {
+  public getBlock(hash: string, cb: (err: any, result: any) => void) {
     r.table('blocks')
       .get(r.args([new Buffer(hash)]))
       .run(this.conn, (err: Error, result: Block) => {
@@ -235,7 +233,7 @@ export class RethinkDBDataStore {
       })
   }
 
-  public getTx(hash: string, cb: (err: Error, result: any) => void) {
+  public getTx(hash: string, cb: (err: any, result: any) => void) {
     r.table('transactions')
       .get(r.args([new Buffer(hash)]))
       .merge(tx => {
@@ -250,31 +248,20 @@ export class RethinkDBDataStore {
             .get(tx('hash'))
         }
       })
-      .run(this.conn, (err: Error, result: Tx) => {
-        if (err) {
-          cb(err, null)
-          return
+      .run(
+        this.conn,
+        (err: Error, result: Tx): void => {
+          if (err) {
+            cb(err, null)
+            return
+          }
+
+          cb(null, result)
         }
-
-        cb(null, result)
-      })
+      )
   }
 
-  private onNewBlock(block: Block) {
-    logger.debug('got new block', block.hash)
-    this.socketIO.to('blocks').emit('newBlock', block)
-    ds.addBlock(block)
-  }
-
-  private onNewTx(tx: Tx | Tx[]) {
-    if (Array.isArray(tx) && !tx.length) {
-      return
-    }
-    this.socketIO.to('txs').emit('newTx', tx)
-    ds.addTransaction(tx)
-  }
-
-  private setAllEvents() {
+  public async startListeningToEvents() {
     r.table('blocks')
       .changes()
       .map(change => change('new_val'))
@@ -293,42 +280,40 @@ export class RethinkDBDataStore {
         }
       })
       .run(this.conn)
-      .then(cursor => {
-        if (!cursor) {
-          return
-        }
-
-        cursor.each((e: Error, block: Block) => {
-          if (e) {
-            logger.error(`Error while listening events in blocks: ${e}`)
+      .then(
+        (cursor: r.cursor): void => {
+          if (!cursor) {
             return
           }
 
-          this.vmRunner.setStateRoot(block.stateRoot)
+          cursor.each(
+            (e: Error, block: Block): void => {
+              if (e) {
+                logger.error(`RethinkDBDataStore - listenToBlockAndTxEvents() / Error while listening events in blocks: ${e}`)
+                return
+              }
 
-          const bstats = new BlockTxStats(block, block.transactions)
-          block.blockStats = { ...bstats.getBlockStats(), ...block.blockStats }
-
-          const sBlock = new SmallBlock(block)
-          const blockHash = sBlock.hash()
-
-          this.socketIO.to(blockHash).emit(blockHash + '_update', block)
-
-          this.onNewBlock(sBlock.smallify())
-          this.onNewTx(
-            block.transactions.map(tx => {
-              const sTx = new SmallTx(tx)
-              const txHash: string = sTx.hash()
-
-              this.socketIO.to(txHash).emit(txHash + '_update', tx)
-
-              return sTx.smallify()
-            })
+              // this.vmRunner.setStateRoot(block.stateRoot)
+              // const bstats = new BlockTxStats(block, block.transactions)
+              // block.blockStats = { ...bstats.getBlockStats(), ...block.blockStats }
+              // const sBlock = new SmallBlock(block)
+              // const blockHash = sBlock.hash()
+              // this.socketIO.to(blockHash).emit(blockHash + '_update', block)
+              // this.onNewBlock(sBlock.smallify())
+              // this.onNewTx(
+              //   block.transactions.map(tx => {
+              //     const sTx = new SmallTx(tx)
+              //     const txHash: string = sTx.hash()
+              //     this.socketIO.to(txHash).emit(txHash + '_update', tx)
+              //     return sTx.smallify()
+              //   })
+              // )
+            }
           )
-        })
-      })
+        }
+      )
       .catch(error => {
-        logger.error(`Error while listening events in blocks: ${error}`)
+        logger.error(`RethinkDBDataStore - listenToBlockAndTxEvents() / Error while listening events in blocks: ${error}`)
       })
 
     r.table('transactions')
@@ -339,29 +324,43 @@ export class RethinkDBDataStore {
           .eq(true)
       )
       .run(this.conn)
-      .then(cursor => {
+      .then((cursor: r.cursor) => {
         if (!cursor) {
           return
         }
 
-        cursor.each((e, row: r.ChangeSet<any, any>) => {
-          if (e) {
-            logger.error(`Error while listening events in transactions. Error: ${e}`)
-            return
-          }
+        cursor.each(
+          (e: Error, row: r.ChangeSet<any, any>): void => {
+            if (e) {
+              logger.error(`RethinkDBDataStore - listenToBlockAndTxEvents() / Error while listening events in transactions. Error: ${e}`)
+              return
+            }
 
-          const tx: Tx = row.new_val
-          if (tx.pending) {
-            const sTx = new SmallTx(tx)
-            const txHash: string = sTx.hash()
-
-            this.socketIO.to(txHash).emit(txHash + '_update', tx)
-            this.socketIO.to('pendingTxs').emit('newPendingTx', sTx.smallify())
+            // const tx: Tx = row.new_val
+            // if (tx.pending) {
+            //   const sTx = new SmallTx(tx)
+            //   const txHash: string = sTx.hash()
+            //   this.socketIO.to(txHash).emit(txHash + '_update', tx)
+            //   this.socketIO.to('pendingTxs').emit('newPendingTx', sTx.smallify())
+            // }
           }
-        })
+        )
       })
       .catch(error => {
-        logger.error(`Error while listening events in transactions: ${error}`)
+        logger.error(`RethinkDBDataStore - listenToBlockAndTxEvents() / Error while listening events in transactions: ${error}`)
       })
+  }
+
+  private onNewBlock(block: Block) {
+    // this.socketIO.to('blocks').emit('newBlock', block)
+    // ds.addBlock(block)
+  }
+
+  private onNewTx(tx: Tx | Tx[]) {
+    // if (Array.isArray(tx) && !tx.length) {
+    //   return
+    // }
+    // this.socketIO.to('txs').emit('newTx', tx)
+    // ds.addTransaction(tx)
   }
 }

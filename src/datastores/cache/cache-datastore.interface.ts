@@ -11,7 +11,3 @@ export interface CacheDataStore {
 
   getTransactions(): Promise<Tx[]>
 }
-
-export interface BlockchainDataStore {
-  initialize(): Promise<boolean>
-}

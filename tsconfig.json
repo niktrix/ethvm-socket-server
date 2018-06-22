@@ -7,7 +7,7 @@
     "typeRoots": ["node_modules/@types", "typings"],
     "outDir": "dist",
     "baseUrl": "src",
-    "strict": false,
+    "strict": true,
     "noImplicitAny": false,
     "removeComments": true,
     "allowSyntheticDefaultImports": true,

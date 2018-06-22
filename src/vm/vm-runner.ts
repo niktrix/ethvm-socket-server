@@ -1,10 +1,9 @@
 import config from '@app/config'
-import { TrieDB } from '@app/datastores'
+import { TrieDB } from '@app/vm'
 import * as VM from '@enkrypt.io/ethereumjs-vm'
 import * as Account from 'ethereumjs-account'
-import * as LRU from 'lru'
+import LRU from 'lru-cache'
 import * as Trie from 'merkle-patricia-tree/secure'
-import { TrieDB } from './trie/db/triedb.interface'
 
 const GAS_LIMIT = config.get('eth.vm.engine.gas_limit')
 
@@ -18,7 +17,7 @@ const hexToBuffer = (hex: string): Buffer => {
 }
 
 export class VmRunner {
-  private readonly codeCache: any
+  private readonly codeCache: LRU.Cache<string, any>
   private stateTrie: Trie
 
   constructor(private readonly db: TrieDB) {
@@ -26,8 +25,7 @@ export class VmRunner {
   }
 
   public setStateRoot(hash: Buffer) {
-    const trie = new Trie(this.db, hash)
-    this.stateTrie = trie
+    this.stateTrie = new Trie(this.db, hash)
   }
 
   public getCurrentStateRoot(): Promise<Buffer> {
@@ -36,7 +34,7 @@ export class VmRunner {
     })
   }
 
-  public call(txs: Tx | Tx[], mCB: (err: Error, result: any) => void) {
+  public call(txs: Tx | Tx[], mCB: (err: any, result: any) => void) {
     const trie = this.stateTrie.copy()
 
     const runCode = (sTree: any, to: Buffer, code: Buffer, gasLimit: string, data: Buffer, _cb: (err: Error, result: any) => void) => {
@@ -57,7 +55,7 @@ export class VmRunner {
       )
     }
 
-    const getResult = (tx: Tx, treeClone: any, cb: (err: Error, result: Buffer) => void) => {
+    const getResult = (tx: Tx, treeClone: any, cb: (err: any, result: any) => void) => {
       if (this.codeCache.peek(tx.to)) {
         runCode(treeClone, hexToBuffer(tx.to), this.codeCache.get(tx.to), GAS_LIMIT, hexToBuffer(tx.data), cb)
         return
@@ -70,11 +68,12 @@ export class VmRunner {
         }
 
         const account = new Account(val)
-        treeClone.getRaw(account.codeHash, (e: Error, code: Buffer) => {
+        treeClone.getRaw(account.codeHash, (e: Error, code?: Buffer) => {
           if (e) {
             cb(e, null)
             return
           }
+
           this.codeCache.set(tx.to, code)
           runCode(treeClone, hexToBuffer(tx.to), code ? code : new Buffer('00', 'hex'), GAS_LIMIT, hexToBuffer(tx.data), cb)
         })
@@ -99,13 +98,13 @@ export class VmRunner {
     }
   }
 
-  public getAccount(to: string, cb: (err: Error, result: Buffer) => void) {
+  public getAccount(to: string, cb: (err: any, result?: Buffer) => void) {
     const trie = this.stateTrie.copy()
     const buffer = hexToBuffer(to)
 
     trie.get(buffer, (err: Error, b: Buffer) => {
       if (err) {
-        cb(err, null)
+        cb(err)
         return
       }
 

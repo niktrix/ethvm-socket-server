@@ -19,6 +19,7 @@
       "allowElseIf": true
     }],
     "no-submodule-imports": [true, "@app", "web3-provider-engine", "merkle-patricia-tree"],
-    "radix": false
+    "radix": false,
+    "no-unused-expression": false
   }
 }

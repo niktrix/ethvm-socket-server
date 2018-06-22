@@ -12,19 +12,10 @@ const bnToHex = (bn: any): string => {
   return '0x' + bn.toString(16)
 }
 
-const validateHexString = (str: string) => {
-  if (str === '') {
-    return true
-  }
-  str = str.substring(0, 2) === '0x' ? str.substring(2).toUpperCase() : str.toUpperCase()
-  const re = /^[0-9A-F]+$/g
-  return re.test(str)
-}
-
 const validateByteArray = (arr: number[]) => {
   let valid = true
-  arr.forEach((_item: number) => {
-    if (!_.isNumber(_item) || _item < 0 || _item > 255) {
+  arr.forEach((item: number) => {
+    if (!_.isNumber(item) || item < 0 || item > 255) {
       valid = false
     }
   })
@@ -32,34 +23,18 @@ const validateByteArray = (arr: number[]) => {
 }
 
 const check = {
-  isNumber(_item: number): boolean {
-    return _.isNumber(_item)
+  isNumber(item: number): boolean {
+    return _.isNumber(item)
   },
 
-  isHashString(_item: string): boolean {
-    return _item.substr(0, 2) === '0x' && validateHexString(_item.substring(2).toUpperCase()) && _item.length === 66
-  },
-
-  isHashBuffer(_item: Buffer): boolean {
-    return Buffer.isBuffer(_item) && _item.length === 32
-  },
-
-  isAddressString(_item: string): boolean {
-    return _item.substr(0, 2) === '0x' && validateHexString(_item.substring(2).toUpperCase()) && _item.length === 42
-  },
-
-  isAddressBuffer(_item: string): boolean {
-    return Buffer.isBuffer(_item) && _item.length === 20
-  },
-
-  isBufferObject(_item: any, length: number): boolean {
-    return _item.type && _item.type === 'Buffer' && _item.data && _.isArray(_item.data) && validateByteArray(_item.data) && _item.data.length === length
+  isBufferObject(item: any, length: number): boolean {
+    return item.type && item.type === 'Buffer' && item.data && _.isArray(item.data) && validateByteArray(item.data) && item.data.length === length
   }
 }
 
-const newError = (_msg: string): any => {
+const newError = (msg: string): any => {
   return {
-    message: _msg
+    message: msg
   }
 }
 

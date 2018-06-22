@@ -1,6 +1,6 @@
 import config from '@app/config'
-import { encodeCall } from '@app/libs/utils'
-import { ZeroClientProviderFactory } from '@app/vm/ZeroClientProviderFactory'
+import { ZeroClientProviderFactory } from '@app/vm/zero-client-provider-factory'
+import * as abi from 'ethereumjs-abi'
 import * as Web3ProviderEngine from 'web3-provider-engine'
 import * as createPayload from 'web3-provider-engine/util/create-payload'
 
@@ -60,7 +60,7 @@ export class VmEngine {
     return new Promise((resolve, reject) => {
       const argss = ['address', 'bool', 'bool', 'bool', 'uint256']
       const vals = [args, 'true', 'true', 'true', 0]
-      const encoded = encodeCall('getAllBalance', argss, vals)
+      const encoded = this.encodeCall('getAllBalance', argss, vals)
 
       const payload = createPayload({
         jsonrpc: '2.0',
@@ -82,5 +82,12 @@ export class VmEngine {
 
   public start() {
     this.proxy.start()
+  }
+
+  private encodeCall(name: string, args: string[] = [], rawValues: any[] = []): string {
+    const values = rawValues.map(value => value.toString())
+    const methodId = abi.methodID(name, args).toString('hex')
+    const params = abi.rawEncode(args, values).toString('hex')
+    return '0x' + methodId + params
   }
 }
