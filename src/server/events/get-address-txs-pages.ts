@@ -1,17 +1,18 @@
+import { errors, eth } from '@app/helpers'
 import { Callback } from '@app/interfaces'
-import { common } from '@app/libs'
 import { EthVMServer, SocketEvent } from '@app/server'
+import _ from 'lodash'
 
-const getAddressTxPagesEvent: SocketEvent =   {
+const getAddressTxPagesEvent: SocketEvent = {
   name: 'getAddressTransactionPages',
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
-    if (msg.hash && (!common.check.isBufferObject(msg.hash, 32) || !common.check.isNumber(msg.number))) {
-      cb(common.newError(common.errors.notBuffer), null)
+    if (msg.hash && (!eth.isBufferObject(msg.hash, 32) || !_.isNumber(msg.number))) {
+      cb(errors.notBuffer, null)
       return
     }
 
-    if (!common.check.isBufferObject(msg.address, 20)) {
-      cb(common.newError(common.errors.notBuffer), null)
+    if (!eth.isBufferObject(msg.address, 20)) {
+      cb(errors.notBuffer, null)
       return
     }
 

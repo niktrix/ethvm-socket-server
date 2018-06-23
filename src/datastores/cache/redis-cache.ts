@@ -2,7 +2,7 @@ import config from '@app/config'
 import { CacheDataStore } from '@app/datastores'
 import { logger } from '@app/helpers'
 import { Block, Tx } from '@app/models'
-import Redis from 'ioredis'
+import * as Redis from 'ioredis'
 
 const bufferify = (obj: any): any => {
   for (const key in obj) {
@@ -44,7 +44,7 @@ export class RedisDataStore implements CacheDataStore {
           resolve(true)
         })
         .catch(error => {
-          logger.error(`RedisDataStore - initialize() / Issue while initializing. Error: ${error}`)
+          logger.error(`RedisDataStore - initialize() / Error: ${error}`)
           this.cache.set('blocks', [])
           this.cache.set('transactions', [])
           resolve(true)
@@ -67,6 +67,7 @@ export class RedisDataStore implements CacheDataStore {
         return Promise.resolve(true)
       })
       .catch(error => {
+        logger.error(`RedisDataStore - putBlock() / Error: ${error}`)
         return Promise.resolve(false)
       })
   }

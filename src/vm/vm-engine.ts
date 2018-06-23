@@ -10,7 +10,7 @@ export class VmEngine {
 
   constructor() {
     this.opts = {
-      rpcUrl: config.get('eth.vm.engine.rpcUrl'),
+      rpcUrl: config.get('eth.vm.engine.rpc_url'),
       tokensAddress: config.get('eth.vm.engine.tokens_smart_contract')
     }
     this.proxy = ZeroClientProviderFactory.create(this.opts)

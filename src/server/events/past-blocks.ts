@@ -21,9 +21,11 @@ const pastBlocksEvent: SocketEvent = {
           cb(null, _blocks)
         }
       )
-      .catch((error: Error): void => {
-        logger.error(`pastBlockEvents / Error: ${error}`)
-      })
+      .catch(
+        (error: Error): void => {
+          logger.error(`pastBlockEvents / Error: ${error}`)
+        }
+      )
   }
 }
 

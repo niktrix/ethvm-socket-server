@@ -1,7 +1,7 @@
 import config from '@app/config'
 import { logger } from '@app/helpers'
 import { Block, Chart, SmallTx, Tx } from '@app/models'
-import EventEmitter from 'eventemitter3'
+import * as EventEmitter from 'eventemitter3'
 import * as r from 'rethinkdb'
 
 export class RethinkDBDataStore {
@@ -18,7 +18,7 @@ export class RethinkDBDataStore {
       password: config.get('rethink_db.password'),
       db: config.get('rethink_db.db_name')
     }
-    if (this.opts.ssl.cert) {
+    if (config.get('rethink_db.cert_raw')) {
       this.opts.ssl = {
         cert: config.get('rethink_db.cert_raw')
       }
@@ -36,13 +36,13 @@ export class RethinkDBDataStore {
 
   public getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number, cb: (err: any, result: any) => void) {
     const sendResults = (cursor: r.cursor): void => {
-      cursor.toArray((err: Error, results: Tx[]) => {
+      cursor.toArray((err: Error, results: any[]) => {
         if (err) {
           cb(err, null)
           return
         }
 
-        cb(null, results.map((tx: Tx) => new SmallTx(tx).smallify()))
+        cb(null, results.map((tx: any) => new SmallTx(tx).smallify()))
       })
     }
 
@@ -85,13 +85,13 @@ export class RethinkDBDataStore {
 
   public getTransactionPages(hash: Buffer, bNumber: number, cb: (err: any, result: any) => void) {
     const sendResults = cursor => {
-      cursor.toArray((err: Error, results: Tx[]) => {
+      cursor.toArray((err: Error, results: any[]) => {
         if (err) {
           cb(err, null)
           return
         }
 
-        cb(null, results.map((tx: Tx) => new SmallTx(tx).smallify()))
+        cb(null, results.map((tx: any) => new SmallTx(tx).smallify()))
       })
     }
 
@@ -142,59 +142,41 @@ export class RethinkDBDataStore {
           return
         }
 
-        cb(null, result.map((tx: Tx) => new SmallTx(tx).smallify()))
+        cb(null, result.map((tx: any) => new SmallTx(tx).smallify()))
       })
   }
 
-  public getTotalTxs(hash: string, cb: (err: any, result: any) => void) {
+  public getTotalTxs(hash: string): Promise<any> {
     const bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex')
-    r.table('transactions')
+    return r
+      .table('transactions')
       .getAll(r.args([bhash]), { index: 'cofrom' })
       .count()
-      .run(this.conn, (err: Error, count: any) => {
-        if (err) {
-          cb(err, null)
-          return
-        }
-
-        cb(null, count)
-      })
+      .run(this.conn)
   }
 
-  public getTxsOfAddress(hash: string, cb: (err: any, result: any) => void) {
-    const sendResults = (cursor: any) => {
-      cursor.toArray((err: Error, results: Tx[]) => {
-        if (err) {
-          cb(err, null)
-          return
-        }
-
-        cb(
-          null,
-          results.map((tx: Tx) => {
-            return new SmallTx(tx).smallify()
-          })
-        )
-      })
-    }
-
+  public getTxsOfAddress(hash: string): Promise<any> {
     const bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex')
 
-    r.table('transactions')
+    return r
+      .table('transactions')
       .getAll(r.args([bhash]), { index: 'cofrom' })
       .limit(20)
-      .run(this.conn, (err: Error, count: any) => {
-        if (err) {
-          cb(err, null)
-          return
-        }
+      .run(this.conn)
+      .then((cursor: r.cursor) => {
+        return cursor.toArray((err: any, results: any[]) => {
+          if (err) {
+            return Promise.reject(err)
+          }
 
-        sendResults(count)
+          return results.map((tx: any) => new SmallTx(tx).smallify())
+        })
       })
   }
 
-  public getChartsData(cb: (err: any, result: any) => void) {
-    r.table('blockscache')
+  public getChartsData(cb: (err: any, result: any) => void): Promise<any> {
+    return r
+      .table('blockscache')
       .between(r.time(2016, 5, 2, 'Z'), r.time(2016, 5, 11, 'Z'), {
         index: 'timestamp',
         rightBound: 'closed'
@@ -203,19 +185,14 @@ export class RethinkDBDataStore {
       .map(r.row('accounts').count())
       .reduce((lf, rt) => lf.add(rt))
       .default(0)
-      .run(this.conn, (err: Error, cursor: any) => {
-        if (err) {
-          cb(err, null)
-          return
-        }
-
-        cursor.toArray((e: any, results: Chart[]) => {
+      .run(this.conn)
+      .then((cursor: r.cursor) => {
+        return cursor.toArray((e: any, results: Chart[]) => {
           if (e) {
-            cb(e, null)
-            return
+            return Promise.reject(e)
           }
 
-          cb(null, results)
+          return results
         })
       })
   }
@@ -223,7 +200,7 @@ export class RethinkDBDataStore {
   public getBlock(hash: string, cb: (err: any, result: any) => void) {
     r.table('blocks')
       .get(r.args([new Buffer(hash)]))
-      .run(this.conn, (err: Error, result: Block) => {
+      .run(this.conn, (err: Error, result: any) => {
         if (err) {
           cb(err, null)
           return
@@ -287,7 +264,7 @@ export class RethinkDBDataStore {
           }
 
           cursor.each(
-            (e: Error, block: Block): void => {
+            (e: Error, result: any): void => {
               if (e) {
                 logger.error(`RethinkDBDataStore - listenToBlockAndTxEvents() / Error while listening events in blocks: ${e}`)
                 return

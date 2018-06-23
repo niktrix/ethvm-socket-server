@@ -51,12 +51,6 @@ const config = convict({
   },
 
   data_stores: {
-    provider: {
-      default: 'redis',
-      format: ['redis', 'loki'],
-      env: 'ETHVM_DATASTORE_PROVIDER'
-    },
-
     redis: {
       host: {
         default: 'localhost',

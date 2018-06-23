@@ -1,13 +1,12 @@
-import { logger } from '@app/helpers'
+import { errors, logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
-import { common } from '@app/libs'
 import { EthVMServer, SocketEvent } from '@app/server'
 
 const getCurrentStateRootEvent: SocketEvent = {
   name: 'getCurrentStateRoot',
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
     if (msg !== '') {
-      cb(common.newError(common.errors.invalidInput), null)
+      cb(errors.invalidInput, null)
       return
     }
 

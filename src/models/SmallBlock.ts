@@ -1,6 +1,6 @@
-import { common } from '@app/libs'
 import { Block } from '@app/models'
 import bn from 'bignumber.js'
+import * as utils from 'web3-utils'
 
 export class SmallBlock {
   constructor(private readonly block: Block) {}
@@ -16,13 +16,13 @@ export class SmallBlock {
     b.hash = this.block.hash
     b.miner = this.block.miner
     b.timestamp = this.block.timestamp
-    b.transactionCount = this.block.transactionHashes.length
+    b.transactionCount = this.block.transactionHashes ? this.block.transactionHashes.length : 0
     b.uncleHashes = this.block.uncleHashes
     b.isUncle = this.block.isUncle
     b.totalBlockReward = Buffer.from(
-      new bn(common.bufferToHex(this.block.blockReward))
-        .plus(new bn(common.bufferToHex(this.block.txFees)))
-        .plus(new bn(common.bufferToHex(this.block.uncleReward)))
+      new bn(utils.toHex(this.block.blockReward))
+        .plus(new bn(utils.toHex(this.block.txFees)))
+        .plus(new bn(utils.toHex(this.block.uncleReward)))
         .toString(16),
       'hex'
     )

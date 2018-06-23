@@ -1,8 +1,9 @@
 import config from '@app/config'
+import { eth } from '@app/helpers'
 import { TrieDB } from '@app/vm'
 import * as VM from '@enkrypt.io/ethereumjs-vm'
 import * as Account from 'ethereumjs-account'
-import LRU from 'lru-cache'
+import * as LRU from 'lru-cache'
 import * as Trie from 'merkle-patricia-tree/secure'
 
 const GAS_LIMIT = config.get('eth.vm.engine.gas_limit')
@@ -10,10 +11,6 @@ const GAS_LIMIT = config.get('eth.vm.engine.gas_limit')
 interface Tx {
   to: string
   data: string
-}
-
-const hexToBuffer = (hex: string): Buffer => {
-  return Buffer.from(hex.toLowerCase().replace('0x', ''), 'hex')
 }
 
 export class VmRunner {
@@ -57,11 +54,11 @@ export class VmRunner {
 
     const getResult = (tx: Tx, treeClone: any, cb: (err: any, result: any) => void) => {
       if (this.codeCache.peek(tx.to)) {
-        runCode(treeClone, hexToBuffer(tx.to), this.codeCache.get(tx.to), GAS_LIMIT, hexToBuffer(tx.data), cb)
+        runCode(treeClone, eth.hexToBuffer(tx.to), this.codeCache.get(tx.to), GAS_LIMIT, eth.hexToBuffer(tx.data), cb)
         return
       }
 
-      treeClone.get(hexToBuffer(tx.to), (err: Error, val: Buffer) => {
+      treeClone.get(eth.hexToBuffer(tx.to), (err: Error, val: Buffer) => {
         if (err) {
           cb(err, null)
           return
@@ -75,7 +72,7 @@ export class VmRunner {
           }
 
           this.codeCache.set(tx.to, code)
-          runCode(treeClone, hexToBuffer(tx.to), code ? code : new Buffer('00', 'hex'), GAS_LIMIT, hexToBuffer(tx.data), cb)
+          runCode(treeClone, eth.hexToBuffer(tx.to), code ? code : new Buffer('00', 'hex'), GAS_LIMIT, eth.hexToBuffer(tx.data), cb)
         })
       })
     }
@@ -100,7 +97,7 @@ export class VmRunner {
 
   public getAccount(to: string, cb: (err: any, result?: Buffer) => void) {
     const trie = this.stateTrie.copy()
-    const buffer = hexToBuffer(to)
+    const buffer = eth.hexToBuffer(to)
 
     trie.get(buffer, (err: Error, b: Buffer) => {
       if (err) {

@@ -3,6 +3,7 @@ import { CacheDataStore, RethinkDBDataStore } from '@app/datastores'
 import { logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { TrieDB, VmEngine, VmRunner } from '@app/vm'
+import * as fs from 'fs'
 import * as http from 'http'
 import * as SocketIO from 'socket.io'
 
@@ -13,7 +14,7 @@ export interface SocketEvent {
 
 export class EthVMServer {
   public readonly io: SocketIO.Server
-  public readonly events: Map<string, SocketEvent>
+  private readonly events: Map<string, SocketEvent>
 
   constructor(
     readonly trieDB: TrieDB,
@@ -23,24 +24,28 @@ export class EthVMServer {
     readonly rdb: RethinkDBDataStore
   ) {
     this.io = this.createWSServer()
-    this.events = this.loadEvents()
+    this.events = new Map()
   }
 
   public async start() {
-    logger.debug('Starging to listen realtime events on RethinkDBDataStore')
+    logger.debug('Registering socket events')
+    const events = fs.readdirSync(`${__dirname}/events/`)
+    events.forEach(async ev => {
+      logger.debug(`Loading socket event: ${ev}`)
+      const event = await import(`${__dirname}/events/${ev}`)
+      this.events.set(event.name, event)
+    })
+
+    logger.debug('Starting to listen realtime events on RethinkDBDataStore')
     this.rdb.startListeningToEvents()
 
-    logger.debug('Starting listening WS events on SocketIO')
+    logger.debug('Starting to listen socket events on SocketIO')
     this.io.on(
       'connection',
       (socket: SocketIO.Socket): void => {
         this.registerEventsOnConnection(socket)
       }
     )
-  }
-
-  private loadEvents(): Map<string, SocketEvent> {
-    return new Map()
   }
 
   private registerEventsOnConnection(socket: SocketIO.Socket): void {

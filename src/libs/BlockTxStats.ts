@@ -1,7 +1,7 @@
 import config from '@app/config'
-import { common } from '@app/libs'
 import { Block, BlockStats, Tx } from '@app/models'
 import bn from 'bignumber.js'
+import * as utils from 'web3-utils'
 
 const BLOCK_TIME: number = config.get('eth.block_time')
 let previousBlockTime = new bn(0)
@@ -10,14 +10,14 @@ export class BlockTxStats {
   private blockTime
 
   constructor(private readonly block: Block, private readonly txs: Tx[]) {
-    const ts = new bn(common.bufferToHex(this.block.timestamp))
+    const ts = new bn(utils.toHex(this.block.timestamp))
     if (!previousBlockTime) {
       previousBlockTime = ts.sub(BLOCK_TIME)
     }
 
     this.blockTime = ts.sub(previousBlockTime).abs()
     if (!this.block.isUncle) {
-      previousBlockTime = new bn(common.bufferToHex(this.block.timestamp))
+      previousBlockTime = new bn(utils.toHex(this.block.timestamp))
     }
   }
 
@@ -46,16 +46,16 @@ export class BlockTxStats {
       } else {
         txStatus.failed = txStatus.failed.add(1)
       }
-      txStatus.totGasPrice = txStatus.totGasPrice.add(new bn(common.bufferToHex(tx.gasPrice)))
-      txStatus.totTxFees = txStatus.totTxFees.add(new bn(common.bufferToHex(tx.gasPrice)).mul(new bn(common.bufferToHex(tx.gasUsed))))
+      txStatus.totGasPrice = txStatus.totGasPrice.add(new bn(utils.toHex(tx.gasPrice)))
+      txStatus.totTxFees = txStatus.totTxFees.add(new bn(utils.toHex(tx.gasPrice)).mul(new bn(utils.toHex(tx.gasUsed))))
     })
 
     return {
-      blockTime: common.bnToHex(this.blockTime),
-      failed: common.bnToHex(txStatus.failed),
-      success: common.bnToHex(txStatus.success),
-      avgGasPrice: common.bnToHex(txStatus.totGasPrice.div(this.txs.length).ceil()),
-      avgTxFees: common.bnToHex(txStatus.totTxFees.div(this.txs.length).ceil())
+      blockTime: utils.toHex(this.blockTime),
+      failed: utils.toHex(txStatus.failed),
+      success: utils.toHex(txStatus.success),
+      avgGasPrice: utils.toHex(txStatus.totGasPrice.div(this.txs.length).ceil()),
+      avgTxFees: utils.toHex(txStatus.totTxFees.div(this.txs.length).ceil())
     }
   }
 }
