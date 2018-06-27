@@ -29,12 +29,16 @@ let cacheDB = new CacheDb(configs.global.REDIS.URL, {
 var VmEngine = ZeroClientProvider({
   // supports http and websockets
   // but defaults to infura's mainnet rest api
-  //srpcUrl: 'https://mainnet.infura.io',
+ // rpcUrl: 'https://mainnet.infura.io',
   //rpcUrl: 'http://35.227.70.36:8545',
-  // rpcUrl: 'http://35.225.202.139:9545',  // all synced
-  // rpcUrl: 'wss://mainnet.infura.io/ws',
+ //rpcUrl: 'http://35.225.202.139:9545',  // all synced
+ //  rpcUrl: 'wss://mainnet.infura.io/ws',
+  // rpcUrl:"https://mainnet.infura.io/gcEMpmsM8PA5e2f9dupj",
   // rpcUrl: 'ws://localhost:8545/ws',
-  rpcUrl: 'https://api.myetherwallet.com/eth',
+    //   rpcUrl: 'https://testrpc.metamask.io/',
+    rpcUrl:'https://api.myetherapi.com/eth',
+
+ // rpcUrl: 'https://api.myetherwallet.com/eth',
 })
 // VmEngine.addProvider(new CacheSubprovider())
 // VmEngine.addProvider(new RpcSubprovider({
@@ -51,6 +55,7 @@ VmEngine.getBalance = function (args: any, a: any) {
 
 VmEngine.getAccount = function (args: any, a: any) {
   VmEngine.sendAsync(createPayload({ jsonrpc: '2.0', method: 'eth_getKeyValue', params: ['0x2a65aca4d5fc5b5c859090a6c34d164135398226'], id: 1 }), function (err: any, response: any) {
+    
     console.log("response", response)
   })
 }
@@ -62,16 +67,18 @@ VmEngine.getAllTokens = function (args: any, a: any) {
   var encoded = utils.encodeCall("getAllBalance", argss, vals)
   var pl = createPayload({ jsonrpc: '2.0', method: 'eth_call', params: [{ to: "0xbe1ecf8e340f13071761e0eef054d9a511e1cb56", data: encoded }, "pending"], id: 1 })
   VmEngine.sendAsync(pl, function (err: any, response: any) {
-    // console.log("eth_call", response)
     var tokens = utils.decode(response.result)
-    //  console.log(tokens.length)
     var tokenwithbalance = []
     for (var i = 0; i <= tokens.length - 1; i++) {
       if (tokens[i].balance > 0) {
         tokenwithbalance.push(tokens[i])
       }
     }
-    appendTokenValue(tokenwithbalance, a)
+    if( tokenwithbalance.length >0){
+      appendTokenValue(tokenwithbalance, a)
+    }else{
+      a(null,null)
+    }
 
   });
 }
