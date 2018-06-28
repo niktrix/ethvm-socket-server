@@ -1,4 +1,5 @@
 <div align="center">
+  <img src="https://raw.githubusercontent.com/enKryptIO/ethvm-socket-server/master/assets/logo.png" alt="ethvm-logo">
   <p>:zap::zap::zap: EthVM Project: An open source blockchain explorer for Ethereum (and related networks) :zap::zap::zap:</p>
 </div>
 
@@ -18,12 +19,6 @@
   <a href="https://david-dm.org/enKryptIO/ethvm-socket-server?type=dev" target="_blank">
     <img alt="devDependency Status" src="https://david-dm.org/enKryptIO/ethvm-socket-server/dev-status.svg" />
   </a>
-</div>
-
-<div align="center">
-  <h1>
-    <img src="https://raw.githubusercontent.com/enKryptIO/ethvm-socket-server/master/assets/logo.png" alt="ethvm-logo">
-  </h1>
 </div>
 
 # EthVM: Socket Server
