@@ -27,11 +27,13 @@ services:
       - "traefik.enable=true"
       - "traefik.default.protocol=http"
       - "traefik.frontend.rule=Host:ethvm.lan"
-      - "traefik.port=8080"
+      - "traefik.port=80"
+      - "traefik.frontend.headers.customResponseHeaders=Access-Control-Allow-Origin:*||Access-Control-Allow-Credentials:true"
+      - "traefik.frontend.passHostHeader=true"
       - "traefik.backend=ethvm"
     environment:
       - ETHVM_HOST=0.0.0.0
-      - ETHVM_PORT=8080
+      - ETHVM_PORT=80
       - ETVHM_DOCKER=true
 
   ethvm_socket_server:
@@ -51,7 +53,9 @@ services:
       - "traefik.enable=true"
       - "traefik.default.protocol=http"
       - "traefik.frontend.rule=Host:ws.ethvm.lan"
-      - "traefik.port=8080"
+      - "traefik.port=3000"
+      - "traefik.frontend.headers.customResponseHeaders=Access-Control-Allow-Origin:http://ethvm.lan||Access-Control-Allow-Credentials:true"
+      - "traefik.frontend.passHostHeader=true"
       - "traefik.backend=ethvm_socket_server"
 
   redis:
@@ -82,7 +86,6 @@ services:
       - "traefik.frontend.rule=Host:rethink.ethvm.lan"
       - "traefik.port=28015"
       - "traefik.backend=rethinkdb"
-
       - "traefik.dashboard.frontend.rule=Host:rethink.dashboard.ethvm.lan"
       - "traefik.dashboard.protocol=http"
       - "traefik.dashboard.backend=ethvm_socket_server"
