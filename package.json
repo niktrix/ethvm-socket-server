@@ -67,7 +67,6 @@
     "@types/pino": "^4.16.0",
     "@types/redis": "^2.8.6",
     "@types/socket.io": "^1.4.31",
-    "@types/yargs": "^10.0.0",
     "bluebird": "^3.5.1",
     "chai": "^4.1.2",
     "husky": "^1.0.0-rc.9",
