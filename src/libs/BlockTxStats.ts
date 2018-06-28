@@ -1,6 +1,6 @@
 import config from '@app/config'
 import { Block, BlockStats, Tx } from '@app/models'
-import { BigNumber }  from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import * as utils from 'web3-utils'
 
 const BLOCK_TIME: number = config.get('eth.block_time')
