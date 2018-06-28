@@ -16,7 +16,10 @@ const getAddressTxPagesEvent: SocketEvent = {
       return
     }
 
-    server.rdb.getAddressTransactionPages(msg.address, msg.hash, msg.number, cb)
+    server.rdb
+      .getAddressTransactionPages(msg.address, msg.hash, msg.number)
+      .then((result: any): void => cb(null, result))
+      .catch((error: Error): void => cb(error, null))
   }
 }
 

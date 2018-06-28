@@ -6,8 +6,8 @@ const getTokenBalanceEvent: SocketEvent = {
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
     server.vmEngine
       .getAllTokens(msg)
-      .then(result => cb(null, result))
-      .catch(error => cb(error, null))
+      .then((result: any): void => cb(null, result))
+      .catch((error: Error): void => cb(error, null))
   }
 }
 

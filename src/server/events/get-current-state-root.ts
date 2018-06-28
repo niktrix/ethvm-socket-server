@@ -12,12 +12,8 @@ const getCurrentStateRootEvent: SocketEvent = {
 
     server.vmRunner
       .getCurrentStateRoot()
-      .then(result => {
-        cb(null, result)
-      })
-      .catch((error: Error) => {
-        logger.error(`getCurrentStateRoot / Error: ${error}`)
-      })
+      .then((result: any): void => cb(null, result))
+      .catch((error: Error): void => logger.error(`getCurrentStateRoot / Error: ${error}`))
   }
 }
 

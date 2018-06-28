@@ -1,31 +1,12 @@
 import config from '@app/config'
 import { CacheDataStore } from '@app/datastores'
-import { logger } from '@app/helpers'
+import { eth, logger } from '@app/helpers'
 import { Block, Tx } from '@app/models'
 import * as Redis from 'ioredis'
 
-const bufferify = (obj: any): any => {
-  for (const key in obj) {
-    if (obj.hasOwnProperty(key) && obj[key]) {
-      if (obj[key].type && obj[key].type === 'Buffer') {
-        obj[key] = new Buffer(obj[key])
-      } else if (Array.isArray(obj[key])) {
-        obj[key] = obj[key].map((_item: any) => {
-          if (_item.type && _item.type === 'Buffer') {
-            return new Buffer(_item)
-          }
-          return _item
-        })
-      }
-    }
-  }
-  return obj
-}
-
-const SOCKET_ROWS = config.get('data_stores.redis.socket_rows')
-
 export class RedisDataStore implements CacheDataStore {
   private readonly redis: Redis.Redis
+  private readonly socketRows: number
   private readonly cache: Map<string, Block[] | Tx[]> = new Map()
 
   constructor() {
@@ -33,6 +14,7 @@ export class RedisDataStore implements CacheDataStore {
       host: config.get('data_stores.redis.host'),
       port: config.get('data_stores.redis.port')
     })
+    this.socketRows = config.get('data_stores.redis.socket_rows')
   }
 
   public initialize(): Promise<boolean> {
@@ -57,8 +39,8 @@ export class RedisDataStore implements CacheDataStore {
       .then((blocks: Block[]) => {
         blocks.unshift(block)
 
-        if (blocks.length > SOCKET_ROWS) {
-          blocks = blocks.slice(0, SOCKET_ROWS)
+        if (blocks.length > this.socketRows) {
+          blocks = blocks.slice(0, this.socketRows)
         }
 
         this.cache.set('blocks', blocks)
@@ -87,8 +69,8 @@ export class RedisDataStore implements CacheDataStore {
           txs.unshift(tx)
         }
 
-        if (txs.length > SOCKET_ROWS) {
-          txs = txs.slice(0, SOCKET_ROWS)
+        if (txs.length > this.socketRows) {
+          txs = txs.slice(0, this.socketRows)
         }
 
         this.cache.set('transactions', txs)
@@ -122,7 +104,7 @@ export class RedisDataStore implements CacheDataStore {
             return
           }
 
-          const buffered = JSON.parse(result).map(item => bufferify(item))
+          const buffered = JSON.parse(result).map(item => eth.bufferify(item))
           this.cache.set(key, buffered)
 
           resolve(buffered)

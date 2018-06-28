@@ -1,10 +1,13 @@
 import config from '@app/config'
+import { BlockchainDataStore } from '@app/datastores/blockchain'
 import { logger } from '@app/helpers'
-import { Block, Chart, SmallTx, Tx } from '@app/models'
+import { Block, SmallTx, Tx } from '@app/models'
 import * as EventEmitter from 'eventemitter3'
 import * as r from 'rethinkdb'
 
-export class RethinkDBDataStore {
+const PAGINATION_SIZE = 25
+
+export class RethinkDBDataStore implements BlockchainDataStore {
   public readonly emitter: EventEmitter
 
   private readonly opts: any
@@ -26,28 +29,20 @@ export class RethinkDBDataStore {
     this.emitter = new EventEmitter()
   }
 
-  public async initialize() {
+  public async initialize(): Promise<boolean> {
     try {
       this.conn = await r.connect(this.opts)
+      return Promise.resolve(true)
     } catch (error) {
       logger.error(`Error issued while initializing RethinkDB: ${error}`)
+      return Promise.reject(error)
     }
   }
 
-  public getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number, cb: (err: any, result: any) => void) {
-    const sendResults = (cursor: r.cursor): void => {
-      cursor.toArray((err: Error, results: any[]) => {
-        if (err) {
-          cb(err, null)
-          return
-        }
-
-        cb(null, results.map((tx: any) => new SmallTx(tx).smallify()))
-      })
-    }
-
+  public getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number): Promise<any> {
     if (!hash) {
-      r.table('transactions')
+      return r
+        .table('transactions')
         .orderBy({ index: r.desc('numberAndHash') })
         .filter(
           r
@@ -55,80 +50,49 @@ export class RethinkDBDataStore {
             .eq(r.args([new Buffer(address)]))
             .or(r.row('to').eq(r.args([new Buffer(address)])))
         )
-        .limit(25)
-        .run(this.conn, (err, cursor) => {
-          if (err) {
-            cb(err, null)
-            return
-          }
-
-          sendResults(cursor)
-        })
-
-      return
+        .limit(PAGINATION_SIZE)
+        .run(this.conn)
+        .then((cursor: r.cursor) => cursor.toArray())
+        .then((results: any[]) => results.map((tx: any) => new SmallTx(tx).smallify()))
     }
 
-    r.table('transactions')
+    return r
+      .table('transactions')
       .orderBy({ index: r.desc('numberAndHash') })
       .between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: 'open', index: 'numberAndHash' })
       .filter(r.or(r.row('from').eq(r.args([new Buffer(address)])), r.row('to').eq(r.args([new Buffer(address)]))))
-      .limit(25)
-      .run(this.conn, (err, cursor) => {
-        if (err) {
-          cb(err, null)
-          return
-        }
-
-        sendResults(cursor)
-      })
+      .limit(PAGINATION_SIZE)
+      .run(this.conn)
+      .then((cursor: r.cursor) => cursor.toArray())
+      .then((results: any[]) => results.map((tx: any) => new SmallTx(tx).smallify()))
   }
 
-  public getTransactionPages(hash: Buffer, bNumber: number, cb: (err: any, result: any) => void) {
-    const sendResults = cursor => {
-      cursor.toArray((err: Error, results: any[]) => {
-        if (err) {
-          cb(err, null)
-          return
-        }
-
-        cb(null, results.map((tx: any) => new SmallTx(tx).smallify()))
-      })
-    }
-
+  public getTransactionPages(hash: Buffer, bNumber: number): Promise<any> {
     if (!hash) {
-      r.table('transactions')
+      return r
+        .table('transactions')
         .orderBy({ index: r.desc('numberAndHash') })
         .filter({ pending: false })
-        .limit(25)
-        .run(this.conn, (err, cursor) => {
-          if (err) {
-            cb(err, null)
-            return
-          }
-
-          sendResults(cursor)
-        })
-
-      return
+        .limit(PAGINATION_SIZE)
+        .run(this.conn)
+        .then((cursor: r.cursor) => cursor.toArray())
+        .then((results: any[]) => results.map((tx: any) => new SmallTx(tx).smallify()))
     }
 
-    r.table('transactions')
+    return r
+      .table('transactions')
       .orderBy({ index: r.desc('numberAndHash') })
       .between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: 'open', index: 'numberAndHash' })
       .filter({ pending: false })
-      .limit(25)
-      .run(this.conn, (err, cursor) => {
-        if (err) {
-          cb(err, null)
-          return
-        }
-
-        sendResults(cursor)
-      })
+      .limit(PAGINATION_SIZE)
+      .run(this.conn)
+      .then((cursor: r.cursor) => cursor.toArray())
+      .then((results: any[]) => results.map((tx: any) => new SmallTx(tx).smallify()))
   }
 
-  public getBlockTransactions(hash: string, cb: (err: any, result: any) => void) {
-    r.table('blocks')
+  public getBlockTransactions(hash: string): Promise<any> {
+    return r
+      .table('blocks')
       .get(r.args([new Buffer(hash)]))
       .do(block =>
         r
@@ -136,14 +100,8 @@ export class RethinkDBDataStore {
           .getAll(r.args(block('transactionHashes')))
           .coerceTo('array')
       )
-      .run(this.conn, (err: Error, result: any) => {
-        if (err) {
-          cb(err, null)
-          return
-        }
-
-        cb(null, result.map((tx: any) => new SmallTx(tx).smallify()))
-      })
+      .run(this.conn)
+      .then((results: any[]) => results.map((tx: any) => new SmallTx(tx).smallify()))
   }
 
   public getTotalTxs(hash: string): Promise<any> {
@@ -157,24 +115,15 @@ export class RethinkDBDataStore {
 
   public getTxsOfAddress(hash: string): Promise<any> {
     const bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex')
-
     return r
       .table('transactions')
       .getAll(r.args([bhash]), { index: 'cofrom' })
-      .limit(20)
+      .limit(PAGINATION_SIZE)
       .run(this.conn)
-      .then((cursor: r.cursor) => {
-        return cursor.toArray((err: any, results: any[]) => {
-          if (err) {
-            return Promise.reject(err)
-          }
-
-          return results.map((tx: any) => new SmallTx(tx).smallify())
-        })
-      })
+      .then((cursor: r.cursor) => cursor.toArray())
   }
 
-  public getChartsData(cb: (err: any, result: any) => void): Promise<any> {
+  public getChartsData(): Promise<any> {
     return r
       .table('blockscache')
       .between(r.time(2016, 5, 2, 'Z'), r.time(2016, 5, 11, 'Z'), {
@@ -186,32 +135,19 @@ export class RethinkDBDataStore {
       .reduce((lf, rt) => lf.add(rt))
       .default(0)
       .run(this.conn)
-      .then((cursor: r.cursor) => {
-        return cursor.toArray((e: any, results: Chart[]) => {
-          if (e) {
-            return Promise.reject(e)
-          }
-
-          return results
-        })
-      })
+      .then((cursor: r.cursor) => cursor.toArray())
   }
 
-  public getBlock(hash: string, cb: (err: any, result: any) => void) {
-    r.table('blocks')
+  public getBlock(hash: string): Promise<any> {
+    return r
+      .table('blocks')
       .get(r.args([new Buffer(hash)]))
-      .run(this.conn, (err: Error, result: any) => {
-        if (err) {
-          cb(err, null)
-          return
-        }
-
-        cb(null, result)
-      })
+      .run(this.conn)
   }
 
-  public getTx(hash: string, cb: (err: any, result: any) => void) {
-    r.table('transactions')
+  public getTx(hash: string): Promise<any> {
+    return r
+      .table('transactions')
       .get(r.args([new Buffer(hash)]))
       .merge(tx => {
         return {
@@ -225,17 +161,7 @@ export class RethinkDBDataStore {
             .get(tx('hash'))
         }
       })
-      .run(
-        this.conn,
-        (err: Error, result: Tx): void => {
-          if (err) {
-            cb(err, null)
-            return
-          }
-
-          cb(null, result)
-        }
-      )
+      .run(this.conn)
   }
 
   public async startListeningToEvents() {
@@ -264,11 +190,13 @@ export class RethinkDBDataStore {
           }
 
           cursor.each(
-            (e: Error, result: any): void => {
+            (e: Error, block: any): void => {
               if (e) {
                 logger.error(`RethinkDBDataStore - listenToBlockAndTxEvents() / Error while listening events in blocks: ${e}`)
                 return
               }
+
+              this.emitter.emit('onNewBlock', block)
 
               // this.vmRunner.setStateRoot(block.stateRoot)
               // const bstats = new BlockTxStats(block, block.transactions)
@@ -312,6 +240,9 @@ export class RethinkDBDataStore {
               logger.error(`RethinkDBDataStore - listenToBlockAndTxEvents() / Error while listening events in transactions. Error: ${e}`)
               return
             }
+
+            const tx = row.new_val
+            this.emitter.emit('onNewTx', tx)
 
             // const tx: Tx = row.new_val
             // if (tx.pending) {

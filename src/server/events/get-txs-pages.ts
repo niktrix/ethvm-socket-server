@@ -11,7 +11,10 @@ const getTxPagesEvent: SocketEvent = {
       return
     }
 
-    server.rdb.getTransactionPages(msg.hash, msg.number, cb)
+    server.rdb
+      .getTransactionPages(msg.hash, msg.number)
+      .then((result: any): void => cb(null, result))
+      .catch((error: Error) => cb(error, null))
   }
 }
 

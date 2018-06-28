@@ -19,9 +19,11 @@ const pastTxsEvent: SocketEvent = {
           cb(null, _txs)
         }
       )
-      .catch((error: Error): void => {
-        logger.error(`pastTxs / Error: ${error}`)
-      })
+      .catch(
+        (error: Error): void => {
+          logger.error(`pastTxs / Error: ${error}`)
+        }
+      )
   }
 }
 
