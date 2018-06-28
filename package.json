@@ -40,14 +40,13 @@
   "dependencies": {
     "@enkrypt.io/ethereumjs-vm": "^2.3.3",
     "@enkrypt.io/json-rpc2": "^1.0.2",
-    "bignumber.js": "^5.0.0",
+    "bignumber.js": "^7.2.1",
     "convict": "^4.3.0",
     "ethereumjs-abi": "^0.6.5",
     "ethereumjs-account": "^2.0.4",
     "eventemitter3": "^3.1.0",
     "ioredis": "^3.2.2",
     "lodash": "^4.17.10",
-    "lokijs": "^1.5.1",
     "lru-cache": "^4.1.3",
     "merkle-patricia-tree": "^2.3.0",
     "node-fetch": "^2.1.2",
@@ -58,14 +57,10 @@
     "web3-utils": "^1.0.0-beta.34"
   },
   "devDependencies": {
-    "@types/bignumber.js": "^4.0.3",
     "@types/chai": "^4.1.4",
     "@types/ioredis": "^3.2.4",
-    "@types/jest": "^23.1.0",
     "@types/json-schema": "^6.0.1",
     "@types/lodash": "^4.14.94",
-    "@types/lokijs": "^1.5.0",
-    "@types/lowdb": "^0.15.0",
     "@types/lru-cache": "^4.1.1",
     "@types/node": "^8.5.1",
     "@types/node-fetch": "^2.1.1",
@@ -75,18 +70,16 @@
     "@types/yargs": "^10.0.0",
     "bluebird": "^3.5.1",
     "chai": "^4.1.2",
-    "events": "^1.1.1",
     "husky": "^1.0.0-rc.9",
     "jest": "^23.1.0",
     "nodemon": "^1.17.5",
     "prettier": "1.13.5",
-    "tls": "0.0.1",
     "ts-jest": "^22.4.6",
     "ts-node": "^6.1.1",
     "tsconfig-paths": "^3.3.2",
     "tslint": "^5.10.0",
     "tslint-config-prettier": "^1.13.0",
     "tslint-consistent-codestyle": "^1.13.1",
-    "typescript": "^2.8.4"
+    "typescript": "^2.9.2"
   }
 }

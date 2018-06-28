@@ -1,23 +1,23 @@
 import config from '@app/config'
 import { Block, BlockStats, Tx } from '@app/models'
-import bn from 'bignumber.js'
+import { BigNumber }  from 'bignumber.js'
 import * as utils from 'web3-utils'
 
 const BLOCK_TIME: number = config.get('eth.block_time')
-let previousBlockTime = new bn(0)
+let previousBlockTime = new BigNumber(0)
 
 export class BlockTxStats {
   private blockTime
 
   constructor(private readonly block: Block, private readonly txs: Tx[]) {
-    const ts = new bn(utils.toHex(this.block.timestamp))
+    const ts = new BigNumber(utils.toHex(this.block.timestamp))
     if (!previousBlockTime) {
-      previousBlockTime = ts.sub(BLOCK_TIME)
+      previousBlockTime = ts.minus(BLOCK_TIME)
     }
 
-    this.blockTime = ts.sub(previousBlockTime).abs()
+    this.blockTime = ts.minus(previousBlockTime).abs()
     if (!this.block.isUncle) {
-      previousBlockTime = new bn(utils.toHex(this.block.timestamp))
+      previousBlockTime = new BigNumber(utils.toHex(this.block.timestamp))
     }
   }
 
@@ -33,29 +33,29 @@ export class BlockTxStats {
     }
 
     const txStatus = {
-      blockTime: new bn(0),
-      failed: new bn(0),
-      success: new bn(0),
-      totGasPrice: new bn(0),
-      totTxFees: new bn(0)
+      blockTime: new BigNumber(0),
+      failed: new BigNumber(0),
+      success: new BigNumber(0),
+      totGasPrice: new BigNumber(0),
+      totTxFees: new BigNumber(0)
     }
 
     this.txs.forEach(tx => {
       if (tx.status) {
-        txStatus.success = txStatus.success.add(1)
+        txStatus.success = txStatus.success.plus(1)
       } else {
-        txStatus.failed = txStatus.failed.add(1)
+        txStatus.failed = txStatus.failed.plus(1)
       }
-      txStatus.totGasPrice = txStatus.totGasPrice.add(new bn(utils.toHex(tx.gasPrice)))
-      txStatus.totTxFees = txStatus.totTxFees.add(new bn(utils.toHex(tx.gasPrice)).mul(new bn(utils.toHex(tx.gasUsed))))
+      txStatus.totGasPrice = txStatus.totGasPrice.plus(new BigNumber(utils.toHex(tx.gasPrice)))
+      txStatus.totTxFees = txStatus.totTxFees.plus(new BigNumber(utils.toHex(tx.gasPrice)).times(new BigNumber(utils.toHex(tx.gasUsed))))
     })
 
     return {
       blockTime: utils.toHex(this.blockTime),
       failed: utils.toHex(txStatus.failed),
       success: utils.toHex(txStatus.success),
-      avgGasPrice: utils.toHex(txStatus.totGasPrice.div(this.txs.length).ceil()),
-      avgTxFees: utils.toHex(txStatus.totTxFees.div(this.txs.length).ceil())
+      avgGasPrice: utils.toHex(txStatus.totGasPrice.div(this.txs.length).integerValue(BigNumber.ROUND_CEIL)),
+      avgTxFees: utils.toHex(txStatus.totTxFees.div(this.txs.length).integerValue(BigNumber.ROUND_CEIL))
     }
   }
 }

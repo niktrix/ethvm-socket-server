@@ -1,5 +1,5 @@
 import { Block } from '@app/models'
-import bn from 'bignumber.js'
+import { BigNumber } from 'bignumber.js'
 import * as utils from 'web3-utils'
 
 export class SmallBlock {
@@ -20,9 +20,9 @@ export class SmallBlock {
     b.uncleHashes = this.block.uncleHashes
     b.isUncle = this.block.isUncle
     b.totalBlockReward = Buffer.from(
-      new bn(utils.toHex(this.block.blockReward))
-        .plus(new bn(utils.toHex(this.block.txFees)))
-        .plus(new bn(utils.toHex(this.block.uncleReward)))
+      new BigNumber(utils.toHex(this.block.blockReward))
+        .plus(new BigNumber(utils.toHex(this.block.txFees)))
+        .plus(new BigNumber(utils.toHex(this.block.uncleReward)))
         .toString(16),
       'hex'
     )
