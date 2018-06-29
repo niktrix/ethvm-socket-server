@@ -1,7 +1,7 @@
 import config from '@app/config'
 import { BlockchainDataStore } from '@app/datastores/blockchain'
 import { logger } from '@app/helpers'
-import { Block, SmallTx, Tx } from '@app/models'
+import { SmallTx } from '@app/models'
 import * as EventEmitter from 'eventemitter3'
 import * as r from 'rethinkdb'
 
@@ -120,10 +120,10 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .then((cursor: r.cursor) => cursor.toArray())
   }
 
-  public getChartsData(): Promise<any> {
+  public getChartAccountsGrowth(startDate: Date, endDate: Date): Promise<any> {
     return r
       .table('blockscache')
-      .between(r.time(2016, 5, 2, 'Z'), r.time(2016, 5, 11, 'Z'), {
+      .between(r.epochTime(startDate.getTime() / 1000), r.epochTime(endDate.getTime() / 1000), {
         index: 'timestamp',
         rightBound: 'closed'
       })
@@ -133,6 +133,34 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .default(0)
       .run(this.conn)
       .then((cursor: r.cursor) => cursor.toArray())
+  }
+
+  // TODO: Double check if selector is LAST_DAY, should we group by hours
+  public getChartBlockSize(startDate: Date, endDate: Date): Promise<any> {
+    return (
+      r
+        .table('blockscache')
+        .between(r.epochTime(startDate.getTime() / 1000), r.epochTime(endDate.getTime() / 1000), {
+          index: 'timestamp',
+          rightBound: 'closed'
+        })
+        .group(r.row('timestamp').date())
+        .avg(r.row('size'))
+        .run(this.conn)
+        .then((cursor: r.cursor) => cursor.toArray())
+    )
+  }
+
+  public getChartGasLimit(startDate: Date, endDate: Date): Promise<any> {
+    return r
+      .table('blockscache')
+      .between(r.epochTime(startDate.getTime() / 1000), r.epochTime(endDate.getTime() / 1000), {
+        index: 'timestamp',
+        rightBound: 'closed'
+      })
+      .group(r.row('timestamp').date())
+      .avg(r.row('gasLimit'))
+      .run(this.conn)
   }
 
   public getBlock(hash: string): Promise<any> {
@@ -189,17 +217,18 @@ export class RethinkDBDataStore implements BlockchainDataStore {
           cursor.each(
             (e: Error, block: any): void => {
               if (e) {
-                logger.error(`RethinkDBDataStore - listenToBlockAndTxEvents() / Error while listening events in blocks: ${e}`)
+                logger.error(`RethinkDBDataStore - onNewblock / Error: ${e}`)
                 return
               }
 
+              logger.info(`RethinkDBDataStore - onNewBlock / Emitting block: ${block}`)
               this.emitter.emit('onNewBlock', block)
             }
           )
         }
       )
       .catch(error => {
-        logger.error(`RethinkDBDataStore - listenToBlockAndTxEvents() / Error while listening events in blocks: ${error}`)
+        logger.error(`RethinkDBDataStore - onNewblock / Error: ${error}`)
       })
 
     r.table('transactions')
@@ -218,17 +247,19 @@ export class RethinkDBDataStore implements BlockchainDataStore {
         cursor.each(
           (e: Error, row: r.ChangeSet<any, any>): void => {
             if (e) {
-              logger.error(`RethinkDBDataStore - listenToBlockAndTxEvents() / Error while listening events in transactions. Error: ${e}`)
+              logger.error(`RethinkDBDataStore - onPendingTxs / Error: ${e}`)
               return
             }
 
             const tx = row.new_val
-            this.emitter.emit('onPendingTxs', tx)
+            if (tx) {
+              this.emitter.emit('onPendingTxs', tx)
+            }
           }
         )
       })
       .catch(error => {
-        logger.error(`RethinkDBDataStore - listenToBlockAndTxEvents() / Error while listening events in transactions: ${error}`)
+        logger.error(`RethinkDBDataStore - onPendingTxs / Error: ${error}`)
       })
   }
 }

@@ -11,7 +11,11 @@ export interface BlockchainDataStore {
 
   getTxsOfAddress(hash: string): Promise<any>
 
-  getChartsData(): Promise<any>
+  getChartBlockSize(startDate: Date, endDate: Date, groupBy?: string): Promise<any>
+
+  getChartAccountsGrowth(startDate: Date, endDate: Date): Promise<any>
+
+  getChartGasLimit(startDate: Date, endDate: Date): Promise<any>
 
   getBlock(hash: string): Promise<any>
 
