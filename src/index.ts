@@ -4,6 +4,7 @@ import { logger } from '@app/helpers'
 import { EthVMServer } from '@app/server'
 import { VmEngine, VmRunner } from '@app/vm'
 import { RedisTrieDb } from '@app/vm/trie/db'
+import * as EventEmitter from 'eventemitter3'
 
 async function bootstrapServer() {
   logger.debug('Bootstraping ethvm-socket-server!')
@@ -33,14 +34,18 @@ async function bootstrapServer() {
   const stateRoot = hasStateRoot ? new Buffer(blocks[0].stateRoot!!) : new Buffer(configStateRoot, 'hex')
   vmr.setStateRoot(stateRoot)
 
+  // Create block event emmiter
+  logger.debug('Initializing event emitter')
+  const emitter = new EventEmitter()
+
   // Create Blockchain data store
   logger.debug('Initializing RethinkDBDataStore')
-  const rdb = new RethinkDBDataStore()
+  const rdb = new RethinkDBDataStore(emitter)
   await rdb.initialize().catch(() => process.exit(-1))
 
   // Create server
   logger.debug('Initializing server')
-  const server = new EthVMServer(trieDb, vmr, vme, ds, rdb)
+  const server = new EthVMServer(trieDb, vmr, vme, ds, rdb, emitter)
   await server.start()
 }
 

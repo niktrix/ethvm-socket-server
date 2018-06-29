@@ -8,12 +8,10 @@ import * as r from 'rethinkdb'
 const PAGINATION_SIZE = 25
 
 export class RethinkDBDataStore implements BlockchainDataStore {
-  public readonly emitter: EventEmitter
-
   private readonly opts: any
   private conn: r.Connection
 
-  constructor() {
+  constructor(private readonly emitter: EventEmitter) {
     this.opts = {
       host: config.get('rethink_db.host'),
       port: config.get('rethink_db.port'),
@@ -26,7 +24,6 @@ export class RethinkDBDataStore implements BlockchainDataStore {
         cert: config.get('rethink_db.cert_raw')
       }
     }
-    this.emitter = new EventEmitter()
   }
 
   public async initialize(): Promise<boolean> {
@@ -197,22 +194,6 @@ export class RethinkDBDataStore implements BlockchainDataStore {
               }
 
               this.emitter.emit('onNewBlock', block)
-
-              // this.vmRunner.setStateRoot(block.stateRoot)
-              // const bstats = new BlockTxStats(block, block.transactions)
-              // block.blockStats = { ...bstats.getBlockStats(), ...block.blockStats }
-              // const sBlock = new SmallBlock(block)
-              // const blockHash = sBlock.hash()
-              // this.socketIO.to(blockHash).emit(blockHash + '_update', block)
-              // this.onNewBlock(sBlock.smallify())
-              // this.onNewTx(
-              //   block.transactions.map(tx => {
-              //     const sTx = new SmallTx(tx)
-              //     const txHash: string = sTx.hash()
-              //     this.socketIO.to(txHash).emit(txHash + '_update', tx)
-              //     return sTx.smallify()
-              //   })
-              // )
             }
           )
         }
@@ -242,33 +223,12 @@ export class RethinkDBDataStore implements BlockchainDataStore {
             }
 
             const tx = row.new_val
-            this.emitter.emit('onNewTx', tx)
-
-            // const tx: Tx = row.new_val
-            // if (tx.pending) {
-            //   const sTx = new SmallTx(tx)
-            //   const txHash: string = sTx.hash()
-            //   this.socketIO.to(txHash).emit(txHash + '_update', tx)
-            //   this.socketIO.to('pendingTxs').emit('newPendingTx', sTx.smallify())
-            // }
+            this.emitter.emit('onPendingTxs', tx)
           }
         )
       })
       .catch(error => {
         logger.error(`RethinkDBDataStore - listenToBlockAndTxEvents() / Error while listening events in transactions: ${error}`)
       })
-  }
-
-  private onNewBlock(block: Block) {
-    // this.socketIO.to('blocks').emit('newBlock', block)
-    // ds.addBlock(block)
-  }
-
-  private onNewTx(tx: Tx | Tx[]) {
-    // if (Array.isArray(tx) && !tx.length) {
-    //   return
-    // }
-    // this.socketIO.to('txs').emit('newTx', tx)
-    // ds.addTransaction(tx)
   }
 }
