@@ -21,12 +21,6 @@
   </a>
 </div>
 
-<div align="center">
-  <a href="https://waffle.io/enKryptIO/ethvm-socket-server" target="_blank">
-    <img alt="Waffle.io - Columns and their card count for EthVM: Socket Server" src="https://badge.waffle.io/enKryptIO/ethvm-socket-server.svg?columns=all" />
-  </a>
-</div>
-
 # EthVM: Socket Server
 
 This is the socket server that handles the backend for the sexy [EthVM](https://github.com/enKryptIO/ethvm) frontend. 
