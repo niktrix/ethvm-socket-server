@@ -1,6 +1,10 @@
 import { BlockStats, Tx } from '@app/models'
 
 export class Block {
+  public static fromRaw(obj): Block {
+    return new Block()
+  }
+
   public number: Buffer = new Buffer(0)
   public intNumber: number = 0
   public hash: Buffer = new Buffer(0)

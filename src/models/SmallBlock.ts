@@ -2,6 +2,7 @@ import { Block } from '@app/models'
 import { BigNumber } from 'bignumber.js'
 import * as utils from 'web3-utils'
 
+// TODO: Remove this model in favor of using Block
 export class SmallBlock {
   constructor(private readonly block: Block) {}
 

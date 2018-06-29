@@ -6,6 +6,8 @@ import * as utils from 'web3-utils'
 const BLOCK_TIME: number = config.get('eth.block_time')
 let previousBlockTime = new BigNumber(0)
 
+// TODO: Remove this class in favor of using only BlockStats (so the logic should be moved there)
+// TODO: Also use key-value cache to store PreviousBlockTime
 export class BlockTxStats {
   private blockTime
 

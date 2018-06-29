@@ -1,5 +1,6 @@
 import { Tx } from '@app/models'
 
+// TODO: Remove this model in favor of Tx model
 export class SmallTx {
   constructor(private readonly tx: Tx) {}
 
