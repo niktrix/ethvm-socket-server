@@ -2,7 +2,8 @@ import config from '@app/config'
 import { CacheDataStore, RethinkDBDataStore } from '@app/datastores'
 import { logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
-import { Block } from '@app/models'
+import { BlockTxStats } from '@app/libs'
+import { SmallBlock, SmallTx } from '@app/models'
 import { TrieDB, VmEngine, VmRunner } from '@app/vm'
 import * as EventEmitter from 'eventemitter3'
 import * as fs from 'fs'
@@ -88,7 +89,7 @@ export class EthVMServer {
     block.blockStats = { ...bstats.getBlockStats(), ...block.blockStats }
 
     const sBlock = new SmallBlock(block).smallify()
-    const blockHash = sBlock.hash()
+    const blockHash = sBlock.toStringHash()
 
     this.io.to(blockHash).emit(blockHash + '_update', sBlock)
     this.io.to('blocks').emit('newBlock', sBlock)
