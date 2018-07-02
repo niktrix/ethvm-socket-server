@@ -43,7 +43,7 @@ export class EthVMServer {
     events.forEach(async ev => {
       logger.debug(`Loading socket event: ${ev}`)
       const event = await import(`${__dirname}/events/${ev}`)
-      this.events.set(event.name, event)
+      this.events.set(event.default.name, event.default)
     })
 
     logger.debug('SocketEvent - start() / Starting to listen realtime events on RethinkDBDataStore')
