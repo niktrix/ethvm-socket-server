@@ -15,11 +15,8 @@ export interface SocketEvent {
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback) => void
 }
 
-
 export class EthVMServer {
   public readonly io: SocketIO.Server
-  public readonly vmr: VmRunner
-
 
   private readonly events: Map<string, SocketEvent>
 
@@ -31,15 +28,12 @@ export class EthVMServer {
     public readonly rdb: RethinkDBDataStore,
     public readonly emitter: EventEmitter
   ) {
-
     this.io = this.createWSServer()
-    this.vmr = this.vmRunner
 
     this.events = new Map()
   }
 
   public async start() {
-
     logger.debug('SocketEvent - start() / Registering emmiter callbacks')
     this.emitter.on('onNewBlock', this.onNewBlockEvent)
     this.emitter.on('onPendingTxs', this.onPendingTxs)
@@ -78,10 +72,8 @@ export class EthVMServer {
   private createWSServer(): SocketIO.Server {
     logger.debug('SocketEvent - createWSServer() / Creating WebSocket server')
     const server = http.createServer()
-
     const host = config.get('server.host')
     const port = config.get('server.port')
-
     server.listen(port, host, () => {
       logger.debug(`SocketEvent - createWSServer() / Listening on ${host}:${port}`)
     })
@@ -90,13 +82,9 @@ export class EthVMServer {
     return SocketIO(server)
   }
 
-  private onNewBlockEvent = (block: any): void =>{
-
-    logger.debug("Got New Block")
-
-
+  private onNewBlockEvent = (block: any): void => {
+    logger.debug('Got New Block')
     this.vmRunner.setStateRoot(block.stateRoot)
-
     const bstats = new BlockTxStats(block, block.transactions)
     block.blockStats = { ...bstats.getBlockStats(), ...block.blockStats }
 
