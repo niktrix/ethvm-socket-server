@@ -7,7 +7,7 @@ const getChartsDataEvent: SocketEvent = {
   name: 'getChartBlockSize',
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
     server.rdb
-      .getChartAccountsGrowth(new Date(), new Date())
+      .getChartBlockSize(new Date(), new Date())
       .then((result: any): void => cb(null, result))
       .catch((error: Error): void => cb(error, null))
   }
