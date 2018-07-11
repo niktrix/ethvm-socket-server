@@ -1,0 +1,51 @@
+{
+  "env": "dev",
+  "general": {
+    "logs": {
+      "enabled": "true",
+      "app_id": "ethvm-socket",
+      "level": "debug"
+    }
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 3000,
+    "ping_interval": 10000,
+    "ping_timeout": 5000
+  },
+  "data_stores": {
+    "redis": {
+      "host": "redis",
+      "port": "6379",
+      "socket_rows": 64
+    },
+    "loki": {
+      "db_name": "loki.json",
+      "ttl": {
+        "interval": 5000,
+        "age": "5 min"
+      }
+    }
+  },
+  "rethink_db": {
+    "db_name": "eth_mainnet",
+    "host": "rethinkdb",
+    "port": 28015,
+    "user": "admin",
+    "password": "1234",
+    "cert_raw": ""
+  },
+  "eth": {
+    "rpc": {
+      "host": "localhost",
+      "port": 8545
+    },
+    "block_time": "14 seconds",
+    "state_root": "d7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544",
+    "vm": {
+      "engine": {
+        "rpc_url": "https://api.myetherwallet.com/eth"
+      }
+    }
+  }
+}
