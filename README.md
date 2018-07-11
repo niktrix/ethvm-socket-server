@@ -1,6 +1,7 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/enKryptIO/ethvm-socket-server/master/assets/logo.png" alt="ethvm-logo">
   <p>:zap::zap::zap: EthVM Project: An open source blockchain explorer for Ethereum (and related networks) :zap::zap::zap:</p>
+  <p>Powered by <a href="https://www.typescriptlang.org/">TypeScript</a> / <a href="https://github.com/socketio/socket.io">Socket.io</a> / <a href="https://github.com/ethereum/go-ethereum">go-ethereum</a> / <a href="https://github.com/rethinkdb/rethinkdb">RethinkDB</a> / <a href="https://redis.io/topics/quickstart">Redis</a></p>
 </div>
 
 <div align="center">
@@ -23,9 +24,10 @@
 
 # EthVM: Socket Server
 
+**WARNING:** This project is in heavy refactoring mode! Things may break, don't work or anything else! (Phew!)
+
 This is the socket server that handles the backend for the sexy [EthVM](https://github.com/enKryptIO/ethvm) frontend. 
 
-Powered by [TypeScript](https://www.typescriptlang.org/) / [Socket.io](https://github.com/socketio/socket.io) / [go-ethereum](https://github.com/ethereum/go-ethereum) / [RethinkDB](https://github.com/rethinkdb/rethinkdb) / [Redis](https://redis.io/topics/quickstart)
 
 ## Getting Started
 
@@ -35,40 +37,10 @@ These instructions will get you a copy of the project up and running on your loc
 
 There are two ways to develop on EthVM Socket Server:
 
-1.  Using `docker`
+1.  Using `docker`. This will provide the complete experience to developing the whole EthVM project (i.e: backend and frontend at the same time). To do that, we recommend you to visit directly [ethvm-dev-kit](https://github.com/enKryptIO/ethvm-dev-kit).
 2.  Manual method
 
 So, choose your own path depending on which experience you want to have (keep in mind that using `docker` and `docker-compose` will streamline a lot the different dependencies you need in order to have a proper setup, so, if you want to start developing ASAP, using `docker` will be a better choice).
-
-Also, if you want to have a complete experience developing the whole EthVM project (i.e: backend and frontend at the same time), we recommend you to visit directly [ethvm-dev-kit](https://github.com/enKryptIO/ethvm-dev-kit).
-
-### Developing using Docker
-
-Make sure you have installed `docker` and `docker-compose`.
-
-In order to bring up the project you can issue the following command in the terminal (these are regular `docker-compose` commands, nothing fancy):
-
-```sh
-$ docker-compose up -d
-```
-
-To stop:
-
-```sh
-$ docker-compose stop
-```
-
-To delete built docker images:
-
-```sh
-$ docker-compose rm
-```
-
-And to check the logs:
-
-```sh
-$ docker-compose logs -f
-```
 
 ### Developing without Docker (Manual Installation)
 
@@ -83,8 +55,8 @@ In `configs` folder, you can change connection settings for the different availa
 Execute the following in your terminal:
 
 ```sh
-$ npm install  
-$ npm run start:dev
+$ yarn install  
+$ yarn start:dev
 ```
 
 Nodemon will kicstart the project.
