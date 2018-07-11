@@ -44,7 +44,7 @@ export class RedisDataStore implements CacheDataStore {
         }
 
         this.cache.set('blocks', blocks)
-        this.redis.set('blocks', blocks)
+        this.redis.set('blocks', JSON.stringify(blocks))
 
         return Promise.resolve(true)
       })
