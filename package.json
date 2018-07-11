@@ -1,8 +1,24 @@
 {
   "name": "ethvm-socket-server",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Backend socket server for EthVM",
-  "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enKryptIO/ethvm-socket-server.git"
+  },
+  "keywords": [
+    "ethvm",
+    "socketio",
+    "node",
+    "socket",
+    "ethereum"
+  ],
+  "author": "EnKryptIO",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/enKryptIO/ethvm-socket-server/issues"
+  },
+  "homepage": "https://github.com/enKryptIO/ethvm-socket-server#readme",
   "scripts": {
     "start": "ts-node -r tsconfig-paths/register src/index.ts",
     "start:dev": "nodemon",
@@ -19,23 +35,6 @@
       "pre-commit": "yarn format"
     }
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/enKryptIO/ethvm-socket-server.git"
-  },
-  "keywords": [
-    "ethvm",
-    "socketio",
-    "node",
-    "socket",
-    "ethereum"
-  ],
-  "author": "kvhnuke",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/enKryptIO/ethvm-socket-server/issues"
-  },
-  "homepage": "https://github.com/enKryptIO/ethvm-socket-server#readme",
   "dependencies": {
     "@enkrypt.io/ethereumjs-vm": "^2.3.3",
     "@enkrypt.io/json-rpc2": "^1.0.2",
