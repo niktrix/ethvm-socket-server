@@ -10,6 +10,9 @@ WORKDIR /var/ethvm-server
 # Copy
 COPY . .
 
+# Install
+RUN yarn install
+
 # Expose
 EXPOSE 3000
-CMD ["yarn", "start"]
+CMD yarn start
