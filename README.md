@@ -14,11 +14,11 @@
   <a href="https://codecov.io/gh/enKryptIO/ethvm-socket-server" target="_blank">
     <img alt="codecov" src="https://codecov.io/gh/enKryptIO/ethvm-socket-server/branch/master/graph/badge.svg" />
   </a>
-  <a href="https://david-dm.org/enKryptIO/ethvm-socket-server" target="_blank">
-    <img alt="Dependency Status" src="https://david-dm.org/enKryptIO/ethvm-socket-server.svg" />
+    <a href="https://david-dm.org/enKryptIO/ethvm-socket-server" title="dependencies status">
+    <img src="https://david-dm.org/enKryptIO/ethvm-socket-server/status.svg?style=flat-square" alt="dependencies status"/>
   </a>
-  <a href="https://david-dm.org/enKryptIO/ethvm-socket-server?type=dev" target="_blank">
-    <img alt="devDependency Status" src="https://david-dm.org/enKryptIO/ethvm-socket-server/dev-status.svg" />
+  <a href="https://david-dm.org/enKryptIO/ethvm-socket-server?type=dev" title="devDependencies status">
+    <img src="https://david-dm.org/enKryptIO/ethvm-socket-server/dev-status.svg?style=flat-square" alt="devDependencies status">/>
   </a>
 </div>
 
