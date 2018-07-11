@@ -45,3 +45,4 @@ typings/
 loki.json
 dist/
 docker/volumes/
+package-log.json
