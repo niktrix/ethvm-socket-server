@@ -240,7 +240,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
                 return
               }
 
-              logger.info(`RethinkDBDataStore - onNewBlock / Emitting block: ${block}`)
+              logger.info('RethinkDBDataStore - onNewBlock / Emitting new block!')
               this.emitter.emit('onNewBlock', block)
             }
           )
