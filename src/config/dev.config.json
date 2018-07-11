@@ -32,7 +32,7 @@
     "host": "rethinkdb",
     "port": 28015,
     "user": "admin",
-    "password": "1234",
+    "password": "",
     "cert_raw": ""
   },
   "eth": {
