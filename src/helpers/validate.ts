@@ -25,13 +25,26 @@ const durationSchema = {
     duration: {
       $id: '/properties/duration',
       type: 'string',
-      enum: ["BEGIN","YEAR","MONTH","DAY"],
+      enum: ['BEGIN', 'YEAR', 'MONTH', 'DAY'],
       title: 'The Duration Schema ',
-      default: '',
+      default: ''
+    }
+  }
+}
+
+const tokenSchema = {
+  type: 'object',
+  definitions: {},
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  properties: {
+    tokens: {
+      $id: '/properties/tokens',
+      type: 'array'
     }
   }
 }
 const AddressValidator = ajv.compile(addressSchema)
 const DurationValidator = ajv.compile(durationSchema)
+const TokensValidator = ajv.compile(tokenSchema)
 
-export { AddressValidator, DurationValidator}
+export { AddressValidator, DurationValidator, TokensValidator }
