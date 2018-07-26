@@ -1,6 +1,13 @@
 import * as Ajv from 'ajv'
+import { isValidAddress } from 'ethereumjs-util'
 
 const ajv = new Ajv()
+ajv.addKeyword('address', {
+  validate: (schema, data) => {
+    return isValidAddress(data)
+  },
+  errors: false
+})
 
 const addressSchema = {
   type: 'object',
@@ -12,6 +19,7 @@ const addressSchema = {
       type: 'string',
       title: 'The Address Schema ',
       default: '',
+      address: true,
       examples: ['0x0000000000000']
     }
   }

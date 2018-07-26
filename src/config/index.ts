@@ -67,26 +67,6 @@ const config = convict({
         format: 'int',
         env: 'ETHVM_DATA_STORE_REDIS_SOCKET_ROWS'
       }
-    },
-
-    loki: {
-      db_name: {
-        default: 'loki.json',
-        format: String,
-        env: 'ETHVM_DATA_STORE_LOKI_DB_NAME'
-      },
-      ttl: {
-        interval: {
-          default: 5000, // 5 secs,
-          format: 'duration',
-          env: 'ETHVM_DATA_STORE_LOKI_TTL_INTERVAL'
-        },
-        age: {
-          default: 5 * 60 * 1000, // 5 mins
-          format: 'duration',
-          env: 'ETHVM_DATA_STORE_LOKI_TTL_AGE'
-        }
-      }
     }
   },
 
