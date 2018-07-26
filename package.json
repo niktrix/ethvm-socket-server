@@ -38,7 +38,7 @@
   "dependencies": {
     "@enkrypt.io/ethereumjs-vm": "^2.3.3",
     "@enkrypt.io/json-rpc2": "^1.0.2",
-    "ajv": "^6.5.1",
+    "ajv": "^6.5.2",
     "bignumber.js": "^7.2.1",
     "convict": "^4.3.0",
     "ethereumjs-abi": "^0.6.5",
