@@ -11,23 +11,8 @@ export class RethinkDBDataStore implements BlockchainDataStore {
   private readonly opts: any
   private conn: r.Connection
 
-  constructor(private readonly emitter: EventEmitter) {
-    this.opts = {
-      host: config.get('rethink_db.host'),
-      port: config.get('rethink_db.port'),
-      db: config.get('rethink_db.db_name')
-    }
-    if (config.get('rethink_db.user')) {
-        this.opts.user = config.get('rethink_db.user')
-      }
-    if (config.get('rethink_db.password')) {
-        this.opts.password = config.get('rethink_db.password')
-      }
-    if (config.get('rethink_db.cert_raw')) {
-      this.opts.ssl = {
-        cert: config.get('rethink_db.cert_raw')
-      }
-    }
+  constructor(private readonly emitter: EventEmitter, options:any) {
+    this.opts = options
   }
 
   public async initialize(): Promise<boolean> {
