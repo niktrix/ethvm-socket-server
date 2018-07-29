@@ -1,5 +1,5 @@
 import config from '@app/config'
-import { CacheDataStore, RethinkDBDataStore } from '@app/datastores'
+import { BlockchainDataStore, CacheDataStore, RethinkDBDataStore } from '@app/datastores'
 import { logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { BlockTxStats } from '@app/libs'
@@ -25,7 +25,7 @@ export class EthVMServer {
     public readonly vmRunner: VmRunner,
     public readonly vmEngine: VmEngine,
     public readonly ds: CacheDataStore,
-    public readonly rdb: RethinkDBDataStore,
+    public readonly rdb: BlockchainDataStore,
     public readonly emitter: EventEmitter
   ) {
     this.io = this.createWSServer()
