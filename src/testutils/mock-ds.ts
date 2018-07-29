@@ -1,5 +1,5 @@
-import { CacheDataStore } from '@app/datastores'
-import { Block, Tx } from '@app/models'
+import { CacheDataStore } from 'datastores'
+import { Block, Tx } from 'models'
 
 export class MockDS implements CacheDataStore {
   public initialize(): Promise<boolean> {
