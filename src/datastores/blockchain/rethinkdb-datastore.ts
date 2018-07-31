@@ -126,7 +126,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
 
   public getChartAccountsGrowth(startDate: Date, endDate: Date): Promise<any> {
     return r
-      .table('blockscache')
+      .table('blocks_metrics')
       .between(r.epochTime(startDate.getTime() / 1000), r.epochTime(endDate.getTime() / 1000), {
         index: 'timestamp',
         rightBound: 'closed'
@@ -143,7 +143,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
   public getChartBlockSize(startDate: Date, endDate: Date): Promise<any> {
     return (
       r
-        .table('blockscache')
+        .table('blocks_metrics')
         .between(r.epochTime(startDate.getTime() / 1000), r.epochTime(endDate.getTime() / 1000), {
           index: 'timestamp',
           rightBound: 'closed'
@@ -155,10 +155,10 @@ export class RethinkDBDataStore implements BlockchainDataStore {
     )
   }
 
-  public getChartAvTxFee =  (startDate: Date, endDate: Date): Promise<any> => {
+  public getChartAvTxFee = (startDate: Date, endDate: Date): Promise<any> => {
       return (
       r
-        .table('blockscache')
+        .table('blocks_metrics')
         .between(r.epochTime(startDate.getTime() ), r.epochTime(endDate.getTime() ), {
           index: 'timestamp',
           rightBound: 'closed'
@@ -172,7 +172,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
 
   public getChartGasLimit(startDate: Date, endDate: Date): Promise<any> {
     return r
-      .table('blockscache')
+      .table('blocks_metrics')
       .between(r.epochTime(startDate.getTime() / 1000), r.epochTime(endDate.getTime() / 1000), {
         index: 'timestamp',
         rightBound: 'closed'
@@ -209,6 +209,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
   }
 
   public async startListeningToEvents() {
+    logger.debug('RethinkDBDataStore - startListeningToEvents() / Listening for new events')
     r.table('blocks')
       .changes()
       .map(change => change('new_val'))
