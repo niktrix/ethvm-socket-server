@@ -14,7 +14,7 @@ const pastBlocksEvent: SocketEvent = {
 
           blocks.forEach(
             (block: Block, idx: number): void => {
-              blocks.unshift(block)
+              _blocks.unshift(block)
             }
           )
 
