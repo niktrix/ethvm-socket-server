@@ -5,10 +5,12 @@ import { EthVMServer, SocketEvent } from '@app/server'
 const getBalanceEvent: SocketEvent = {
   name: 'getBalance',
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
-    const isValid = AddressValidator(msg);
+    const isValid = AddressValidator(msg)
     if (!isValid) {
       cb(AddressValidator.errors, null)
+      return
     }
+
     server.vmEngine
       .getBalance(msg)
       .then(result => cb(null, result))

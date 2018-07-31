@@ -3,9 +3,7 @@ import { isValidAddress } from 'ethereumjs-util'
 
 const ajv = new Ajv()
 ajv.addKeyword('address', {
-  validate: (schema, data) => {
-    return isValidAddress(data)
-  },
+  validate: (schema, data) => isValidAddress(data),
   errors: false
 })
 
@@ -51,6 +49,7 @@ const tokenSchema = {
     }
   }
 }
+
 const AddressValidator = ajv.compile(addressSchema)
 const DurationValidator = ajv.compile(durationSchema)
 const TokensValidator = ajv.compile(tokenSchema)

@@ -35,7 +35,7 @@ describe('validate', () => {
   describe('TokensValidator() method', () => {
     const msg = { tokens: [] }
     const wrongmessage = { tokens: 'WRONG' }
-    
+
     it('should return true', () => {
       const isvalid = TokensValidator(msg)
       expect(isvalid).to.be.true
