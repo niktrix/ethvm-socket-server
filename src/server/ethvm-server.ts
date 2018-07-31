@@ -83,6 +83,8 @@ export class EthVMServer {
   }
 
   private onNewBlockEvent = (block: any): void => {
+    logger.info(`EthVMServer - onNewBlockEvent / Block: ${block}`)
+
     this.vmRunner.setStateRoot(block.stateRoot)
     const bstats = new BlockTxStats(block, block.transactions)
     block.blockStats = { ...bstats.getBlockStats(), ...block.blockStats }
@@ -113,6 +115,8 @@ export class EthVMServer {
   }
 
   private onPendingTxsEvent = (tx: any): void => {
+    logger.info(`EthVMServer - onPendingTxsEvent / Tx: ${tx}`)
+
     if (tx.pending) {
       const sTx = new SmallTx(tx)
       const txHash = sTx.hash()

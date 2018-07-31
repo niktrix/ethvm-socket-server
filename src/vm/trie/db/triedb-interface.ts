@@ -5,7 +5,7 @@ export interface TrieDBOptions {
 }
 
 // merkle-patricia-tree module use this signature to store data
-// So, in order to improve where the data is stored, we define the same interface and
+// so, in order to improve where the data is stored, we define the same interface
 export interface TrieDB {
   get(key: Buffer, opts: TrieDBOptions, cb: Callback)
 

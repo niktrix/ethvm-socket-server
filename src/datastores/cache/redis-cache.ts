@@ -18,7 +18,7 @@ export class RedisDataStore implements CacheDataStore {
   }
 
   public initialize(): Promise<boolean> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       Promise.all([this.getBlocks(), this.getTransactions()])
         .then(results => {
           this.cache.set('blocks', results[0])
@@ -35,6 +35,8 @@ export class RedisDataStore implements CacheDataStore {
   }
 
   public putBlock(block: Block): Promise<boolean> {
+    logger.debug(`RedisDataStore - putBlock / Block: ${block}`)
+
     return this.getArray<Block>('blocks')
       .then((blocks: Block[]) => {
         blocks.unshift(block)
@@ -59,6 +61,8 @@ export class RedisDataStore implements CacheDataStore {
   }
 
   public putTransaction(tx: Tx | Tx[]): Promise<boolean> {
+    logger.debug(`RedisDataStore - putTransaction / Txs: ${tx}`)
+
     return this.getArray<Tx>('transactions')
       .then((txs: Tx[]) => {
         if (Array.isArray(tx)) {
@@ -99,6 +103,8 @@ export class RedisDataStore implements CacheDataStore {
       this.redis
         .get(key)
         .then(result => {
+          logger.debug(`RedisDataStore - getArray() / Key: ${key} | Result: ${result}`)
+
           if (!result) {
             resolve([])
             return
