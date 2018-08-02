@@ -1,4 +1,4 @@
-export class Chart {
-  public timestamp: Buffer = new Buffer(0)
-  public newaccounts: Buffer = new Buffer(0)
+export interface Chart {
+  timestamp: Buffer
+  newaccounts: Buffer
 }

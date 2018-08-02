@@ -1,9 +1,9 @@
 import config from '@app/config'
 import { CacheDataStore, RethinkDBDataStore } from '@app/datastores'
-import { logger } from '@app/helpers'
+import { logger, eth } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { BlockTxStats } from '@app/libs'
-import { SmallBlock, SmallTx } from '@app/models'
+import { SmallBlock } from '@app/models'
 import { TrieDB, VmEngine, VmRunner } from '@app/vm'
 import * as EventEmitter from 'eventemitter3'
 import * as fs from 'fs'
@@ -29,7 +29,6 @@ export class EthVMServer {
     public readonly emitter: EventEmitter
   ) {
     this.io = this.createWSServer()
-
     this.events = new Map()
   }
 
@@ -89,20 +88,20 @@ export class EthVMServer {
     const bstats = new BlockTxStats(block, block.transactions)
     block.blockStats = { ...bstats.getBlockStats(), ...block.blockStats }
 
-    const sBlock = new SmallBlock(block).smallify()
-    const blockHash = sBlock.toStringHash()
+    const blockHash = eth.toHex(block.hash)
+    const sBlock = new SmallBlock(block)
+    const formattedBlock = sBlock.smallify()
 
-    this.io.to(blockHash).emit(blockHash + '_update', sBlock)
-    this.io.to('blocks').emit('newBlock', sBlock)
+    this.io.to(blockHash).emit(blockHash + '_update', formattedBlock)
+    this.io.to('blocks').emit('newBlock', formattedBlock)
 
     this.ds.putBlock(block)
 
     const txs = block.transactions
       ? block.transactions.map(tx => {
-          const sTx = new SmallTx(tx)
-          const txHash = sTx.hash()
+          const txHash = eth.toHex(tx.hash)
           this.io.to(txHash).emit(txHash + '_update', tx)
-          return sTx.smallify()
+          return tx
         })
       : []
 
@@ -118,10 +117,9 @@ export class EthVMServer {
     logger.info(`EthVMServer - onPendingTxsEvent / Tx: ${tx}`)
 
     if (tx.pending) {
-      const sTx = new SmallTx(tx)
-      const txHash = sTx.hash()
+      const txHash = eth.toHex(tx.hash)
       this.io.to(txHash).emit(txHash + '_update', tx)
-      this.io.to('pendingTxs').emit('newPendingTx', sTx.smallify())
+      this.io.to('pendingTxs').emit('newPendingTx', tx)
     }
   }
 }

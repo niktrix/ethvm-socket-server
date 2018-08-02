@@ -1,7 +1,6 @@
 import config from '@app/config'
 import { BlockchainDataStore } from '@app/datastores/blockchain'
 import { logger } from '@app/helpers'
-import { SmallTx } from '@app/models'
 import * as EventEmitter from 'eventemitter3'
 import * as r from 'rethinkdb'
 
@@ -54,7 +53,6 @@ export class RethinkDBDataStore implements BlockchainDataStore {
         .limit(PAGINATION_SIZE)
         .run(this.conn)
         .then((cursor: r.cursor) => cursor.toArray())
-        .then((results: any[]) => results.map((tx: any) => new SmallTx(tx).smallify()))
     }
 
     return r
@@ -65,7 +63,6 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .limit(PAGINATION_SIZE)
       .run(this.conn)
       .then((cursor: r.cursor) => cursor.toArray())
-      .then((results: any[]) => results.map((tx: any) => new SmallTx(tx).smallify()))
   }
 
   public getTransactionPages(hash: Buffer, bNumber: number): Promise<any> {
@@ -77,7 +74,6 @@ export class RethinkDBDataStore implements BlockchainDataStore {
         .limit(PAGINATION_SIZE)
         .run(this.conn)
         .then((cursor: r.cursor) => cursor.toArray())
-        .then((results: any[]) => results.map((tx: any) => new SmallTx(tx).smallify()))
     }
 
     return r
@@ -88,7 +84,6 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .limit(PAGINATION_SIZE)
       .run(this.conn)
       .then((cursor: r.cursor) => cursor.toArray())
-      .then((results: any[]) => results.map((tx: any) => new SmallTx(tx).smallify()))
   }
 
   public getBlockTransactions(hash: string): Promise<any> {
@@ -102,7 +97,6 @@ export class RethinkDBDataStore implements BlockchainDataStore {
           .coerceTo('array')
       )
       .run(this.conn)
-      .then((results: any[]) => results.map((tx: any) => new SmallTx(tx).smallify()))
   }
 
   public getTotalTxs(hash: string): Promise<any> {

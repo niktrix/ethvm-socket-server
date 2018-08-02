@@ -1,9 +1,9 @@
-export class Transfer {
-  public op: string = ''
-  public value: Buffer = new Buffer(0)
-  public from: Buffer = new Buffer(0)
-  public fromBalance: Buffer = new Buffer(0)
-  public to: Buffer = new Buffer(0)
-  public toBalance: Buffer = new Buffer(0)
-  public input: Buffer = new Buffer(0)
+export interface Transfer {
+  op: string
+  value: Buffer
+  from: Buffer
+  fromBalance: Buffer
+  to: Buffer
+  toBalance: Buffer
+  input: Buffer
 }

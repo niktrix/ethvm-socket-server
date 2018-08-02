@@ -3,6 +3,8 @@ import _ from 'lodash'
 const validateByteArray = (arr: number[]): boolean => arr.some((item: number) => !_.isNumber(item) || item < 0 || item > 255)
 
 export const eth = {
+  toHex: (b: Buffer): string => '0x' + new Buffer(b).toString('hex'),
+
   hexToBuffer: (hex: string): Buffer => Buffer.from(hex.toLowerCase().replace('0x', ''), 'hex'),
 
   isBufferObject: (item: any, length: number): boolean =>
