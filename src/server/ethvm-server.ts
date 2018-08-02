@@ -1,6 +1,6 @@
 import config from '@app/config'
 import { CacheDataStore, RethinkDBDataStore } from '@app/datastores'
-import { logger, eth } from '@app/helpers'
+import { eth, logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { BlockTxStats } from '@app/libs'
 import { SmallBlock } from '@app/models'
