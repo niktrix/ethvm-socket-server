@@ -15,6 +15,8 @@ export interface BlockchainDataStore {
 
   getChartAccountsGrowth(startDate: Date, endDate: Date): Promise<any>
 
+  getChartAvTxFee(startDate: Date, endDate: Date): Promise<any>
+
   getChartGasLimit(startDate: Date, endDate: Date): Promise<any>
 
   getBlock(hash: string): Promise<any>

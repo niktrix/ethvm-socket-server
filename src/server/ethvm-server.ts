@@ -1,9 +1,9 @@
 import config from '@app/config'
-import { CacheDataStore, RethinkDBDataStore } from '@app/datastores'
+import { BlockchainDataStore, CacheDataStore } from '@app/datastores'
 import { eth, logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { BlockTxStats } from '@app/libs'
-import { SmallBlock } from '@app/models'
+import { SmallBlock, AddressPayload, DurationPayload, TokensPayload } from '@app/models'
 import { TrieDB, VmEngine, VmRunner } from '@app/vm'
 import * as EventEmitter from 'eventemitter3'
 import * as fs from 'fs'
@@ -12,7 +12,7 @@ import * as SocketIO from 'socket.io'
 
 export interface SocketEvent {
   name: string
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback) => void
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: AddressPayload | DurationPayload | TokensPayload | any, cb: Callback) => void
 }
 
 export class EthVMServer {
@@ -25,7 +25,7 @@ export class EthVMServer {
     public readonly vmRunner: VmRunner,
     public readonly vmEngine: VmEngine,
     public readonly ds: CacheDataStore,
-    public readonly rdb: RethinkDBDataStore,
+    public readonly rdb: BlockchainDataStore,
     public readonly emitter: EventEmitter
   ) {
     this.io = this.createWSServer()
@@ -45,8 +45,8 @@ export class EthVMServer {
       this.events.set(event.default.name, event.default)
     })
 
-    logger.debug('SocketEvent - start() / Starting to listen realtime events on RethinkDBDataStore')
-    this.rdb.startListeningToEvents()
+    logger.debug('SocketEvent - start() / Starting RethinkDB datastore')
+    this.rdb.initialize()
 
     logger.debug('SocketEvent - start() / Starting to listen socket events on SocketIO')
     this.io.on(

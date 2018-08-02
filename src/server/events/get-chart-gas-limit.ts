@@ -1,3 +1,4 @@
+import { DurationValidator } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
 
@@ -6,6 +7,12 @@ import { EthVMServer, SocketEvent } from '@app/server'
 const getChartsDataEvent: SocketEvent = {
   name: 'getChartGasLimit',
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
+    const isValid = DurationValidator(msg)
+    if (!isValid) {
+      cb(DurationValidator.errors, null)
+      return
+    }
+
     server.rdb
       .getChartGasLimit(new Date(), new Date())
       .then((result: any): void => cb(null, result))

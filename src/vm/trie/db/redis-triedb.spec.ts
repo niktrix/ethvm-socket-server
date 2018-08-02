@@ -1,5 +1,4 @@
 import { expect } from 'chai'
-import { describe, it } from 'mocha'
 
 describe('redis-triedb', () => {
   describe('get() method', () => {

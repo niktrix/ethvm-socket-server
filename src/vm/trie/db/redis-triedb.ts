@@ -7,11 +7,15 @@ import * as Redis from 'ioredis'
 export class RedisTrieDb implements TrieDB {
   private readonly redis: Redis.Redis
   private readonly rpc: any
+  private readonly opts: any
 
-  constructor() {
+
+  constructor(options:any) {
+    this.opts = options
+
     this.redis = new Redis({
-      host: config.get('data_stores.redis.host'),
-      port: config.get('data_stores.redis.port')
+      host: this.opts.host,
+      port: this.opts.port
     })
 
     const rpcHost = config.get('eth.rpc.host')

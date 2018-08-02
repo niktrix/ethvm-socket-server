@@ -1,5 +1,5 @@
 import config from '@app/config'
-import { RedisDataStore, RethinkDBDataStore } from '@app/datastores'
+import { RedisDataStore, RethinkDBDataStore, RethinkDBOpts } from '@app/datastores'
 import { logger } from '@app/helpers'
 import { EthVMServer } from '@app/server'
 import { VmEngine, VmRunner } from '@app/vm'
@@ -11,7 +11,11 @@ async function bootstrapServer() {
 
   // Create TrieDB
   logger.debug('Initializing TrieDB')
-  const trieDb = new RedisTrieDb()
+  const redisOpts: any = {
+    host: config.get('data_stores.redis.host'),
+    port: config.get('data_stores.redis.port')
+  }
+  const trieDb = new RedisTrieDb(redisOpts)
 
   // Create VmEngine
   logger.debug('Initializing VmEngine')
@@ -40,8 +44,21 @@ async function bootstrapServer() {
 
   // Create Blockchain data store
   logger.debug('Initializing RethinkDBDataStore')
-  const rdb = new RethinkDBDataStore(emitter)
-  await rdb.initialize().catch(() => process.exit(-1))
+
+  const rethinkDbOpts: RethinkDBOpts = {
+    host: config.get('rethink_db.host'),
+    port: config.get('rethink_db.port'),
+    db: config.get('rethink_db.db_name'),
+    user: config.get('rethink_db.user') || '',
+    password: config.get('rethink_db.password') || '',
+    ssl: {
+      cert: config.get('rethink_db.cert_raw')
+    }
+  }
+  if (!rethinkDbOpts.ssl.cert) {
+    delete rethinkDbOpts.ssl
+  }
+  const rdb = new RethinkDBDataStore(emitter, rethinkDbOpts)
 
   // Create server
   logger.debug('Initializing server')

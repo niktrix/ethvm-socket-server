@@ -6,32 +6,32 @@ import * as r from 'rethinkdb'
 
 const PAGINATION_SIZE = 25
 
+export interface RethinkDBOpts {
+  host: string
+  port: number
+  db: string
+  user?: string
+  password?: string
+  ssl?: any
+}
+
 export class RethinkDBDataStore implements BlockchainDataStore {
-  private readonly opts: any
+  private readonly opts: RethinkDBOpts
   private conn: r.Connection
 
-  constructor(private readonly emitter: EventEmitter) {
-    this.opts = {
-      host: config.get('rethink_db.host'),
-      port: config.get('rethink_db.port'),
-      db: config.get('rethink_db.db_name')
-    }
-    if (config.get('rethink_db.user')) {
-        this.opts.user = config.get('rethink_db.user')
-      }
-    if (config.get('rethink_db.password')) {
-        this.opts.password = config.get('rethink_db.password')
-      }
-    if (config.get('rethink_db.cert_raw')) {
-      this.opts.ssl = {
-        cert: config.get('rethink_db.cert_raw')
-      }
-    }
+  constructor(private readonly emitter: EventEmitter, options: RethinkDBOpts) {
+    this.opts = options
   }
 
   public async initialize(): Promise<boolean> {
     try {
+      logger.debug('RethinkDBDataStore - initialize() / Creating connection to RethinkDB')
       this.conn = await r.connect(this.opts)
+
+      logger.debug('RethinkDBDataStore - initialize() / Registering events')
+      await this.registerEventEmitter()
+      logger.debug('RethinkDBDataStore - initialize() / Events registered sucessfully!')
+
       return Promise.resolve(true)
     } catch (error) {
       logger.error(`Error issued while initializing RethinkDB: ${error}`)
@@ -135,33 +135,29 @@ export class RethinkDBDataStore implements BlockchainDataStore {
 
   // TODO: Double check if selector is LAST_DAY, should we group by hours
   public getChartBlockSize(startDate: Date, endDate: Date): Promise<any> {
-    return (
-      r
-        .table('blocks_metrics')
-        .between(r.epochTime(startDate.getTime() / 1000), r.epochTime(endDate.getTime() / 1000), {
-          index: 'timestamp',
-          rightBound: 'closed'
-        })
-        .group(r.row('timestamp').date())
-        .avg(r.row('size'))
-        .run(this.conn)
-        .then((cursor: r.cursor) => cursor.toArray())
-    )
+    return r
+      .table('blocks_metrics')
+      .between(r.epochTime(startDate.getTime() / 1000), r.epochTime(endDate.getTime() / 1000), {
+        index: 'timestamp',
+        rightBound: 'closed'
+      })
+      .group(r.row('timestamp').date())
+      .avg(r.row('size'))
+      .run(this.conn)
+      .then((cursor: r.cursor) => cursor.toArray())
   }
 
   public getChartAvTxFee = (startDate: Date, endDate: Date): Promise<any> => {
-      return (
-      r
-        .table('blocks_metrics')
-        .between(r.epochTime(startDate.getTime() ), r.epochTime(endDate.getTime() ), {
-          index: 'timestamp',
-          rightBound: 'closed'
-        })
-        .group(r.row('timestamp').date())
-        .avg(r.row('txFees'))
-        .run(this.conn)
-        .then((cursor: r.cursor) => cursor.toArray())
-    )
+    return r
+      .table('blocks_metrics')
+      .between(r.epochTime(startDate.getTime()), r.epochTime(endDate.getTime()), {
+        index: 'timestamp',
+        rightBound: 'closed'
+      })
+      .group(r.row('timestamp').date())
+      .avg(r.row('txFees'))
+      .run(this.conn)
+      .then((cursor: r.cursor) => cursor.toArray())
   }
 
   public getChartGasLimit(startDate: Date, endDate: Date): Promise<any> {
@@ -190,11 +186,11 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .merge(tx => {
         return {
           trace: r
-            .db(this.opts.db_name)
+            .db(this.opts.db)
             .table('traces')
             .get(tx('hash')),
           logs: r
-            .db(this.opts.db_name)
+            .db(this.opts.db)
             .table('logs')
             .get(tx('hash'))
         }
@@ -202,9 +198,9 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .run(this.conn)
   }
 
-  public async startListeningToEvents() {
-    logger.debug('RethinkDBDataStore - startListeningToEvents() / Listening for new events')
-    r.table('blocks')
+  private registerEventEmitter(): Promise<any[]> {
+    const blocksPromise = r
+      .table('blocks')
       .changes()
       .map(change => change('new_val'))
       .merge(block => {
@@ -245,7 +241,8 @@ export class RethinkDBDataStore implements BlockchainDataStore {
         logger.error(`RethinkDBDataStore - onNewblock / Error: ${error}`)
       })
 
-    r.table('transactions')
+    const txsPromise = r
+      .table('transactions')
       .changes()
       .filter(
         r
@@ -275,5 +272,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .catch(error => {
         logger.error(`RethinkDBDataStore - onPendingTxs / Error: ${error}`)
       })
+
+    return Promise.all([blocksPromise, txsPromise])
   }
 }
