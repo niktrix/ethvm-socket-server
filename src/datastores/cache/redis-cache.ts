@@ -18,7 +18,7 @@ export class RedisDataStore implements CacheDataStore {
   }
 
   public initialize(): Promise<boolean> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       Promise.all([this.getBlocks(), this.getTransactions()])
         .then(results => {
           this.cache.set('blocks', results[0])
@@ -35,7 +35,7 @@ export class RedisDataStore implements CacheDataStore {
   }
 
   public putBlock(block: Block): Promise<boolean> {
-    logger.debug(`RedisDataStore - putBlock / Block: ${block}`)
+    logger.debug(`RedisDataStore - putBlock / Block: ${eth.toHex(block.hash)}`)
 
     return this.getArray<Block>('blocks')
       .then((blocks: Block[]) => {
@@ -60,25 +60,25 @@ export class RedisDataStore implements CacheDataStore {
     return this.getArray<Block>('blocks')
   }
 
-  public putTransaction(tx: Tx | Tx[]): Promise<boolean> {
-    logger.debug(`RedisDataStore - putTransaction / Txs: ${tx}`)
+  public putTransactions(txs: Tx[]): Promise<boolean> {
+    logger.debug(`RedisDataStore - putTransaction / Txs: ${txs.length}`)
 
     return this.getArray<Tx>('transactions')
-      .then((txs: Tx[]) => {
-        if (Array.isArray(tx)) {
-          tx.forEach(t => {
-            txs.unshift(t)
+      .then((_txs: Tx[]) => {
+        if (Array.isArray(txs)) {
+          txs.forEach(t => {
+            _txs.unshift(t)
           })
         } else {
-          txs.unshift(tx)
+          _txs.unshift(txs)
         }
 
-        if (txs.length > this.socketRows) {
-          txs = txs.slice(0, this.socketRows)
+        if (_txs.length > this.socketRows) {
+          _txs = _txs.slice(0, this.socketRows)
         }
 
-        this.cache.set('transactions', txs)
-        this.redis.set('transactions', JSON.stringify(txs))
+        this.cache.set('transactions', _txs)
+        this.redis.set('transactions', JSON.stringify(_txs))
 
         return Promise.resolve(true)
       })
@@ -103,12 +103,13 @@ export class RedisDataStore implements CacheDataStore {
       this.redis
         .get(key)
         .then(result => {
-          logger.debug(`RedisDataStore - getArray() / Key: ${key} | Result: ${result}`)
-
           if (!result) {
+            logger.debug(`RedisDataStore - getArray() / Key: ${key} | Result: empty`)
             resolve([])
             return
           }
+
+          logger.debug(`RedisDataStore - getArray() / Key: ${key} | Result: ${result.length}`)
 
           const buffered = JSON.parse(result).map(item => eth.bufferify(item))
           this.cache.set(key, buffered)

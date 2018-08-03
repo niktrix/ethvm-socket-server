@@ -7,7 +7,7 @@ export interface CacheDataStore {
 
   getBlocks(): Promise<Block[]>
 
-  putTransaction(tx: Tx | Tx[]): Promise<boolean>
+  putTransactions(txs: Tx[]): Promise<boolean>
 
   getTransactions(): Promise<Tx[]>
 }
