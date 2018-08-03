@@ -1,6 +1,6 @@
-import config from '@app/config'
 import { BlockchainDataStore } from '@app/datastores/blockchain'
 import { logger } from '@app/helpers'
+import { Block, Tx } from '@app/models'
 import * as EventEmitter from 'eventemitter3'
 import * as r from 'rethinkdb'
 
@@ -30,8 +30,8 @@ export class RethinkDBDataStore implements BlockchainDataStore {
 
       logger.debug('RethinkDBDataStore - initialize() / Registering events')
       await this.registerEventEmitter()
-      logger.debug('RethinkDBDataStore - initialize() / Events registered sucessfully!')
 
+      logger.debug('RethinkDBDataStore - initialize() / Initialization performed sucessfully!')
       return Promise.resolve(true)
     } catch (error) {
       logger.error(`Error issued while initializing RethinkDB: ${error}`)
@@ -39,7 +39,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
     }
   }
 
-  public getAddressTransactionPages(address: Buffer, hash: Buffer, bNumber: number): Promise<any> {
+  public getAddressTxPages(address: Buffer, hash: Buffer, bNumber: number): Promise<Tx[]> {
     if (!hash) {
       return r
         .table('transactions')
@@ -65,7 +65,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .then((cursor: r.cursor) => cursor.toArray())
   }
 
-  public getTransactionPages(hash: Buffer, bNumber: number): Promise<any> {
+  public getTxsPages(bNumber: number, hash?: Buffer): Promise<Tx[]> {
     if (!hash) {
       return r
         .table('transactions')
@@ -86,7 +86,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .then((cursor: r.cursor) => cursor.toArray())
   }
 
-  public getBlockTransactions(hash: string): Promise<any> {
+  public getBlockTxs(hash: string): Promise<Block> {
     return r
       .table('blocks')
       .get(r.args([new Buffer(hash)]))
@@ -99,7 +99,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .run(this.conn)
   }
 
-  public getTotalTxs(hash: string): Promise<any> {
+  public getTotalTxs(hash: string): Promise<number> {
     const bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex')
     return r
       .table('transactions')
@@ -108,7 +108,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .run(this.conn)
   }
 
-  public getTxsOfAddress(hash: string): Promise<any> {
+  public getTxsOfAddress(hash: string): Promise<Tx[]> {
     const bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex')
     return r
       .table('transactions')
@@ -118,10 +118,10 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .then((cursor: r.cursor) => cursor.toArray())
   }
 
-  public getChartAccountsGrowth(startDate: Date, endDate: Date): Promise<any> {
+  public getChartAccountsGrowth(start: Date, end: Date): Promise<any> {
     return r
       .table('blocks_metrics')
-      .between(r.epochTime(startDate.getTime() / 1000), r.epochTime(endDate.getTime() / 1000), {
+      .between(r.epochTime(start.getTime() / 1000), r.epochTime(end.getTime() / 1000), {
         index: 'timestamp',
         rightBound: 'closed'
       })
@@ -133,11 +133,10 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .then((cursor: r.cursor) => cursor.toArray())
   }
 
-  // TODO: Double check if selector is LAST_DAY, should we group by hours
-  public getChartBlockSize(startDate: Date, endDate: Date): Promise<any> {
+  public getChartBlockSize(start: Date, end: Date): Promise<number> {
     return r
       .table('blocks_metrics')
-      .between(r.epochTime(startDate.getTime() / 1000), r.epochTime(endDate.getTime() / 1000), {
+      .between(r.epochTime(start.getTime() / 1000), r.epochTime(end.getTime() / 1000), {
         index: 'timestamp',
         rightBound: 'closed'
       })
@@ -147,10 +146,10 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .then((cursor: r.cursor) => cursor.toArray())
   }
 
-  public getChartAvTxFee = (startDate: Date, endDate: Date): Promise<any> => {
+  public getChartAvTxFee = (start: Date, end: Date): Promise<any> => {
     return r
       .table('blocks_metrics')
-      .between(r.epochTime(startDate.getTime()), r.epochTime(endDate.getTime()), {
+      .between(r.epochTime(start.getTime()), r.epochTime(end.getTime()), {
         index: 'timestamp',
         rightBound: 'closed'
       })
@@ -160,10 +159,10 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .then((cursor: r.cursor) => cursor.toArray())
   }
 
-  public getChartGasLimit(startDate: Date, endDate: Date): Promise<any> {
+  public getChartGasLimit(start: Date, to: Date): Promise<number> {
     return r
       .table('blocks_metrics')
-      .between(r.epochTime(startDate.getTime() / 1000), r.epochTime(endDate.getTime() / 1000), {
+      .between(r.epochTime(start.getTime() / 1000), r.epochTime(to.getTime() / 1000), {
         index: 'timestamp',
         rightBound: 'closed'
       })
@@ -172,14 +171,14 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .run(this.conn)
   }
 
-  public getBlock(hash: string): Promise<any> {
+  public getBlock(hash: string): Promise<Block> {
     return r
       .table('blocks')
       .get(r.args([new Buffer(hash)]))
       .run(this.conn)
   }
 
-  public getTx(hash: string): Promise<any> {
+  public getTx(hash: string): Promise<Tx[]> {
     return r
       .table('transactions')
       .get(r.args([new Buffer(hash)]))
