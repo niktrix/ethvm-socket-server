@@ -1,1 +1,3 @@
-export type AddressPayload = (address: string) => any
+export interface AddressPayload {
+  address: string
+}

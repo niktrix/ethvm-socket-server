@@ -1,1 +1,3 @@
-export type TokensPayload = (tokens: string[]) => any
+export interface TokensPayload {
+  tokens: string[]
+}

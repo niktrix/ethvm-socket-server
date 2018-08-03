@@ -1,1 +1,3 @@
-export type DurationPayload = (duration: string) => any
+export interface DurationPayload {
+  duration: string
+}
