@@ -11,7 +11,9 @@ export interface VmEngineOptions {
 }
 
 export class VmEngine {
-  constructor(private readonly proxy: Web3ProviderEngine, private readonly opts: VmEngineOptions) {
+  constructor(private readonly proxy: Web3ProviderEngine, private readonly opts: VmEngineOptions) {}
+
+  public start() {
     this.proxy.start()
   }
 
