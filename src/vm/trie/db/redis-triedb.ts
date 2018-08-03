@@ -4,8 +4,8 @@ import * as rpc from '@enkrypt.io/json-rpc2'
 import * as Redis from 'ioredis'
 
 export interface RedisTrieDbOpts {
-  redisHost: string,
-  redisPort: number,
+  host: string,
+  port: number,
   rpcHost: string
   rpcPort: number
 }
@@ -16,8 +16,8 @@ export class RedisTrieDb implements TrieDB {
 
   constructor(private readonly opts: RedisTrieDbOpts) {
     this.redis = new Redis({
-      host: this.opts.redisHost,
-      port: this.opts.redisPort
+      host: this.opts.host,
+      port: this.opts.port
     })
     this.rpc = rpc.Client.$create(this.opts.rpcPort, this.opts.rpcHost)
   }

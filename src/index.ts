@@ -32,8 +32,14 @@ async function bootstrapServer() {
   vme.start()
 
   // Create Cache data store
-  logger.info('bootstrapper -> Initializing Cache DataStore')
-  const ds = new RedisDataStore()
+  logger.info('bootstrapper -> Initializing redis cache data store')
+  const redisDsOpts = {
+    host: config.get('data_stores.redis.host'),
+    port: config.get('data_stores.redis.port'),
+    socketRows: config.get('data_stores.redis.socket_rows')
+  }
+  const ds = new RedisDataStore(redisDsOpts)
+  logger.error(JSON.stringify(redisDsOpts))
   await ds.initialize().catch(() => process.exit(-1))
 
   // Create VmRunner
@@ -57,8 +63,8 @@ async function bootstrapServer() {
     host: config.get('rethink_db.host'),
     port: config.get('rethink_db.port'),
     db: config.get('rethink_db.db_name'),
-    user: config.get('rethink_db.user') || '',
-    password: config.get('rethink_db.password') || '',
+    user: config.get('rethink_db.user'),
+    password: config.get('rethink_db.password'),
     ssl: {
       cert: config.get('rethink_db.cert_raw')
     }
