@@ -16,7 +16,7 @@ const addressSchema = {
       $id: '/properties/address',
       type: 'string',
       default: '',
-      address: true,
+      address: true
     }
   }
 }
