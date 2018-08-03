@@ -16,12 +16,9 @@ export interface RethinkDBOpts {
 }
 
 export class RethinkDBDataStore implements BlockchainDataStore {
-  private readonly opts: RethinkDBOpts
   private conn: r.Connection
 
-  constructor(private readonly emitter: EventEmitter, options: RethinkDBOpts) {
-    this.opts = options
-  }
+  constructor(private readonly emitter: EventEmitter, private readonly opts: RethinkDBOpts) {}
 
   public async initialize(): Promise<boolean> {
     try {
