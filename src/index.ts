@@ -4,31 +4,40 @@ import { logger } from '@app/helpers'
 import { EthVMServer } from '@app/server'
 import { VmEngine, VmRunner } from '@app/vm'
 import { RedisTrieDb } from '@app/vm/trie/db'
+import { ZeroClientProviderFactory } from '@app/vm/zero-client-provider-factory'
 import * as EventEmitter from 'eventemitter3'
 
 async function bootstrapServer() {
-  logger.debug('Bootstraping ethvm-socket-server!')
+  logger.debug('bootstrapper -> Bootstraping ethvm-socket-server!')
 
   // Create TrieDB
-  logger.debug('Initializing TrieDB')
-  const redisOpts: any = {
+  logger.debug('bootstrapper -> Initializing TrieDB')
+  const trieOpts: any = {
     host: config.get('data_stores.redis.host'),
-    port: config.get('data_stores.redis.port')
+    port: config.get('data_stores.redis.port'),
+    rpcHost: config.get('eth.rpc.host'),
+    rpcPort: config.get('eth.rpc.port')
   }
-  const trieDb = new RedisTrieDb(redisOpts)
+  const trieDb = new RedisTrieDb(trieOpts)
 
   // Create VmEngine
-  logger.debug('Initializing VmEngine')
-  const vme = new VmEngine()
+  logger.debug('bootstrapper -> Initializing VmEngine')
+  const vmeOpts = {
+    rpcUrl: config.get('eth.vm.engine.rpc_url'),
+    tokensAddress: config.get('eth.vm.engine.tokens_smart_contract'),
+    account: config.get('eth.vm.engine.account')
+  }
+  const vmeProxy = ZeroClientProviderFactory.create(vmeOpts)
+  const vme = new VmEngine(vmeProxy, vmeOpts)
   vme.start()
 
   // Create Cache data store
-  logger.info('Initializing Cache DataStore')
+  logger.info('bootstrapper -> Initializing Cache DataStore')
   const ds = new RedisDataStore()
   await ds.initialize().catch(() => process.exit(-1))
 
   // Create VmRunner
-  logger.debug('Initializing VmRunner')
+  logger.debug('bootstrapper -> Initializing VmRunner')
   const vmr = new VmRunner(trieDb)
 
   // Set default state block to VmRunner
@@ -39,12 +48,11 @@ async function bootstrapServer() {
   vmr.setStateRoot(stateRoot)
 
   // Create block event emmiter
-  logger.debug('Initializing event emitter')
+  logger.debug('bootstrapper -> Initializing event emitter')
   const emitter = new EventEmitter()
 
   // Create Blockchain data store
-  logger.debug('Initializing RethinkDBDataStore')
-
+  logger.debug('bootstrapper -> Initializing RethinkDBDataStore')
   const rethinkDbOpts: RethinkDBOpts = {
     host: config.get('rethink_db.host'),
     port: config.get('rethink_db.port'),
@@ -61,7 +69,7 @@ async function bootstrapServer() {
   const rdb = new RethinkDBDataStore(emitter, rethinkDbOpts)
 
   // Create server
-  logger.debug('Initializing server')
+  logger.debug('bootstrapper -> Initializing server')
   const server = new EthVMServer(trieDb, vmr, vme, ds, rdb, emitter)
   await server.start()
 }
