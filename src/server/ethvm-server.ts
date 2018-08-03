@@ -3,7 +3,7 @@ import { BlockchainDataStore, CacheDataStore } from '@app/datastores'
 import { eth, logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { BlockTxStats } from '@app/libs'
-import { AddressPayload, DurationPayload, SmallBlock, TokensPayload } from '@app/models'
+import { Block, SmallBlock } from '@app/models'
 import { TrieDB, VmEngine, VmRunner } from '@app/vm'
 import * as EventEmitter from 'eventemitter3'
 import * as fs from 'fs'
@@ -12,7 +12,7 @@ import * as SocketIO from 'socket.io'
 
 export interface SocketEvent {
   name: string
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: AddressPayload | DurationPayload | TokensPayload | any, cb: Callback) => void
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback) => void
 }
 
 export class EthVMServer {
@@ -33,22 +33,22 @@ export class EthVMServer {
   }
 
   public async start() {
-    logger.debug('SocketEvent - start() / Registering emmiter callbacks')
+    logger.debug('EthVMServer - start() / Registering emitter callbacks')
     this.emitter.on('onNewBlock', this.onNewBlockEvent)
     this.emitter.on('onPendingTxs', this.onPendingTxsEvent)
 
-    logger.debug('SocketEvent - start() / Registering socket events')
+    logger.debug('EthVMServer - start() / Loading socket evens...')
     const events = fs.readdirSync(`${__dirname}/events/`)
     events.forEach(async ev => {
-      logger.debug(`Loading socket event: ${ev}`)
+      logger.debug(`EthVMServer - start() / Registering socket event: ${ev}`)
       const event = await import(`${__dirname}/events/${ev}`)
       this.events.set(event.default.name, event.default)
     })
 
-    logger.debug('SocketEvent - start() / Starting RethinkDB datastore')
-    this.rdb.initialize()
+    logger.debug('EthVMServer - start() / Starting RethinkDB datastore')
+    await this.rdb.initialize().catch(() => process.exit(-1))
 
-    logger.debug('SocketEvent - start() / Starting to listen socket events on SocketIO')
+    logger.debug('EthVMServer - start() / Starting to listen socket events on SocketIO')
     this.io.on(
       'connection',
       (socket: SocketIO.Socket): void => {
@@ -69,23 +69,25 @@ export class EthVMServer {
   }
 
   private createWSServer(): SocketIO.Server {
-    logger.debug('SocketEvent - createWSServer() / Creating WebSocket server')
+    logger.debug('EthVMServer - createWSServer() / Creating SocketIO server')
     const server = http.createServer()
     const host = config.get('server.host')
     const port = config.get('server.port')
+
     server.listen(port, host, () => {
-      logger.debug(`SocketEvent - createWSServer() / Listening on ${host}:${port}`)
+      logger.debug(`EthVMServer - createWSServer() / Web server listening on ${host}:${port}`)
     })
 
-    logger.debug('SocketEvent - createWSServer() / Creating SocketIO server')
     return SocketIO(server)
   }
 
-  private onNewBlockEvent = (block: any): void => {
-    logger.info(`EthVMServer - onNewBlockEvent / Block: ${block}`)
+  private onNewBlockEvent = (block: Block): void => {
+    logger.info(`EthVMServer - onNewBlockEvent / Block: ${eth.toHex(block.hash)}`)
 
-    this.vmRunner.setStateRoot(block.stateRoot)
-    const bstats = new BlockTxStats(block, block.transactions)
+    if (block.stateRoot) {
+      this.vmRunner.setStateRoot(block.stateRoot)
+    }
+    const bstats = new BlockTxStats(block, block.transactions || [])
     block.blockStats = { ...bstats.getBlockStats(), ...block.blockStats }
 
     const blockHash = eth.toHex(block.hash)
@@ -97,20 +99,15 @@ export class EthVMServer {
 
     this.ds.putBlock(block)
 
-    const txs = block.transactions
-      ? block.transactions.map(tx => {
-          const txHash = eth.toHex(tx.hash)
-          this.io.to(txHash).emit(txHash + '_update', tx)
-          return tx
-        })
-      : []
-
-    if (!txs.length) {
-      return
+    const txs = block.transactions || []
+    if (txs.length > 0) {
+      txs.forEach(tx => {
+        const txHash = eth.toHex(tx.hash)
+        this.io.to(txHash).emit(txHash + '_update', tx)
+      })
+      this.io.to('txs').emit('newTx', txs)
+      this.ds.putTransactions(txs)
     }
-
-    this.io.to('txs').emit('newTx', txs)
-    this.ds.putTransaction(txs)
   }
 
   private onPendingTxsEvent = (tx: any): void => {
