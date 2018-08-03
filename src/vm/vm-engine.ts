@@ -1,22 +1,18 @@
-import config from '@app/config'
-import { ZeroClientProviderFactory } from '@app/vm/zero-client-provider-factory'
 import { BigNumber } from 'bignumber.js'
 import * as abi from 'ethereumjs-abi'
 import * as Web3ProviderEngine from 'web3-provider-engine'
 import * as createPayload from 'web3-provider-engine/util/create-payload'
 import * as utils from 'web3-utils'
 
-export class VmEngine {
-  private readonly opts: any
-  private readonly proxy: Web3ProviderEngine
+export interface VmEngineOptions {
+  rpcUrl: string
+  tokensAddress: string
+  account: string
+}
 
-  constructor() {
-    this.opts = {
-      rpcUrl: config.get('eth.vm.engine.rpc_url'),
-      tokensAddress: config.get('eth.vm.engine.tokens_smart_contract'),
-      account: config.get('eth.vm.engine.account')
-    }
-    this.proxy = ZeroClientProviderFactory.create(this.opts)
+export class VmEngine {
+  constructor(private readonly proxy: Web3ProviderEngine, private readonly opts: VmEngineOptions) {
+    this.proxy.start()
   }
 
   public getBalance(args: any): Promise<any> {
@@ -82,10 +78,6 @@ export class VmEngine {
         resolve(tokens)
       })
     })
-  }
-
-  public start() {
-    this.proxy.start()
   }
 
   private encodeCall(name: string, args: string[] = [], rawValues: any[] = []): string {

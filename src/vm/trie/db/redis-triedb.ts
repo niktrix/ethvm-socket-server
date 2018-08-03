@@ -1,26 +1,25 @@
-import config from '@app/config'
 import { Callback } from '@app/interfaces'
 import { TrieDB, TrieDBOptions } from '@app/vm/trie/db/triedb-interface'
 import * as rpc from '@enkrypt.io/json-rpc2'
 import * as Redis from 'ioredis'
 
+export interface RedisTrieDbOpts {
+  redisHost: string,
+  redisPort: number,
+  rpcHost: string
+  rpcPort: number
+}
+
 export class RedisTrieDb implements TrieDB {
   private readonly redis: Redis.Redis
   private readonly rpc: any
-  private readonly opts: any
 
-
-  constructor(options:any) {
-    this.opts = options
-
+  constructor(private readonly opts: RedisTrieDbOpts) {
     this.redis = new Redis({
-      host: this.opts.host,
-      port: this.opts.port
+      host: this.opts.redisHost,
+      port: this.opts.redisPort
     })
-
-    const rpcHost = config.get('eth.rpc.host')
-    const rpcPort = config.get('eth.rpc.port')
-    this.rpc = rpc.Client.$create(rpcPort, rpcHost)
+    this.rpc = rpc.Client.$create(this.opts.rpcPort, this.opts.rpcHost)
   }
 
   public get(key: Buffer, opts: TrieDBOptions, cb: Callback) {
