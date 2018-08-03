@@ -17,7 +17,6 @@ const addressSchema = {
       type: 'string',
       default: '',
       address: true,
-      examples: ['0x0000000000000']
     }
   }
 }
