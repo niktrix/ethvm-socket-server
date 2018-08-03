@@ -1,3 +1,4 @@
+import { errors, logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
 import fetch from 'node-fetch'
@@ -10,7 +11,10 @@ const getExchangeRatesEvent: SocketEvent = {
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
     fetch('http://still-waters-52916.herokuapp.com/ticker')
       .then(res => cb(null, res.json()))
-      .catch(error => cb(error, null))
+      .catch(error => {
+        logger.error(`event -> getTokenToUSD / Error: ${error}`)
+        cb(errors.serverError, null)
+      })
   }
 }
 

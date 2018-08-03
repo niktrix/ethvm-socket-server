@@ -1,4 +1,4 @@
-import { TokensValidator } from '@app/helpers'
+import { errors, logger, TokensValidator } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
 
@@ -7,6 +7,7 @@ const getTokenBalanceEvent: SocketEvent = {
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
     const isValid = TokensValidator(msg)
     if (!isValid) {
+      logger.error(`event -> getTokenBalance / Invalid payload: ${msg}`)
       cb(TokensValidator.errors, null)
       return
     }
@@ -14,7 +15,12 @@ const getTokenBalanceEvent: SocketEvent = {
     server.vmEngine
       .getAllTokens(msg)
       .then((result: any): void => cb(null, result))
-      .catch((error: Error): void => cb(error, null))
+      .catch(
+        (error: Error): void => {
+          logger.error(`event -> getTokenBalance / Error: ${error}`)
+          cb(errors.serverError, null)
+        }
+      )
   }
 }
 

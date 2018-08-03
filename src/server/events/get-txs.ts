@@ -1,3 +1,4 @@
+import { errors, logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
 
@@ -7,7 +8,10 @@ const getTxsEvent: SocketEvent = {
     server.rdb
       .getTxsOfAddress(msg)
       .then(result => cb(null, result))
-      .catch(error => cb(error, null))
+      .catch(error => {
+        logger.error(`event -> getTxs / Error: ${error}`)
+        cb(errors.serverError, null)
+      })
   }
 }
 

@@ -6,10 +6,11 @@ const joinEvent: SocketEvent = {
   name: 'join',
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
     if (!msg) {
-      logger.error(`${socket.id} tried to join invalid room with msg: ${msg}`)
+      logger.error(`event -> join / ${socket.id} tried to join invalid room with msg: ${msg}`)
       return
     }
 
+    logger.error(`event -> join / Joining room: ${msg}`)
     socket.join(msg)
   }
 }

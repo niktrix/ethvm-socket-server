@@ -1,4 +1,4 @@
-import { logger } from '@app/helpers'
+import { errors, logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { Tx } from '@app/models'
 import { EthVMServer, SocketEvent } from '@app/server'
@@ -9,19 +9,19 @@ const pastTxsEvent: SocketEvent = {
     server.ds
       .getTransactions()
       .then(
-        (txs: Tx[]): void => {
-          const _txs: Tx[] = []
-
-          txs.forEach((t: Tx) => {
-            _txs.unshift(t)
+        (_txs: Tx[]): void => {
+          const txs: Tx[] = []
+          _txs.forEach((t: Tx) => {
+            txs.unshift(t)
           })
 
-          cb(null, _txs)
+          cb(null, txs)
         }
       )
       .catch(
         (error: Error): void => {
-          logger.error(`pastTxs / Error: ${error}`)
+          logger.error(`event -> pastTxs / Error: ${error}`)
+          cb(errors.serverError, null)
         }
       )
   }

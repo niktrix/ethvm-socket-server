@@ -1,4 +1,4 @@
-import { logger } from '@app/helpers'
+import { errors, logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { Block } from '@app/models'
 import { EthVMServer, SocketEvent } from '@app/server'
@@ -9,21 +9,21 @@ const pastBlocksEvent: SocketEvent = {
     server.ds
       .getBlocks()
       .then(
-        (blocks: Block[]): void => {
-          const _blocks: Block[] = []
-
-          blocks.forEach(
-            (block: Block, idx: number): void => {
-              _blocks.unshift(block)
+        (_blocks: Block[]): void => {
+          const blocks: Block[] = []
+          _blocks.forEach(
+            (block: Block): void => {
+              blocks.unshift(block)
             }
           )
 
-          cb(null, _blocks)
+          cb(null, blocks)
         }
       )
       .catch(
         (error: Error): void => {
-          logger.error(`pastBlockEvents / Error: ${error}`)
+          logger.error(`event -> pastBlockEvents / Error: ${error}`)
+          cb(errors.serverError, null)
         }
       )
   }

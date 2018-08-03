@@ -1,5 +1,6 @@
-import { AddressValidator } from '@app/helpers'
+import { AddressValidator, errors, logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
+import { AddressPayload } from '@app/models'
 import { EthVMServer, SocketEvent } from '@app/server'
 
 const getBalanceEvent: SocketEvent = {
@@ -7,6 +8,7 @@ const getBalanceEvent: SocketEvent = {
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
     const isValid = AddressValidator(msg)
     if (!isValid) {
+      logger.error(`event -> getBalance / Invalid payload: ${msg}`)
       cb(AddressValidator.errors, null)
       return
     }
@@ -14,7 +16,10 @@ const getBalanceEvent: SocketEvent = {
     server.vmEngine
       .getBalance(msg)
       .then(result => cb(null, result))
-      .catch(error => cb(error, null))
+      .catch(error => {
+        logger.error(`event -> getBalance / Error: ${error}`)
+        cb(errors.serverError, null)
+      })
   }
 }
 
