@@ -1,6 +1,7 @@
 import { CacheDataStore } from '@app/datastores'
 import { eth, logger } from '@app/helpers'
 import { Block, Tx } from '@app/models'
+import { bufferToHex } from 'ethereumjs-util'
 import * as Redis from 'ioredis'
 
 export interface RedisDataStoreOpts {
@@ -40,7 +41,7 @@ export class RedisDataStore implements CacheDataStore {
   }
 
   public putBlock(block: Block): Promise<boolean> {
-    logger.debug(`RedisDataStore - putBlock / Block: ${eth.toHex(block.hash)}`)
+    logger.debug(`RedisDataStore - putBlock / Block: ${bufferToHex(block.hash)}`)
 
     return this.getArray<Block>('blocks')
       .then((blocks: Block[]) => {
