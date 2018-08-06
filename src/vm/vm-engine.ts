@@ -17,12 +17,12 @@ export class VmEngine {
     this.proxy.start()
   }
 
-  public getBalance(args: any): Promise<any> {
+  public getBalance(address: string): Promise<any> {
     return new Promise((resolve, reject) => {
       const payload = createPayload({
         jsonrpc: '2.0',
         method: 'eth_getBalance',
-        params: [args, 'latest'],
+        params: [address, 'latest'],
         id: 1
       })
 
