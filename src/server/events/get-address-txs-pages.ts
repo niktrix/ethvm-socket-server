@@ -13,7 +13,7 @@ const getAddressTxPagesEvent: SocketEvent = {
     }
 
     server.rdb
-      .getAddressTxPages(msg.address, msg.hash, msg.number)
+      .getAddressTxPages(msg.address, msg.number, msg.hash)
       .then((result: any): void => cb(null, result))
       .catch(
         (error: Error): void => {
