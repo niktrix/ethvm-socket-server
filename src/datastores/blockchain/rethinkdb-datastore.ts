@@ -36,7 +36,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
     }
   }
 
-  public getAddressTxPages(address: Buffer, hash: Buffer, bNumber: number): Promise<Tx[]> {
+  public getAddressTxPages(address: Buffer, bNumber: number, hash?: Buffer): Promise<Tx[]> {
     if (!hash) {
       return r
         .table('transactions')
