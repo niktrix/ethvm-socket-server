@@ -8,7 +8,7 @@ import fetch from 'node-fetch'
 // API Doc: https://www.cryptocompare.com/api/#-api-data-coinlist
 const getExchangeRatesEvent: SocketEvent = {
   name: 'getTokenToUSD',
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     fetch('http://still-waters-52916.herokuapp.com/ticker')
       .then(res => cb(null, res.json()))
       .catch(error => {

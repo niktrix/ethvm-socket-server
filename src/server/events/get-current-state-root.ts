@@ -4,7 +4,7 @@ import { EthVMServer, SocketEvent } from '@app/server'
 
 const getCurrentStateRootEvent: SocketEvent = {
   name: 'getCurrentStateRoot',
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     server.vmRunner
       .getCurrentStateRoot()
       .then((result: any): void => cb(null, result))

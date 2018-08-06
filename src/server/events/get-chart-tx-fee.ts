@@ -1,19 +1,17 @@
-import { DurationValidator, errors, logger } from '@app/helpers'
+import { errors, logger, validators } from '@app/helpers'
 import { Callback } from '@app/interfaces'
-import { DurationPayload } from '@app/models'
 import { EthVMServer, SocketEvent } from '@app/server'
+import _ from 'lodash'
 
 const getChartsAvTxFeeDataEvent: SocketEvent = {
   name: 'getChartAvTxFee',
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
-    const isValid = DurationValidator(msg)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
+    const isValid = _.isObject(payload) && validators.chartPayloadValidator(payload)
     if (!isValid) {
-      logger.error(`event -> getBlockTransactions / Invalid payload: ${msg}`)
-      cb(DurationValidator.errors, null)
+      logger.error(`event -> getChartAvTxFee / Invalid payload: ${payload}`)
+      cb(validators.chartPayloadValidator.errors, null)
       return
     }
-
-    const payload: DurationPayload = JSON.parse(msg)
 
     server.rdb
       .getChartAvTxFee(new Date(), new Date())

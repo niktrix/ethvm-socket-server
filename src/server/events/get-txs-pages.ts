@@ -5,15 +5,15 @@ import _ from 'lodash'
 
 const getTxPagesEvent: SocketEvent = {
   name: 'getTransactionPages',
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
-    if (msg.hash && (!eth.isBufferObject(msg.hash, 32) || !_.isNumber(msg.number))) {
-      logger.error(`event -> getTransactionPages / Invalid payload: ${msg}`)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
+    if (payload.hash && (!eth.isBufferObject(payload.hash, 32) || !_.isNumber(payload.number))) {
+      logger.error(`event -> getTransactionPages / Invalid payload: ${payload}`)
       cb(errors.notBuffer, null)
       return
     }
 
     server.rdb
-      .getTxsPages(msg.number, msg.hash)
+      .getTxsPages(payload.number, payload.hash)
       .then((result: any): void => cb(null, result))
       .catch((error: Error) => {
         logger.error(`event -> getTransactionPages / Error: ${error}`)

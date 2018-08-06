@@ -1,19 +1,17 @@
-import { AddressValidator, errors, logger } from '@app/helpers'
+import { errors, logger, validators } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
-import { AddressPayload } from 'models';
+import _ from 'lodash'
 
 const getBlockEvent: SocketEvent = {
   name: 'getBlock',
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
-    const isValid = AddressValidator(msg)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
+    const isValid = _.isObject(payload) && validators.blockPayloadValidator(payload)
     if (!isValid) {
-      logger.error(`event -> getBlockTransactions / Invalid payload: ${msg}`)
-      cb(AddressValidator.errors, null)
+      logger.error(`event -> getBlock / Invalid payload: ${payload}`)
+      cb(validators.blockPayloadValidator.errors, null)
       return
     }
-
-    const payload: AddressPayload = JSON.parse(msg)
 
     server.rdb
       .getBlock(payload.address)

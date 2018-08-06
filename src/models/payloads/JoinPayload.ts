@@ -1,0 +1,3 @@
+interface JoinPayload {
+  rooms: string[]
+}

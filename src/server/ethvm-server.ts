@@ -1,10 +1,11 @@
 import config from '@app/config'
 import { BlockchainDataStore, CacheDataStore } from '@app/datastores'
-import { eth, logger } from '@app/helpers'
+import { logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
-import { BlockTxStats } from '@app/libs'
-import { Block, SmallBlock } from '@app/models'
+import { Block } from '@app/models'
+import { mappers } from '@app/models/helpers'
 import { TrieDB, VmEngine, VmRunner } from '@app/vm'
+import { bufferToHex } from 'ethereumjs-util'
 import * as EventEmitter from 'eventemitter3'
 import * as fs from 'fs'
 import * as http from 'http'
@@ -82,27 +83,26 @@ export class EthVMServer {
   }
 
   private onNewBlockEvent = (block: Block): void => {
-    logger.info(`EthVMServer - onNewBlockEvent / Block: ${eth.toHex(block.hash)}`)
+    logger.info(`EthVMServer - onNewBlockEvent / Block: ${bufferToHex(block.hash)}`)
 
     if (block.stateRoot) {
       this.vmRunner.setStateRoot(block.stateRoot)
     }
-    const bstats = new BlockTxStats(block, block.transactions || [])
-    block.blockStats = { ...bstats.getBlockStats(), ...block.blockStats }
+    const bstats = mappers.toBlockStats(block, block.transactions)
+    block.blockStats = { ...bstats, ...block.blockStats }
 
-    const blockHash = eth.toHex(block.hash)
-    const sBlock = new SmallBlock(block)
-    const formattedBlock = sBlock.smallify()
+    const blockHash = bufferToHex(block.hash)
+    const smallBlock = mappers.toSmallBlock(block)
 
-    this.io.to(blockHash).emit(blockHash + '_update', formattedBlock)
-    this.io.to('blocks').emit('newBlock', formattedBlock)
+    this.io.to(blockHash).emit(blockHash + '_update', smallBlock)
+    this.io.to('blocks').emit('newBlock', smallBlock)
 
     this.ds.putBlock(block)
 
     const txs = block.transactions || []
     if (txs.length > 0) {
       txs.forEach(tx => {
-        const txHash = eth.toHex(tx.hash)
+        const txHash = bufferToHex(tx.hash)
         this.io.to(txHash).emit(txHash + '_update', tx)
       })
       this.io.to('txs').emit('newTx', txs)
@@ -114,7 +114,7 @@ export class EthVMServer {
     logger.info(`EthVMServer - onPendingTxsEvent / Tx: ${tx}`)
 
     if (tx.pending) {
-      const txHash = eth.toHex(tx.hash)
+      const txHash = bufferToHex(tx.hash)
       this.io.to(txHash).emit(txHash + '_update', tx)
       this.io.to('pendingTxs').emit('newPendingTx', tx)
     }

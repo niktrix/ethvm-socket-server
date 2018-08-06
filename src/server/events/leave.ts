@@ -1,17 +1,20 @@
-import { logger } from '@app/helpers'
+import { logger, validators } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
+import _ from 'lodash'
 
 const leaveEvent: SocketEvent = {
   name: 'leave',
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
-    if (!msg) {
-      logger.error(`event -> leave / ${socket.id} tried to leave invalid room with msg: ${msg}`)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
+    const isValid = validators.leavePayloadValidator(payload)
+    if (!isValid) {
+      logger.error(`event -> join / ${socket.id} tried to join invalid room with msg: ${payload}`)
+      cb(validators.leavePayloadValidator.errors, null)
       return
     }
 
-    logger.error(`event -> leave / Leaving room: ${msg}`)
-    socket.leave(msg)
+    logger.debug(`event -> leave / Leaving room: ${payload}`)
+    socket.leave(payload)
   }
 }
 

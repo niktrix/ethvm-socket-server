@@ -1,17 +1,20 @@
-import { logger } from '@app/helpers'
+import { logger, validators } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
+import _ from 'lodash'
 
 const joinEvent: SocketEvent = {
   name: 'join',
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
-    if (!msg) {
-      logger.error(`event -> join / ${socket.id} tried to join invalid room with msg: ${msg}`)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
+    const isValid = _.isObject(payload) && validators.joinPayloadValidator(payload)
+    if (!isValid) {
+      logger.error(`event -> join / ${socket.id} tried to join invalid room with msg: ${payload}`)
+      cb(validators.joinPayloadValidator.errors, null)
       return
     }
 
-    logger.error(`event -> join / Joining room: ${msg}`)
-    socket.join(msg)
+    logger.debug(`event -> join / Joining room: ${payload}`)
+    socket.join(payload)
   }
 }
 

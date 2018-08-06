@@ -5,7 +5,7 @@ import { EthVMServer, SocketEvent } from '@app/server'
 
 const pastTxsEvent: SocketEvent = {
   name: 'pastTxs',
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     server.ds
       .getTransactions()
       .then(
