@@ -3,7 +3,7 @@ import _ from 'lodash'
 const validateByteArray = (arr: number[]): boolean => arr.some((item: number) => !_.isNumber(item) || item < 0 || item > 255)
 
 export const eth = {
-  toHex: (b: Buffer): string => '0x' + new Buffer(b).toString('hex'),
+  isValidHash: (hash: string): boolean => /^(0x)?([A-Fa-f0-9]{64})$/.test(hash),
 
   hexToBuffer: (hex: string): Buffer => Buffer.from(hex.toLowerCase().replace('0x', ''), 'hex'),
 
