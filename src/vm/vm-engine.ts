@@ -1,84 +1,45 @@
+import config from '@app/config'
 import { BigNumber } from 'bignumber.js'
 import * as abi from 'ethereumjs-abi'
-import * as Web3ProviderEngine from 'web3-provider-engine'
-import * as createPayload from 'web3-provider-engine/util/create-payload'
+import { logger } from 'helpers'
+import * as jayson from 'jayson/promise'
 import * as utils from 'web3-utils'
 
-export interface VmEngineOptions {
-  rpcUrl: string
-  tokensAddress: string
-  account: string
-}
-
 export class VmEngine {
-  constructor(private readonly proxy: Web3ProviderEngine, private readonly opts: VmEngineOptions) {}
+  private readonly opts: any
+  private readonly client: jayson.Client
 
-  public start() {
-    this.proxy.start()
+  constructor() {
+    this.opts = {
+      rpcUrl: config.get('eth.vm.engine.rpc_url'),
+      tokensAddress: config.get('eth.vm.engine.tokens_smart_contract'),
+      account: config.get('eth.vm.engine.account')
+    }
+    this.client = jayson.Client.https(this.opts.rpcUrl)
   }
 
-  public getBalance(address: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const payload = createPayload({
-        jsonrpc: '2.0',
-        method: 'eth_getBalance',
-        params: [address, 'latest'],
-        id: 1
-      })
-
-      this.proxy.sendAsync(payload, (err: Error, response: any) => {
-        if (err) {
-          reject(err)
-          return
-        }
-
-        resolve(response)
-      })
-    })
+  public getBalance(address: any): Promise<any> {
+    return this.client.request('eth_getBalance', [address, 'latest'])
   }
 
   public getAccount(): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const payload = createPayload({
-        jsonrpc: '2.0',
-        method: 'eth_getKeyValue',
-        params: [this.opts.account],
-        id: 1
-      })
-
-      this.proxy.sendAsync(payload, (err: Error, response: any) => {
-        if (err) {
-          reject(err)
-          return
-        }
-
-        resolve(response)
-      })
-    })
+    return this.client.request('eth_getKeyValue', [this.opts.account])
   }
 
-  public getAllTokens(args: any): Promise<any> {
-    return new Promise((resolve, reject) => {
+  public getAllTokens(address: any): Promise<any> {
+    return new Promise(async (resolve, reject) => {
       const argss = ['address', 'bool', 'bool', 'bool', 'uint256']
-      const vals = [args, 'true', 'true', 'true', 0]
+      const vals = [address, 'true', 'true', 'true', 0]
       const encoded = this.encodeCall('getAllBalance', argss, vals)
-
-      const payload = createPayload({
-        jsonrpc: '2.0',
-        method: 'eth_call',
-        params: [{ to: this.opts.tokensAddress, data: encoded }, 'pending'],
-        id: 1
-      })
-
-      this.proxy.sendAsync(payload, (err: Error, response: any) => {
-        if (err) {
-          reject(err)
-          return
-        }
-
+      try {
+        const response = await this.client.request('eth_call', [{ to: this.opts.tokensAddress.address, data: encoded }, 'pending'])
         const tokens = this.decode(response.result || []).filter(token => token.balance > 0)
         resolve(tokens)
-      })
+        return
+      } catch (err) {
+        reject(err)
+        return
+      }
     })
   }
 
