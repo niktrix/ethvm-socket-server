@@ -14,8 +14,11 @@ export interface VmEngineOptions {
 
 export class VmEngine {
   private readonly client: jayson.Client
+  private readonly opts: VmEngineOptions
 
-  constructor(private readonly opts: VmEngineOptions) {
+
+  constructor(private readonly options: VmEngineOptions) {
+    this.opts = options
     this.client = jayson.Client.https(this.opts.rpcUrl)
   }
 

@@ -16,7 +16,7 @@ export interface RedisTrieDbOpts {
 export class RedisTrieDb implements TrieDB {
   private readonly redis: Redis.Redis
   private readonly rpc: any
-  private readonly opts: any
+  private readonly opts: RedisTrieDbOpts
 
   constructor(options:RedisTrieDbOpts) {
     this.opts = options
