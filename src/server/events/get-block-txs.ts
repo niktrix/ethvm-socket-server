@@ -13,8 +13,10 @@ const getBlockTxsEvent: SocketEvent = {
       return
     }
 
+    const payload: AddressPayload = JSON.parse(msg)
+
     server.rdb
-      .getBlockTxs(msg)
+      .getBlockTxs(payload.address)
       .then((result: any): void => cb(null, result))
       .catch((error: Error) => {
         logger.error(`event -> getBlockTransactions / Error: ${error}`)

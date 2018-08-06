@@ -13,8 +13,10 @@ const getBalanceEvent: SocketEvent = {
       return
     }
 
+    const payload: AddressPayload = JSON.parse(msg)
+
     server.vmEngine
-      .getBalance(msg)
+      .getBalance(payload.address)
       .then(result => cb(null, result))
       .catch(error => {
         logger.error(`event -> getBalance / Error: ${error}`)

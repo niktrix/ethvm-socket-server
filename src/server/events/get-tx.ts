@@ -1,4 +1,4 @@
-import { errors, logger } from '@app/helpers'
+import { errors, eth, logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
 

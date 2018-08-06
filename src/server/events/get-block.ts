@@ -14,6 +14,7 @@ const getBlockEvent: SocketEvent = {
     }
 
     const payload: AddressPayload = JSON.parse(msg)
+
     server.rdb
       .getBlock(payload.address)
       .then((result: any): void => cb(null, result))

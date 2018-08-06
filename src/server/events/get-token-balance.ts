@@ -12,6 +12,8 @@ const getTokenBalanceEvent: SocketEvent = {
       return
     }
 
+    const payload = JSON.parse(msg)
+
     server.vmEngine
       .getAllTokens(msg)
       .then((result: any): void => cb(null, result))

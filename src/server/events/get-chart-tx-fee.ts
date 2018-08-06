@@ -1,5 +1,6 @@
 import { DurationValidator, errors, logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
+import { DurationPayload } from '@app/models'
 import { EthVMServer, SocketEvent } from '@app/server'
 
 const getChartsAvTxFeeDataEvent: SocketEvent = {
@@ -11,6 +12,8 @@ const getChartsAvTxFeeDataEvent: SocketEvent = {
       cb(DurationValidator.errors, null)
       return
     }
+
+    const payload: DurationPayload = JSON.parse(msg)
 
     server.rdb
       .getChartAvTxFee(new Date(), new Date())
