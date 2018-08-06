@@ -39,7 +39,6 @@ async function bootstrapServer() {
     socketRows: config.get('data_stores.redis.socket_rows')
   }
   const ds = new RedisDataStore(redisDsOpts)
-  logger.error(JSON.stringify(redisDsOpts))
   await ds.initialize().catch(() => process.exit(-1))
 
   // Create VmRunner
