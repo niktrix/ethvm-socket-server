@@ -6,8 +6,6 @@ import * as Account from 'ethereumjs-account'
 import * as LRU from 'lru-cache'
 import * as Trie from 'merkle-patricia-tree/secure'
 
-const GAS_LIMIT = config.get('eth.vm.engine.gas_limit')
-
 interface Tx {
   to: string
   data: string
@@ -17,7 +15,7 @@ export class VmRunner {
   private readonly codeCache: LRU.Cache<string, any>
   private stateTrie: Trie
 
-  constructor(private readonly db: TrieDB) {
+  constructor(private readonly db: TrieDB, private readonly gasLimit: string) {
     this.codeCache = new LRU(2000)
   }
 
@@ -26,73 +24,80 @@ export class VmRunner {
   }
 
   public getCurrentStateRoot(): Promise<Buffer> {
-    return new Promise(resolve => {
-      resolve(this.stateTrie.root)
-    })
+    return new Promise(resolve => resolve(this.stateTrie.root))
   }
 
-  public call(txs: Tx | Tx[], mCB: (err: any, result: any) => void) {
-    const trie = this.stateTrie.copy()
+  public call(txs: Tx[]): Promise<any> {
+    return new Promise(resolve => {
+      const runOnVM = (trie: Trie, to: Buffer, code: Buffer, gasLimit: string, data: Buffer): Promise<any> => {
+        return new Promise((res, rej) => {
+          const vm = new VM({
+            state: trie
+          })
 
-    const runCode = (sTree: any, to: Buffer, code: Buffer, gasLimit: string, data: Buffer, _cb: (err: Error, result: any) => void) => {
-      const vm = new VM({
-        state: sTree
-      })
+          vm.runCode(
+            {
+              address: to,
+              code,
+              gasLimit,
+              data
+            },
+            (err: Error, result: any) => {
+              if (err) {
+                rej(err)
+                return
+              }
 
-      vm.runCode(
-        {
-          address: to,
-          code,
-          gasLimit,
-          data
-        },
-        (err: Error, result: any) => {
-          _cb(err, result ? result.return : null)
-        }
-      )
-    }
-
-    const getResult = (tx: Tx, treeClone: any, cb: (err: any, result: any) => void) => {
-      if (this.codeCache.peek(tx.to)) {
-        runCode(treeClone, eth.hexToBuffer(tx.to), this.codeCache.get(tx.to), GAS_LIMIT, eth.hexToBuffer(tx.data), cb)
-        return
+              res(result.return)
+            }
+          )
+        })
       }
 
-      treeClone.get(eth.hexToBuffer(tx.to), (err: Error, val: Buffer) => {
-        if (err) {
-          cb(err, null)
-          return
+      const getResult = (tx: Tx, trie: Trie): Promise<any> => {
+        if (this.codeCache.peek(tx.to)) {
+          const to = eth.hexToBuffer(tx.to)
+          const code = this.codeCache.get(tx.to)
+          const data = eth.hexToBuffer(tx.data)
+          return runOnVM(trie, to, code, this.gasLimit, data)
         }
 
-        const account = new Account(val)
-        treeClone.getRaw(account.codeHash, (e: Error, code?: Buffer) => {
-          if (e) {
-            cb(e, null)
-            return
-          }
+        return new Promise((res, rej) => {
+          trie.get(eth.hexToBuffer(tx.to), (err: Error, val: Buffer) => {
+            if (err) {
+              rej(err)
+              return
+            }
 
-          this.codeCache.set(tx.to, code)
-          runCode(treeClone, eth.hexToBuffer(tx.to), code ? code : new Buffer('00', 'hex'), GAS_LIMIT, eth.hexToBuffer(tx.data), cb)
+            const account = new Account(val)
+            trie.getRaw(account.codeHash, (e: Error, code?: Buffer) => {
+              if (e) {
+                rej(e)
+                return
+              }
+
+              // Store code in memory to avoid heavy computations
+              this.codeCache.set(tx.to, code)
+
+              const to = eth.hexToBuffer(tx.to)
+              code = code ? code : new Buffer('00', 'hex')
+              const data = eth.hexToBuffer(tx.data)
+              runOnVM(trie, to, code, this.gasLimit, data)
+                .then(r => res(r))
+                .catch(er => rej(er))
+            })
+          })
         })
-      })
-    }
+      }
 
-    if (Array.isArray(txs)) {
-      const returnArr: any[] = []
-      let counter = 0
-
-      txs.forEach((_tx, _idx) => {
-        getResult(_tx, trie.copy(), (err: Error, result: any) => {
-          counter++
-          returnArr[_idx] = { error: err, result }
-          if (counter === txs.length) {
-            mCB(null, returnArr)
-          }
-        })
+      const promises: Array<Promise<any>> = []
+      txs.forEach(tx => {
+        const trie = this.stateTrie.copy()
+        promises.push(getResult(tx, trie).catch(err => err))
       })
-    } else {
-      getResult(txs, trie, mCB)
-    }
+
+      Promise.all(promises).then(res => resolve(res))
+    })
   }
 
   public getAccount(to: string, cb: (err: any, result?: Buffer) => void) {

@@ -43,7 +43,8 @@ async function bootstrapServer() {
 
   // Create VmRunner
   logger.debug('bootstrapper -> Initializing VmRunner')
-  const vmr = new VmRunner(trieDb)
+  const gasLimit = config.get('eth.vm.engine.gas_limit')
+  const vmr = new VmRunner(trieDb, gasLimit)
 
   // Set default state block to VmRunner
   const blocks = await ds.getBlocks()
