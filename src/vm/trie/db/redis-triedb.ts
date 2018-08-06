@@ -6,12 +6,19 @@ import * as Redis from 'ioredis'
 import * as jayson from 'jayson/promise'
 
 
+export interface RedisTrieDbOpts {
+  host: string,
+  port: number,
+  rpcHost: string
+  rpcPort: number
+}
+
 export class RedisTrieDb implements TrieDB {
   private readonly redis: Redis.Redis
   private readonly rpc: any
   private readonly opts: any
 
-  constructor(options:any) {
+  constructor(options:RedisTrieDbOpts) {
     this.opts = options
 
     this.redis = new Redis({

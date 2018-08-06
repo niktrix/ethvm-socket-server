@@ -3,18 +3,19 @@ import { BigNumber } from 'bignumber.js'
 import * as abi from 'ethereumjs-abi'
 import { logger } from 'helpers'
 import * as jayson from 'jayson/promise'
+import { AddressPayload } from 'models'
 import * as utils from 'web3-utils'
 
+export interface VmEngineOptions {
+  rpcUrl: string
+  tokensAddress: AddressPayload
+  account: string
+}
+
 export class VmEngine {
-  private readonly opts: any
   private readonly client: jayson.Client
 
-  constructor() {
-    this.opts = {
-      rpcUrl: config.get('eth.vm.engine.rpc_url'),
-      tokensAddress: config.get('eth.vm.engine.tokens_smart_contract'),
-      account: config.get('eth.vm.engine.account')
-    }
+  constructor(private readonly opts: VmEngineOptions) {
     this.client = jayson.Client.https(this.opts.rpcUrl)
   }
 
