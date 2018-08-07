@@ -1,8 +1,9 @@
-import { eth } from '@app/helpers'
+import { isBuffer, isValidHash } from '@app/helpers'
 import * as Ajv from 'ajv'
 import { isValidAddress } from 'ethereumjs-util'
 
 const ajv = new Ajv()
+require('ajv-keywords')(ajv, ['instanceof']) // tslint:disable-line no-var-requires
 
 // Create custom data types
 ajv.addKeyword('address', {
@@ -11,114 +12,48 @@ ajv.addKeyword('address', {
 })
 
 ajv.addKeyword('addresBuffer', {
-  validate: (schema, data) => eth.isBufferObject(data, 20),
+  validate: (schema, data) => isBuffer(data, 20),
   errors: false
 })
 
 ajv.addKeyword('hash', {
-  validate: (schema, data) => eth.isValidHash(data),
+  validate: (schema, data) => isValidHash(data),
   errors: false
 })
 
 ajv.addKeyword('hashBuffer', {
-  validate: (schema, data) => eth.isBufferObject(data, 32),
+  validate: (schema, data) => isBuffer(data, 32),
   errors: false
 })
 
 // Types Schemas Definitions
 
 // Schemas definitions
-const EthCallPayloadSchema = {
-  $id: 'https://ethvm.com/eth.call.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: []
-}
-
 const AddressTxsPagesPayloadSchema = {
   $id: 'https://ethvm.com/address.txs.pages.schema.json',
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
-  properties: {},
-  required: []
+  properties: {
+    address: {
+      $id: '/properties/address',
+      instanceof: 'Buffer',
+      addresBuffer: true
+    },
+    number: {
+      $id: '/properties/number',
+      type: 'number'
+    },
+    hash: {
+      $id: '/properties/hash',
+      instanceof: 'Buffer',
+      hashBuffer: true
+    }
+  },
+  required: ['address', 'number', 'hash']
 }
 
 const BalancePayloadSchema = {
   $id: 'https://ethvm.com/balance.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: []
-}
-
-const BlockTxsPayloadSchema = {
-  $id: 'https://ethvm.com/block.txs.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: []
-}
-
-const BlockPayloadSchema = {
-  $id: 'https://ethvm.com/block.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: []
-}
-
-const ChartPayloadSchema = {
-  $id: 'https://ethvm.com/chart.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: []
-}
-
-const JoinPayloadSchema = {
-  $id: 'https://ethvm.com/join.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: []
-}
-
-const LeavePayloadSchema = {
-  $id: 'https://ethvm.com/leave.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: []
-}
-
-const PastBlocksPayloadSchema = {
-  $id: 'https://ethvm.com/past.blocks.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: []
-}
-
-const PastTxsPayloadSchema = {
-  $id: 'https://ethvm.com/past.txs.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: []
-}
-
-const TxsPayloadSchema = {
-  $id: 'https://ethvm.com/txs.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: []
-}
-
-// To be deprecated
-const AddressSchema = {
-  $id: 'https://ethvm.com/address.schema.json',
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
@@ -128,11 +63,42 @@ const AddressSchema = {
       address: true
     }
   },
-  required: ['address']
+  required: ['address'],
+  additionalProperties: false
 }
 
-const DurationSchema = {
-  $id: 'https://ethvm.com/duration.schema.json',
+const BlockTxsPayloadSchema = {
+  $id: 'https://ethvm.com/block.txs.payload.schema.json',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {
+    address: {
+      $id: '/properties/address',
+      type: 'string',
+      address: true
+    }
+  },
+  required: ['address'],
+  additionalProperties: false
+}
+
+const BlockPayloadSchema = {
+  $id: 'https://ethvm.com/block.payload.schema.json',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {
+    address: {
+      $id: '/properties/address',
+      type: 'string',
+      address: true
+    }
+  },
+  required: ['address'],
+  additionalProperties: false
+}
+
+const ChartPayloadSchema = {
+  $id: 'https://ethvm.com/chart.payload.schema.json',
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
@@ -143,11 +109,72 @@ const DurationSchema = {
       default: ''
     }
   },
-  required: ['duration']
+  required: ['duration'],
+  additionalProperties: false
 }
 
-const TokenSchema = {
-  $id: 'https://ethvm.com/token.schema.json',
+const EthCallPayloadSchema = {
+  $id: 'https://ethvm.com/eth.call.payload.schema.json',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {},
+  required: [],
+  additionalProperties: false
+}
+
+const JoinPayloadSchema = {
+  $id: 'https://ethvm.com/join.payload.schema.json',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {},
+  required: [],
+  additionalProperties: false
+}
+
+const LeavePayloadSchema = {
+  $id: 'https://ethvm.com/leave.payload.schema.json',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {},
+  required: [],
+  additionalProperties: false
+}
+
+const PastBlocksPayloadSchema = {
+  $id: 'https://ethvm.com/past.blocks.payload.schema.json',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {},
+  required: [],
+  additionalProperties: false
+}
+
+const PastTxsPayloadSchema = {
+  $id: 'https://ethvm.com/past.txs.payload.schema.json',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {},
+  required: [],
+  additionalProperties: false
+}
+
+const TokensBalancePayloadSchema = {
+  $id: 'https://ethvm.com/past.txs.payload.schema.json',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {
+    address: {
+      $id: '/properties/address',
+      type: 'string',
+      address: true
+    }
+  },
+  required: ['address'],
+  additionalProperties: false
+}
+
+const TokensPayloadSchema = {
+  $id: 'https://ethvm.com/txs.payload.schema.json',
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
@@ -155,7 +182,44 @@ const TokenSchema = {
       $id: '/properties/tokens',
       type: 'array'
     }
-  }
+  },
+  required: ['tokens'],
+  additionalProperties: false
+}
+
+const TotalTxsPayloadSchema = {
+  $id: 'https://ethvm.com/past.txs.payload.schema.json',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {
+    address: {
+      $id: '/properties/address',
+      type: 'string',
+      address: true
+    }
+  },
+  required: ['address'],
+  additionalProperties: false
+}
+
+const TxsPayloadSchema = {
+  $id: 'https://ethvm.com/txs.payload.schema.json',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {
+    duration: {
+      $id: '/properties/duration',
+      type: 'string',
+      enum: ['ALL', 'YEAR', 'MONTH', 'DAY'],
+      default: ''
+    },
+    tokens: {
+      $id: '/properties/tokens',
+      type: 'array'
+    }
+  },
+  required: [],
+  additionalProperties: false
 }
 
 // Compile schemas
@@ -170,19 +234,21 @@ const leavePayloadValidator = ajv.compile(LeavePayloadSchema)
 const pastBlocksPayloadValidator = ajv.compile(PastBlocksPayloadSchema)
 const pastTxsBlocksPayloadValidator = ajv.compile(PastTxsPayloadSchema)
 const txsPayloadValidator = ajv.compile(TxsPayloadSchema)
+const totalTxsPayloadValidator = ajv.compile(TotalTxsPayloadSchema)
 
 const validators = {
-  ethCallPayloadValidator,
   addressTxsPagesPayloadValidator,
   balancePayloadValidator,
   blockTxsPayloadValidator,
   blockPayloadValidator,
   chartPayloadValidator,
+  ethCallPayloadValidator,
   joinPayloadValidator,
   leavePayloadValidator,
   pastBlocksPayloadValidator,
   pastTxsBlocksPayloadValidator,
-  txsPayloadValidator
+  txsPayloadValidator,
+  totalTxsPayloadValidator
 }
 
 export { validators }
