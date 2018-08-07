@@ -177,7 +177,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .run(this.conn)
   }
 
-  public getTx(hash: string): Promise<Tx[]> {
+  public getTx(hash: string): Promise<Tx> {
     return r
       .table('transactions')
       .get(r.args([new Buffer(hash)]))

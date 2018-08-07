@@ -6,7 +6,7 @@ export interface BlockchainDataStore {
   getBlock(hash: string): Promise<Block>
   getBlockTxs(hash: string): Promise<Block>
 
-  getTx(hash: string): Promise<Tx[]>
+  getTx(hash: string): Promise<Tx>
   getTxsPages(bNumber: number, hash?: Buffer): Promise<Tx[]>
   getAddressTxPages(address: Buffer, bNumber: number, hash?: Buffer): Promise<Tx[]>
   getTxsOfAddress(hash: string, limit: number, page: number): Promise<Tx[]>
