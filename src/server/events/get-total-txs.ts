@@ -1,15 +1,14 @@
 import { errors, logger, validators } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
-import _ from 'lodash'
 
 const getTotalTxsEvent: SocketEvent = {
   name: 'getTotalTxs',
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
-    const isValid = _.isObject(payload) && validators.addressValidator(payload)
+    const isValid = validators.totalTxsPayloadValidator(payload)
     if (!isValid) {
       logger.error(`event -> getTotalTxs / Invalid payload: ${payload}`)
-      cb(validators.addressValidator.errors, null)
+      cb(validators.totalTxsPayloadValidator.errors, null)
       return
     }
 

@@ -1,12 +1,11 @@
 import { errors, logger, validators } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
-import _ from 'lodash'
 
 const getBlockTxsEvent: SocketEvent = {
   name: 'getBlockTransactions',
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
-    const isValid = _.isObject(payload) && validators.blockTxsPayloadValidator(payload)
+    const isValid = validators.blockTxsPayloadValidator(payload)
     if (!isValid) {
       logger.error(`event -> getBlockTransactions / Invalid payload: ${payload}`)
       cb(validators.blockTxsPayloadValidator.errors, null)

@@ -5,7 +5,7 @@ import { EthVMServer, SocketEvent } from '@app/server'
 const ethCallEvent: SocketEvent = {
   name: 'ethCall',
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
-    const isValid =  _.isObject(payload) && validators.ethCallPayloadValidator(payload)
+    const isValid = validators.ethCallPayloadValidator(payload)
     if (!isValid) {
       logger.error(`event -> ethCall / Invalid payload: ${payload}`)
       cb(validators.ethCallPayloadValidator.errors, null)

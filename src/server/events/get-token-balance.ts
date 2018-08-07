@@ -1,20 +1,19 @@
 import { errors, logger, validators } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
-import _ from 'lodash'
 
 const getTokenBalanceEvent: SocketEvent = {
   name: 'getTokenBalance',
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
-    const isValid = _.isObject(payload) && validators.tokensValidator(payload)
+    const isValid = validators.tokensBalanceValidator(payload)
     if (!isValid) {
       logger.error(`event -> getTokenBalance / Invalid payload: ${payload}`)
-      cb(validators.tokensValidator.errors, null)
+      cb(validators.tokensBalanceValidator.errors, null)
       return
     }
 
     server.vmEngine
-      .getAllTokens(payload)
+      .getTokensBalance(payload.address)
       .then((result: any): void => cb(null, result))
       .catch(
         (error: Error): void => {

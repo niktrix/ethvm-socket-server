@@ -1,7 +1,6 @@
 import { logger, validators } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
-import _ from 'lodash'
 
 const leaveEvent: SocketEvent = {
   name: 'leave',

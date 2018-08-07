@@ -1,4 +1,4 @@
-import { errors, eth, logger } from '@app/helpers'
+import { errors, isBuffer, logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
 import _ from 'lodash'
@@ -6,7 +6,7 @@ import _ from 'lodash'
 const getTxPagesEvent: SocketEvent = {
   name: 'getTransactionPages',
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
-    if (payload.hash && (!eth.isBufferObject(payload.hash, 32) || !_.isNumber(payload.number))) {
+    if (payload.hash && (!isBuffer(payload.hash, 32) || !_.isNumber(payload.number))) {
       logger.error(`event -> getTransactionPages / Invalid payload: ${payload}`)
       cb(errors.notBuffer, null)
       return
