@@ -1,5 +1,4 @@
-import config from '@app/config'
-import { eth } from '@app/helpers'
+import { hexToBuffer } from '@app/helpers'
 import { TrieDB } from '@app/vm'
 import * as VM from '@enkrypt.io/ethereumjs-vm'
 import * as Account from 'ethereumjs-account'
@@ -56,14 +55,14 @@ export class VmRunner {
 
       const getResult = (tx: Tx, trie: Trie): Promise<any> => {
         if (this.codeCache.peek(tx.to)) {
-          const to = eth.hexToBuffer(tx.to)
+          const to = hexToBuffer(tx.to)
           const code = this.codeCache.get(tx.to)
-          const data = eth.hexToBuffer(tx.data)
+          const data = hexToBuffer(tx.data)
           return runOnVM(trie, to, code, this.gasLimit, data)
         }
 
         return new Promise((res, rej) => {
-          trie.get(eth.hexToBuffer(tx.to), (err: Error, val: Buffer) => {
+          trie.get(hexToBuffer(tx.to), (err: Error, val: Buffer) => {
             if (err) {
               rej(err)
               return
@@ -79,9 +78,9 @@ export class VmRunner {
               // Store code in memory to avoid heavy computations
               this.codeCache.set(tx.to, code)
 
-              const to = eth.hexToBuffer(tx.to)
+              const to = hexToBuffer(tx.to)
               code = code ? code : new Buffer('00', 'hex')
-              const data = eth.hexToBuffer(tx.data)
+              const data = hexToBuffer(tx.data)
               runOnVM(trie, to, code, this.gasLimit, data)
                 .then(r => res(r))
                 .catch(er => rej(er))
@@ -100,17 +99,19 @@ export class VmRunner {
     })
   }
 
-  public getAccount(to: string, cb: (err: any, result?: Buffer) => void) {
-    const trie = this.stateTrie.copy()
-    const buffer = eth.hexToBuffer(to)
+  public getAccount(to: string, cb: (err: any, result?: Buffer) => void): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const trie = this.stateTrie.copy()
+      const buffer = hexToBuffer(to)
 
-    trie.get(buffer, (err: Error, b: Buffer) => {
-      if (err) {
-        cb(err)
-        return
-      }
+      trie.get(buffer, (err: Error, b: Buffer) => {
+        if (err) {
+          reject(err)
+          return
+        }
 
-      cb(null, b)
+        resolve(b)
+      })
     })
   }
 }

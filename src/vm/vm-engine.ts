@@ -1,14 +1,11 @@
-import config from '@app/config'
 import { BigNumber } from 'bignumber.js'
 import * as abi from 'ethereumjs-abi'
-import { logger } from 'helpers'
 import * as jayson from 'jayson/promise'
-import { AddressPayload } from 'models'
 import * as utils from 'web3-utils'
 
 export interface VmEngineOptions {
   rpcUrl: string
-  tokensAddress: AddressPayload
+  tokensAddress: string
   account: string
 }
 
@@ -16,30 +13,28 @@ export class VmEngine {
   private readonly client: jayson.Client
 
   constructor(private readonly opts: VmEngineOptions) {
-     this.client = jayson.Client.https(this.opts.rpcUrl)
-  }
-
-  public getBalance(address: any): Promise<any> {
-    return this.client.request('eth_getBalance', [address, 'latest'])
+    this.client = jayson.Client.https(this.opts.rpcUrl)
   }
 
   public getAccount(): Promise<any> {
     return this.client.request('eth_getKeyValue', [this.opts.account])
   }
 
-  public getAllTokens(address: any): Promise<any> {
+  public getBalance(address: any): Promise<any> {
+    return this.client.request('eth_getBalance', [address, 'latest'])
+  }
+
+  public getTokensBalance(address: string): Promise<any> {
     return new Promise(async (resolve, reject) => {
       const argss = ['address', 'bool', 'bool', 'bool', 'uint256']
       const vals = [address, 'true', 'true', 'true', 0]
       const encoded = this.encodeCall('getAllBalance', argss, vals)
       try {
-        const response = await this.client.request('eth_call', [{ to: this.opts.tokensAddress.address, data: encoded }, 'pending'])
+        const response = await this.client.request('eth_call', [{ to: this.opts.tokensAddress, data: encoded }, 'pending'])
         const tokens = this.decode(response.result || []).filter(token => token.balance > 0)
         resolve(tokens)
-        return
       } catch (err) {
         reject(err)
-        return
       }
     })
   }
