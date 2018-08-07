@@ -188,7 +188,7 @@ const TokensPayloadSchema = {
 }
 
 const TotalTxsPayloadSchema = {
-  $id: 'https://ethvm.com/past.txs.payload.schema.json',
+  $id: 'https://ethvm.com/total.txs.payload.schema.json',
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
