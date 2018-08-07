@@ -14,12 +14,9 @@ export interface VmEngineOptions {
 
 export class VmEngine {
   private readonly client: jayson.Client
-  private readonly opts: VmEngineOptions
 
-
-  constructor(private readonly options: VmEngineOptions) {
-    this.opts = options
-    this.client = jayson.Client.https(this.opts.rpcUrl)
+  constructor(private readonly opts: VmEngineOptions) {
+     this.client = jayson.Client.https(this.opts.rpcUrl)
   }
 
   public getBalance(address: any): Promise<any> {
