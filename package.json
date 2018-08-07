@@ -39,6 +39,7 @@
     "@enkrypt.io/ethereumjs-vm": "^2.3.3",
     "@enkrypt.io/json-rpc2": "^1.0.2",
     "ajv": "^6.5.2",
+    "ajv-keywords": "^3.2.0",
     "bignumber.js": "^7.2.1",
     "convict": "^4.3.0",
     "ethereumjs-abi": "^0.6.5",
@@ -58,6 +59,7 @@
   },
   "devDependencies": {
     "@types/chai": "^4.1.4",
+    "@types/ethereumjs-abi": "^0.6.1",
     "@types/ioredis": "^3.2.4",
     "@types/json-schema": "^6.0.1",
     "@types/lodash": "^4.14.94",
