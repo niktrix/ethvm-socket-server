@@ -27,7 +27,7 @@ export class VmServiceImpl implements VmService {
     throw new Error('Method not implemented.')
   }
 
-  call(args: any): Promise<any> {
+  public call(args: any): Promise<any> {
     throw new Error('Method not implemented.')
   }
 }
