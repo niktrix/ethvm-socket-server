@@ -1,8 +1,8 @@
 import { expect } from 'chai'
-import { isBuffer } from './eth'
+import { isBuffer, isValidHash } from './eth'
 
 describe('helpers.eth', () => {
-  describe('isBufferObject()', () => {
+  describe('isBuffer()', () => {
     it('should validate correct buffer objects', () => {
       const inputs = [
         {
@@ -57,6 +57,32 @@ describe('helpers.eth', () => {
       ]
       inputs.forEach(input => {
         const isValid = isBuffer(input.buffer, input.length)
+        expect(isValid).to.be.false
+      })
+    })
+  })
+
+  describe('isValidHash()', () => {
+    it('should validate correctly tx hashes', () => {
+      const inputs = [
+        '0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238',
+        '0xB903239F8543D04B5DC1BA6579132B143087C68DB1B2168786408FCBCE568238'
+      ]
+      inputs.forEach(input => {
+        const isValid = isValidHash(input)
+        expect(isValid).to.be.true
+      })
+    })
+
+    it('should not validate incorrect tx hashes', () => {
+      const inputs = [
+        '0XB903239F8543D04B5DC1BA6579132B143087C68DB1B2168786408FCBCE568238',
+        '0xb903239f8543d04b5dc1ba6579132b143087c68db1b21',
+        '0XB903239F8543D04B5DC1BA6579132B143087C68DB1B21687864CBCE568238',
+        'B903239F8543D04B5DC1BA6579132B143087C68DB1786408FCBCE568238'
+      ]
+      inputs.forEach(input => {
+        const isValid = isValidHash(input)
         expect(isValid).to.be.false
       })
     })
