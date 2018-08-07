@@ -1,5 +1,5 @@
 import { CacheDataStore } from '@app/datastores'
-import { eth, logger } from '@app/helpers'
+import { bufferify, logger } from '@app/helpers'
 import { Block, Tx } from '@app/models'
 import { bufferToHex } from 'ethereumjs-util'
 import * as Redis from 'ioredis'
@@ -117,7 +117,7 @@ export class RedisDataStore implements CacheDataStore {
 
           logger.debug(`RedisDataStore - getArray() / Key: ${key} | Result: ${result.length}`)
 
-          const buffered = JSON.parse(result).map(item => eth.bufferify(item))
+          const buffered = JSON.parse(result).map(item => bufferify(item))
           this.cache.set(key, buffered)
 
           resolve(buffered)
