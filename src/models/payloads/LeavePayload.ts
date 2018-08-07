@@ -1,3 +1,3 @@
-interface LeavePayload {
+export interface LeavePayload {
   rooms: string[]
 }

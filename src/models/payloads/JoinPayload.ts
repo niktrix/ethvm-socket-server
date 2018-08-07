@@ -1,3 +1,3 @@
-interface JoinPayload {
+export interface JoinPayload {
   rooms: string[]
 }
