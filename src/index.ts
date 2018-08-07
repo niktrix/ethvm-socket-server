@@ -27,9 +27,7 @@ async function bootstrapServer() {
     tokensAddress: config.get('eth.vm.engine.tokens_smart_contract'),
     account: config.get('eth.vm.engine.account')
   }
-  const vmeProxy = ZeroClientProviderFactory.create(vmeOpts)
-  const vme = new VmEngine(vmeProxy, vmeOpts)
-  vme.start()
+   const vme = new VmEngine(vmeOpts)
 
   // Create Cache data store
   logger.info('bootstrapper -> Initializing redis cache data store')

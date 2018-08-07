@@ -18,7 +18,7 @@
     "no-unnecessary-else": ["error", {
       "allowElseIf": true
     }],
-    "no-submodule-imports": [true, "@app", "web3-provider-engine", "merkle-patricia-tree"],
+    "no-submodule-imports": [true, "@app", "web3-provider-engine", "merkle-patricia-tree","jayson"],
     "radix": false,
     "no-unused-expression": false
   }

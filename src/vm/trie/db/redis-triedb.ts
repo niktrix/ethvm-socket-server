@@ -1,7 +1,10 @@
+import config from '@app/config'
 import { Callback } from '@app/interfaces'
 import { TrieDB, TrieDBOptions } from '@app/vm/trie/db/triedb-interface'
 import * as rpc from '@enkrypt.io/json-rpc2'
 import * as Redis from 'ioredis'
+import * as jayson from 'jayson/promise'
+
 
 export interface RedisTrieDbOpts {
   host: string,
@@ -14,33 +17,33 @@ export class RedisTrieDb implements TrieDB {
   private readonly redis: Redis.Redis
   private readonly rpc: any
 
-  constructor(private readonly opts: RedisTrieDbOpts) {
+  constructor(private opts: RedisTrieDbOpts) {
     this.redis = new Redis({
       host: this.opts.host,
       port: this.opts.port
     })
-    this.rpc = rpc.Client.$create(this.opts.rpcPort, this.opts.rpcHost)
+
+    const rpcUrl = config.get('eth.vm.engine.rpc_url')
+    this.rpc = jayson.client.https(rpcUrl)
   }
 
-  public get(key: Buffer, opts: TrieDBOptions, cb: Callback) {
+  public async get(key: Buffer, opts: TrieDBOptions, cb: Callback) {
     this.redis.get(key.toString(), (err: Error, result: string) => {
       if (!err && result) {
         cb(null, new Buffer(result, 'hex'))
         return
       }
-
       // Otherwise retrieve from RPC
-      this.rpc.call('eth_getKeyValue', ['0x' + key.toString('hex')], (e: Error, res: string) => {
-        if (e) {
-          cb(err, null)
-          return
-        }
-
+      try {
+        const res = this.rpc.request('eth_getKeyValue', ['0x' + key.toString('hex')])
         const buffer: Buffer = new Buffer(res.substring(2), 'hex')
         this.redis.set(key.toString(), buffer.toString('hex'))
-
         cb(null, buffer)
-      })
+        return
+      } catch (e) {
+        cb(err, null)
+        return
+      }
     })
   }
 

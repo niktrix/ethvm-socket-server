@@ -14,7 +14,7 @@ const getTxsEvent: SocketEvent = {
     }
 
     server.rdb
-      .getTxsOfAddress(payload)
+      .getTxsOfAddress(payload.address, payload.limit, payload.page)
       .then(result => cb(null, result))
       .catch(error => {
         logger.error(`event -> getTxs / Error: ${error}`)

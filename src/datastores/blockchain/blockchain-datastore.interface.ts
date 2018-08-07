@@ -9,7 +9,7 @@ export interface BlockchainDataStore {
   getTx(hash: string): Promise<Tx[]>
   getTxsPages(bNumber: number, hash?: Buffer): Promise<Tx[]>
   getAddressTxPages(address: Buffer, bNumber: number, hash?: Buffer): Promise<Tx[]>
-  getTxsOfAddress(hash: string): Promise<Tx[]>
+  getTxsOfAddress(hash: string, limit: number, page: number): Promise<Tx[]>
   getTotalTxs(hash: string): Promise<number>
 
   getChartBlockSize(startDate: Date, endDate: Date, groupBy?: string): Promise<number>
