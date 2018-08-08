@@ -5,10 +5,10 @@ import { EthVMServer, SocketEvent } from '@app/server'
 const getTokenBalanceEvent: SocketEvent = {
   name: 'getTokenBalance',
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
-    const isValid = validators.tokensBalanceValidator(payload)
+    const isValid = validators.tokensBalancePayloadValidator(payload)
     if (!isValid) {
       logger.error(`event -> getTokenBalance / Invalid payload: ${payload}`)
-      cb(validators.tokensBalanceValidator.errors, null)
+      cb(validators.tokensBalancePayloadValidator.errors, null)
       return
     }
 
