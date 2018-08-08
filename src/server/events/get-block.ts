@@ -3,7 +3,7 @@ import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
 
 const getBlockEvent: SocketEvent = {
-  name: 'getBlock',
+  name: 'getBlock', // new_name: block
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     const isValid = validators.blockPayloadValidator(payload)
     if (!isValid) {

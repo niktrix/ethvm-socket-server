@@ -3,7 +3,7 @@ import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
 
 const getTxsEvent: SocketEvent = {
-  name: 'getTxs',
+  name: 'getTxs', // new_name: address_txs
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     const isValid = validators.txsPayloadValidator(payload)
     if (!isValid) {

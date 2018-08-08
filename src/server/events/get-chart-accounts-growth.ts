@@ -5,7 +5,7 @@ import { EthVMServer, SocketEvent } from '@app/server'
 
 // TODO: Create helper function convert selected enum string to time duration
 const getChartsDataEvent: SocketEvent = {
-  name: 'getChartAccountsGrowth',
+  name: 'getChartAccountsGrowth', // new_name: chart_accounts_growth
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     const isValid = validators.chartPayloadValidator(payload)
     if (!isValid) {

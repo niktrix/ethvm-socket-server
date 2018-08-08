@@ -5,7 +5,7 @@ import { EthVMServer, SocketEvent } from '@app/server'
 
 // TODO: Create helper function to request time
 const getChartsDataEvent: SocketEvent = {
-  name: 'getChartBlockSize',
+  name: 'getChartBlockSize', // new_name: chart_block_size
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     const isValid = validators.chartPayloadValidator(payload)
     if (!isValid) {

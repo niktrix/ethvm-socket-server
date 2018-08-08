@@ -4,7 +4,7 @@ import { Tx } from '@app/models'
 import { EthVMServer, SocketEvent } from '@app/server'
 
 const pastTxsEvent: SocketEvent = {
-  name: 'pastTxs',
+  name: 'pastTxs', // new_name: past_txs
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     server.ds
       .getTransactions()

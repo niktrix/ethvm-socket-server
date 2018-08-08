@@ -4,7 +4,7 @@ import { Tx } from '@app/models'
 import { EthVMServer, SocketEvent } from '@app/server'
 
 const getAddressTxPagesEvent: SocketEvent = {
-  name: 'getAddressTransactionPages',
+  name: 'getAddressTransactionPages', // new_name: address_txs_pages
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     const isValid = validators.addressTxsPagesPayloadValidator(payload)
     if (!isValid) {

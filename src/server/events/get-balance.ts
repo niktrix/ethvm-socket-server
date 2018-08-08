@@ -3,7 +3,7 @@ import { Callback } from '@app/interfaces'
 import { EthVMServer, SocketEvent } from '@app/server'
 
 const getBalanceEvent: SocketEvent = {
-  name: 'getBalance',
+  name: 'getBalance', // new_name: balance
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     const isValid = validators.balancePayloadValidator(payload)
     if (!isValid) {

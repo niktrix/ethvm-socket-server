@@ -4,7 +4,7 @@ import { EthVMServer, SocketEvent } from '@app/server'
 import _ from 'lodash'
 
 const getTxPagesEvent: SocketEvent = {
-  name: 'getTransactionPages',
+  name: 'getTransactionPages', // new_name: txs_pages
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     if (payload.hash && (!isBuffer(payload.hash, 32) || !_.isNumber(payload.number))) {
       logger.error(`event -> getTransactionPages / Invalid payload: ${payload}`)

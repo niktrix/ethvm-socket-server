@@ -4,7 +4,7 @@ import { toDatePeriods } from '@app/models/helpers'
 import { EthVMServer, SocketEvent } from '@app/server'
 
 const getChartsAvTxFeeDataEvent: SocketEvent = {
-  name: 'getChartAvTxFee',
+  name: 'getChartAvTxFee', // new_name: chart_tx_Fee
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     const isValid = validators.chartPayloadValidator(payload)
     if (!isValid) {

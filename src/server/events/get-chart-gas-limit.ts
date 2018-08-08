@@ -4,7 +4,7 @@ import { toDatePeriods } from '@app/models/helpers'
 import { EthVMServer, SocketEvent } from '@app/server'
 
 const getChartsDataEvent: SocketEvent = {
-  name: 'getChartGasLimit',
+  name: 'getChartGasLimit', // new_name: chart_gas_limit
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     const isValid = validators.chartPayloadValidator(payload)
     if (!isValid) {

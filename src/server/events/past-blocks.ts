@@ -4,7 +4,7 @@ import { Block } from '@app/models'
 import { EthVMServer, SocketEvent } from '@app/server'
 
 const pastBlocksEvent: SocketEvent = {
-  name: 'pastBlocks',
+  name: 'pastBlocks', // new_name: past_blocks
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
     server.ds
       .getBlocks()
