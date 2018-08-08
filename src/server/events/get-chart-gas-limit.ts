@@ -1,6 +1,6 @@
 import { errors, logger, validators } from '@app/helpers'
 import { Callback } from '@app/interfaces'
-import { toDate } from '@app/models/helpers'
+import { toDatePeriods } from '@app/models/helpers'
 import { EthVMServer, SocketEvent } from '@app/server'
 
 const getChartsDataEvent: SocketEvent = {
@@ -13,7 +13,7 @@ const getChartsDataEvent: SocketEvent = {
       return
     }
 
-    const period = toDate(payload.duration)
+    const period = toDatePeriods(payload.duration)
     server.rdb
       .getChartGasLimit(period.from, period.to)
       .then((result: any): void => cb(null, result))
