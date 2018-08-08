@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { isBuffer, isValidHash } from './eth'
+import { hexToBuffer, isBuffer, isValidHash } from './eth'
 
 describe('helpers.eth', () => {
   describe('isBuffer()', () => {
@@ -84,6 +84,34 @@ describe('helpers.eth', () => {
       inputs.forEach(input => {
         const isValid = isValidHash(input)
         expect(isValid).to.be.false
+      })
+    })
+  })
+
+  describe('hexToBuffer()', () => {
+    it('should properly convert a hexadecimal string to a buffer', () => {
+      const inputs = [
+        {
+          hex: '0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238',
+          length: 32
+        },
+        {
+          hex: '0xB903239F8543D04B5DC1BA6579132B143087C68DB1B2168786408FCBCE568238',
+          length: 32
+        },
+        {
+          hex: 'B903239F8543D04B5DC1BA6579132B143087C68DB1B2168786408FCBCE568238',
+          length: 32
+        },
+        {
+          hex: '',
+          length: 0
+        }
+      ]
+      inputs.forEach(input => {
+        const b = hexToBuffer(input.hex)
+        expect(b).to.be.instanceof(Buffer)
+        expect(b.length).to.equal(input.length)
       })
     })
   })
