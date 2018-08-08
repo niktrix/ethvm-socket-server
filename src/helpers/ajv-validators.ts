@@ -159,7 +159,7 @@ const PastTxsPayloadSchema = {
 }
 
 const TokensBalancePayloadSchema = {
-  $id: 'https://ethvm.com/past.txs.payload.schema.json',
+  $id: 'https://ethvm.com/tokens.balance.schema.json',
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
@@ -174,7 +174,7 @@ const TokensBalancePayloadSchema = {
 }
 
 const TokensPayloadSchema = {
-  $id: 'https://ethvm.com/txs.payload.schema.json',
+  $id: 'https://ethvm.com/tokens.payload.schema.json',
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
@@ -233,6 +233,8 @@ const joinPayloadValidator = ajv.compile(JoinPayloadSchema)
 const leavePayloadValidator = ajv.compile(LeavePayloadSchema)
 const pastBlocksPayloadValidator = ajv.compile(PastBlocksPayloadSchema)
 const pastTxsBlocksPayloadValidator = ajv.compile(PastTxsPayloadSchema)
+const tokensPayloadValidator = ajv.compile(TokensPayloadSchema)
+const tokensBalancePayloadValidator = ajv.compile(TokensBalancePayloadSchema)
 const txsPayloadValidator = ajv.compile(TxsPayloadSchema)
 const totalTxsPayloadValidator = ajv.compile(TotalTxsPayloadSchema)
 
@@ -247,6 +249,8 @@ const validators = {
   leavePayloadValidator,
   pastBlocksPayloadValidator,
   pastTxsBlocksPayloadValidator,
+  tokensPayloadValidator,
+  tokensBalancePayloadValidator,
   txsPayloadValidator,
   totalTxsPayloadValidator
 }
