@@ -1,3 +1,3 @@
-export interface AddressPayload {
+export interface BalancePayload {
   address: string
 }

@@ -1,0 +1,16 @@
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+
+const getCurrentStateRootEvent: SocketEvent = {
+  id: 'getCurrentStateRoot', // new_name: current_state_root
+
+  onValidate: (server: EthVMServer, socket: SocketIO.Socket, payload: any): SocketEventValidationResult => {
+    return {
+      valid: true,
+      errors: []
+    }
+  },
+
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket): Promise<Buffer> => server.vmRunner.getCurrentStateRoot()
+}
+
+export default getCurrentStateRootEvent

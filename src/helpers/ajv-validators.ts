@@ -2,6 +2,12 @@ import { isBuffer, isValidHash } from '@app/helpers'
 import * as Ajv from 'ajv'
 import { isValidAddress } from 'ethereumjs-util'
 
+// Define some constants
+const PAGINATION_SIZE = 25
+const ROOMS = ['blocks', 'txs', 'uncles']
+const PERIODS = ['ALL', 'YEAR', 'MONTH', 'DAY']
+
+// Create Ajv
 const ajv = new Ajv()
 require('ajv-keywords')(ajv, ['instanceof']) // tslint:disable-line no-var-requires
 
@@ -26,7 +32,36 @@ ajv.addKeyword('hashBuffer', {
   errors: false
 })
 
-// Types Schemas Definitions
+// Mini schemas definitions
+const addressBufferSchema = {
+  $id: '/properties/address',
+  instanceof: 'Buffer',
+  addresBuffer: true
+}
+
+const addressSchema = {
+  $id: '/properties/address',
+  type: 'string',
+  address: true
+}
+
+const hashBufferSchema = {
+  $id: '/properties/hash',
+  instanceof: 'Buffer',
+  hashBuffer: true
+}
+
+const limitSchema = {
+  $id: '/properties/limit',
+  type: 'number',
+  default: PAGINATION_SIZE
+}
+
+const pageSchema = {
+  $id: '/properties/limit',
+  type: 'number',
+  default: 0
+}
 
 // Schemas definitions
 const AddressTxsPagesPayloadSchema = {
@@ -34,22 +69,34 @@ const AddressTxsPagesPayloadSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
-    address: {
-      $id: '/properties/address',
-      instanceof: 'Buffer',
-      addresBuffer: true
-    },
+    address: addressBufferSchema,
+    hash: hashBufferSchema,
     number: {
       $id: '/properties/number',
       type: 'number'
-    },
-    hash: {
-      $id: '/properties/hash',
-      instanceof: 'Buffer',
-      hashBuffer: true
     }
   },
-  required: ['address', 'number', 'hash']
+  required: ['address', 'number'],
+  additionalProperties: false
+}
+
+const JoinLeavePayloadSchema = {
+  $id: 'https://ethvm.com/join.leave.payload.schema.json',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {
+    rooms: {
+      $id: '/properties/rooms',
+      type: 'array',
+      additionalItems: { type: 'string' },
+      uniqueItems: true,
+      enum: ROOMS,
+      minItems: 1,
+      maxItems: ROOMS.length
+    }
+  },
+  required: ['rooms'],
+  additionalProperties: false
 }
 
 const BalancePayloadSchema = {
@@ -57,11 +104,7 @@ const BalancePayloadSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
-    address: {
-      $id: '/properties/address',
-      type: 'string',
-      address: true
-    }
+    address: addressSchema
   },
   required: ['address'],
   additionalProperties: false
@@ -72,11 +115,7 @@ const BlockTxsPayloadSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
-    address: {
-      $id: '/properties/address',
-      type: 'string',
-      address: true
-    }
+    address: addressSchema
   },
   required: ['address'],
   additionalProperties: false
@@ -87,11 +126,7 @@ const BlockPayloadSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
-    address: {
-      $id: '/properties/address',
-      type: 'string',
-      address: true
-    }
+    address: addressSchema
   },
   required: ['address'],
   additionalProperties: false
@@ -105,8 +140,7 @@ const ChartPayloadSchema = {
     duration: {
       $id: '/properties/duration',
       type: 'string',
-      enum: ['ALL', 'YEAR', 'MONTH', 'DAY'],
-      default: ''
+      enum: PERIODS
     }
   },
   required: ['duration'],
@@ -122,52 +156,12 @@ const EthCallPayloadSchema = {
   additionalProperties: false
 }
 
-const JoinPayloadSchema = {
-  $id: 'https://ethvm.com/join.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: [],
-  additionalProperties: false
-}
-
-const LeavePayloadSchema = {
-  $id: 'https://ethvm.com/leave.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: [],
-  additionalProperties: false
-}
-
-const PastBlocksPayloadSchema = {
-  $id: 'https://ethvm.com/past.blocks.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: [],
-  additionalProperties: false
-}
-
-const PastTxsPayloadSchema = {
-  $id: 'https://ethvm.com/past.txs.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {},
-  required: [],
-  additionalProperties: false
-}
-
 const TokensBalancePayloadSchema = {
   $id: 'https://ethvm.com/tokens.balance.schema.json',
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
-    address: {
-      $id: '/properties/address',
-      type: 'string',
-      address: true
-    }
+    address: addressSchema
   },
   required: ['address'],
   additionalProperties: false
@@ -192,13 +186,20 @@ const TotalTxsPayloadSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
-    address: {
-      $id: '/properties/address',
-      type: 'string',
-      address: true
-    }
+    address: addressSchema
   },
   required: ['address'],
+  additionalProperties: false
+}
+
+const TxPayloadSchema = {
+  $id: 'https://ethvm.com/tx.payload.schema.json',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {
+    hash: hashBufferSchema
+  },
+  required: ['hash'],
   additionalProperties: false
 }
 
@@ -207,18 +208,26 @@ const TxsPayloadSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
-    duration: {
-      $id: '/properties/duration',
-      type: 'string',
-      enum: ['ALL', 'YEAR', 'MONTH', 'DAY'],
-      default: ''
-    },
-    tokens: {
-      $id: '/properties/tokens',
-      type: 'array'
+    address: addressSchema,
+    limit: limitSchema,
+    page: pageSchema
+  },
+  required: ['address'],
+  additionalProperties: false
+}
+
+const TxsPagesPayloadSchema = {
+  $id: 'https://ethvm.com/txs.pages.payload.schema.json',
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  properties: {
+    hash: hashBufferSchema,
+    number: {
+      $id: '/properties/number',
+      type: 'number'
     }
   },
-  required: [],
+  required: ['number'],
   additionalProperties: false
 }
 
@@ -229,30 +238,26 @@ const balancePayloadValidator = ajv.compile(BalancePayloadSchema)
 const blockTxsPayloadValidator = ajv.compile(BlockTxsPayloadSchema)
 const blockPayloadValidator = ajv.compile(BlockPayloadSchema)
 const chartPayloadValidator = ajv.compile(ChartPayloadSchema)
-const joinPayloadValidator = ajv.compile(JoinPayloadSchema)
-const leavePayloadValidator = ajv.compile(LeavePayloadSchema)
-const pastBlocksPayloadValidator = ajv.compile(PastBlocksPayloadSchema)
-const pastTxsBlocksPayloadValidator = ajv.compile(PastTxsPayloadSchema)
+const joinLeavePayloadValidator = ajv.compile(JoinLeavePayloadSchema)
 const tokensPayloadValidator = ajv.compile(TokensPayloadSchema)
 const tokensBalancePayloadValidator = ajv.compile(TokensBalancePayloadSchema)
+const txPayloadValidator = ajv.compile(TxPayloadSchema)
 const txsPayloadValidator = ajv.compile(TxsPayloadSchema)
+const txsPagesPayloadValidator = ajv.compile(TxsPagesPayloadSchema)
 const totalTxsPayloadValidator = ajv.compile(TotalTxsPayloadSchema)
 
-const validators = {
+export {
   addressTxsPagesPayloadValidator,
   balancePayloadValidator,
   blockTxsPayloadValidator,
   blockPayloadValidator,
   chartPayloadValidator,
   ethCallPayloadValidator,
-  joinPayloadValidator,
-  leavePayloadValidator,
-  pastBlocksPayloadValidator,
-  pastTxsBlocksPayloadValidator,
+  joinLeavePayloadValidator,
   tokensPayloadValidator,
   tokensBalancePayloadValidator,
+  txPayloadValidator,
   txsPayloadValidator,
+  txsPagesPayloadValidator,
   totalTxsPayloadValidator
 }
-
-export { validators }

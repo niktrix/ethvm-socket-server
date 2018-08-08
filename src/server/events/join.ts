@@ -1,19 +1,21 @@
-import { logger, validators } from '@app/helpers'
-import { Callback } from '@app/interfaces'
-import { EthVMServer, SocketEvent } from '@app/server'
+import { joinLeavePayloadValidator, logger } from '@app/helpers'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
 
 const joinEvent: SocketEvent = {
-  name: 'join',
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback): void => {
-    const isValid = validators.joinPayloadValidator(payload)
-    if (!isValid) {
-      logger.error(`event -> join / ${socket.id} tried to join invalid room with msg: ${payload}`)
-      cb(validators.joinPayloadValidator.errors, null)
-      return
-    }
+  id: 'join',
 
+  onValidate: (server: EthVMServer, socket: SocketIO.Socket, payload: any): SocketEventValidationResult => {
+    const valid = joinLeavePayloadValidator(payload) as boolean
+    return {
+      valid,
+      errors: [] // TODO: Map properly the error
+    }
+  },
+
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any): Promise<any> => {
     logger.debug(`event -> join / Joining room: ${payload}`)
     socket.join(payload)
+    return Promise.resolve(undefined)
   }
 }
 

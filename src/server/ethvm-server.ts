@@ -1,19 +1,55 @@
 import config from '@app/config'
 import { BlockchainDataStore, CacheDataStore } from '@app/datastores'
-import { logger } from '@app/helpers'
+import { errors, logger } from '@app/helpers'
 import { Callback } from '@app/interfaces'
-import { Block } from '@app/models'
+import {
+  AddressTxsPagesPayload,
+  BalancePayload,
+  Block,
+  BlocksTxsPayload,
+  ChartPayload,
+  EthCallPayload,
+  ExchangeRatePayload,
+  JoinPayload,
+  LeavePayload,
+  TokensBalancePayload,
+  Tx,
+  TxsPayload
+} from '@app/models'
 import { mappers } from '@app/models/helpers'
 import { TrieDB, VmEngine, VmRunner } from '@app/vm'
 import { bufferToHex } from 'ethereumjs-util'
 import * as EventEmitter from 'eventemitter3'
 import * as fs from 'fs'
 import * as http from 'http'
+import _ from 'lodash'
 import * as SocketIO from 'socket.io'
 
+export type SocketEventPayload =
+  | AddressTxsPagesPayload
+  | BalancePayload
+  | BlocksTxsPayload
+  | Buffer
+  | ChartPayload
+  | EthCallPayload
+  | ExchangeRatePayload
+  | JoinPayload
+  | LeavePayload
+  | TokensBalancePayload
+  | TxsPayload
+  | any
+
+export type SocketEventResponse = Block | Block[] | Tx | Tx[] | number | any
+
+export interface SocketEventValidationResult {
+  readonly valid: boolean
+  readonly errors?: any[]
+}
+
 export interface SocketEvent {
-  name: string
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any, cb: Callback) => void
+  id: string
+  onValidate: (server: EthVMServer, socket: SocketIO.Socket, payload: any) => SocketEventValidationResult
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload?: SocketEventPayload) => Promise<SocketEventResponse>
 }
 
 export class EthVMServer {
@@ -61,9 +97,31 @@ export class EthVMServer {
   private registerEventsOnConnection(socket: SocketIO.Socket): void {
     this.events.forEach((event: SocketEvent) => {
       socket.on(
-        event.name,
-        (msg: any, cb: Callback): void => {
-          event.onEvent(this, socket, msg, cb)
+        event.id,
+        (payload: any, cb: Callback): void => {
+          const validationResult = event.onValidate(this, socket, payload)
+          if (!validationResult.valid) {
+            logger.error(`event -> ${event.id} / Invalid payload: ${payload}`)
+            cb(validationResult.errors, null)
+            return
+          }
+
+          event
+            .onEvent(this, socket, payload)
+            .then(res => {
+              // Some events like join, leave doesn't produce a concrete result
+              if (_.isUndefined(res)) {
+                return
+              }
+
+              cb(null, res)
+            })
+            .catch(err => {
+              logger.error(`event -> ${event.id} / Error: ${err}`)
+
+              // TODO: Until we have defined which errors are we going to return, we use a generic one
+              cb(errors.serverError, null)
+            })
         }
       )
     })

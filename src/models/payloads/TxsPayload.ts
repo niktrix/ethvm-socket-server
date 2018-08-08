@@ -1,3 +1,5 @@
-export interface TxsPayload {
-  hash: string
+import { Pagination } from '@app/models'
+
+export interface TxsPayload extends Pagination {
+  address: string
 }

@@ -20,7 +20,7 @@ export class VmEngine {
     return this.client.request('eth_getKeyValue', [this.opts.account])
   }
 
-  public getBalance(address: any): Promise<any> {
+  public getBalance(address: string): Promise<any> {
     return this.client.request('eth_getBalance', [address, 'latest'])
   }
 

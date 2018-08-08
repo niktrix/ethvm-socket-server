@@ -1,3 +1,3 @@
-export interface TokensPayload {
-  tokens: string[]
+export interface TokensBalancePayload {
+  address: string
 }
