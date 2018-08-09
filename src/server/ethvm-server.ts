@@ -1,6 +1,6 @@
 import config from '@app/config'
 import { BlockchainDataStore, CacheDataStore } from '@app/datastores'
-import { errors, logger } from '@app/helpers'
+import { errors, logger, mappers } from '@app/helpers'
 import { Callback } from '@app/interfaces'
 import {
   AddressTxsPagesPayload,
@@ -15,7 +15,6 @@ import {
   Tx,
   TxsPayload
 } from '@app/models'
-import { mappers } from '@app/models/helpers'
 import { TrieDB, VmEngine, VmRunner } from '@app/vm'
 import BigNumber from 'bignumber.js'
 import { bufferToHex } from 'ethereumjs-util'
@@ -78,7 +77,8 @@ export class EthVMServer {
     logger.debug('EthVMServer - start() / Loading socket evens...')
     const events = fs.readdirSync(`${__dirname}/events/`)
     events.forEach(async ev => {
-      if (ev.match(/.*\.spec\.ts/)) { // Ignore test files
+      if (ev.match(/.*\.spec\.ts/)) {
+        // Ignore test files
         return
       }
       logger.debug(`EthVMServer - start() / Registering socket event: ${ev}`)
