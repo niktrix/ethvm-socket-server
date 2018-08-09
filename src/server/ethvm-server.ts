@@ -22,7 +22,6 @@ import { bufferToHex } from 'ethereumjs-util'
 import * as EventEmitter from 'eventemitter3'
 import * as fs from 'fs'
 import * as http from 'http'
-import _ from 'lodash'
 import * as SocketIO from 'socket.io'
 import * as utils from 'web3-utils'
 
@@ -79,7 +78,7 @@ export class EthVMServer {
     logger.debug('EthVMServer - start() / Loading socket evens...')
     const events = fs.readdirSync(`${__dirname}/events/`)
     events.forEach(async ev => {
-      if (ev.match(/.*\.spec\.ts/)) {
+      if (ev.match(/.*\.spec\.ts/)) { // Ignore test files
         return
       }
       logger.debug(`EthVMServer - start() / Registering socket event: ${ev}`)
@@ -114,8 +113,8 @@ export class EthVMServer {
           event
             .onEvent(this, socket, payload)
             .then(res => {
-              // Some events like join, leave doesn't produce a concrete result
-              if (_.isUndefined(res)) {
+              // Some events like join, leave doesn't produce a concrete result, so better to not send anything back
+              if (typeof res === 'undefined') {
                 return
               }
 
