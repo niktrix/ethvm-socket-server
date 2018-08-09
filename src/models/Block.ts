@@ -1,8 +1,7 @@
 import { BlockStats, Tx } from '@app/models'
 
 export interface Block {
-  number: Buffer
-  intNumber: number
+  number: number
   hash: Buffer
   parentHash?: Buffer
   nonce?: Buffer

@@ -1,7 +1,7 @@
 export interface Tx {
   root?: Buffer
   blockHash: Buffer
-  blockNumber?: Buffer
+  blockNumber?: number
   transactionIndex?: Buffer
   from: Buffer
   fromBalance?: Buffer
