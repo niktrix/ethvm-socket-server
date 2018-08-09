@@ -84,7 +84,7 @@ export class EthVMServer {
       }
       logger.debug(`EthVMServer - start() / Registering socket event: ${ev}`)
       const event = await import(`${__dirname}/events/${ev}`)
-      this.events.set(event.default.name, event.default)
+      this.events.set(event.default.id, event.default)
     })
 
     logger.debug('EthVMServer - start() / Starting RethinkDB datastore')
