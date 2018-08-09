@@ -1,4 +1,5 @@
 import { joinLeavePayloadValidator, logger } from '@app/helpers'
+import { JoinLeavePayload } from '@app/models/payloads/JoinLeavePayload'
 import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
 
 const leaveEvent: SocketEvent = {
@@ -12,7 +13,7 @@ const leaveEvent: SocketEvent = {
     }
   },
 
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any): Promise<any> => {
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: JoinLeavePayload): Promise<any> => {
     logger.debug(`event -> leave / Leaving room: ${payload}`)
     socket.leave(payload)
     return Promise.resolve(undefined)
