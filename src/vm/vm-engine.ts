@@ -2,11 +2,16 @@ import { BigNumber } from 'bignumber.js'
 import * as abi from 'ethereumjs-abi'
 import * as jayson from 'jayson/promise'
 import * as utils from 'web3-utils'
+import { logger } from 'helpers';
 
 export interface VmEngineOptions {
   rpcUrl: string
-  tokensAddress: string
+  tokenBalanceContract: Contract
   account: string
+}
+
+export interface Contract {
+  address: string
 }
 
 export class VmEngine {
@@ -29,8 +34,8 @@ export class VmEngine {
       const argss = ['address', 'bool', 'bool', 'bool', 'uint256']
       const vals = [address, 'true', 'true', 'true', 0]
       const encoded = this.encodeCall('getAllBalance', argss, vals)
-      try {
-        const response = await this.client.request('eth_call', [{ to: this.opts.tokensAddress, data: encoded }, 'pending'])
+       try {
+        const response = await this.client.request('eth_call', [{ to: this.opts.tokenBalanceContract.address, data: encoded }, 'pending'])
         const tokens = this.decode(response.result || []).filter(token => token.balance > 0)
         resolve(tokens)
       } catch (err) {
