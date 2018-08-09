@@ -426,7 +426,7 @@ describe('ajv-validators', () => {
     })
   })
 
-  xdescribe('join / leave validator', () => {
+  describe('join / leave validator', () => {
     it('should validate a correct join/leave payload', () => {
       const inputs = [
         {

@@ -88,14 +88,13 @@ const JoinLeavePayloadSchema = {
     rooms: {
       $id: '/properties/rooms',
       type: 'array',
-      additionalItems: { type: 'string' },
+      items: { type: 'string', enum: ROOMS },
       uniqueItems: true,
-      enum: ROOMS,
-      minItems: 1,
-      maxItems: ROOMS.length
+      minItems: 1
     }
   },
   required: ['rooms'],
+  additionalItems: false,
   additionalProperties: false
 }
 
@@ -232,12 +231,12 @@ const TxsPagesPayloadSchema = {
 }
 
 // Compile schemas
-const ethCallPayloadValidator = ajv.compile(EthCallPayloadSchema)
 const addressTxsPagesPayloadValidator = ajv.compile(AddressTxsPagesPayloadSchema)
 const balancePayloadValidator = ajv.compile(BalancePayloadSchema)
 const blockTxsPayloadValidator = ajv.compile(BlockTxsPayloadSchema)
 const blockPayloadValidator = ajv.compile(BlockPayloadSchema)
 const chartPayloadValidator = ajv.compile(ChartPayloadSchema)
+const ethCallPayloadValidator = ajv.compile(EthCallPayloadSchema)
 const joinLeavePayloadValidator = ajv.compile(JoinLeavePayloadSchema)
 const tokensPayloadValidator = ajv.compile(TokensPayloadSchema)
 const tokensBalancePayloadValidator = ajv.compile(TokensBalancePayloadSchema)
