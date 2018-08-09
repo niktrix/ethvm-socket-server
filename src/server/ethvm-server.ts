@@ -79,6 +79,9 @@ export class EthVMServer {
     logger.debug('EthVMServer - start() / Loading socket evens...')
     const events = fs.readdirSync(`${__dirname}/events/`)
     events.forEach(async ev => {
+      if (ev.match(/.*\.spec\.ts/)) {
+        return
+      }
       logger.debug(`EthVMServer - start() / Registering socket event: ${ev}`)
       const event = await import(`${__dirname}/events/${ev}`)
       this.events.set(event.default.name, event.default)

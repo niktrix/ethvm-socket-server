@@ -14,8 +14,10 @@ const leaveEvent: SocketEvent = {
   },
 
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: JoinLeavePayload): Promise<any> => {
-    logger.debug(`event -> leave / Leaving room: ${payload}`)
-    socket.leave(payload)
+    payload.rooms.forEach(room => {
+      logger.debug(`event -> leave / Leaving room: ${payload}`)
+      socket.join(room)
+    })
     return Promise.resolve(undefined)
   }
 }
