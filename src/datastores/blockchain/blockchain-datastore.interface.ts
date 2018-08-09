@@ -3,8 +3,8 @@ import { Block, Tx } from '@app/models'
 export interface BlockchainDataStore {
   initialize(): Promise<boolean>
 
-  getBlock(hash: string): Promise<Block>
-  getBlockTxs(hash: string): Promise<Block>
+  getBlock(hash: Buffer): Promise<Block>
+  getBlockTxs(hash: Buffer): Promise<Block>
 
   getTx(hash: string): Promise<Tx>
   getTxsPages(bNumber: number, hash?: Buffer): Promise<Tx[]>

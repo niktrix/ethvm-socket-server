@@ -83,10 +83,10 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .then((cursor: r.cursor) => cursor.toArray())
   }
 
-  public getBlockTxs(hash: string): Promise<Block> {
+  public getBlockTxs(hash: Buffer): Promise<Block> {
     return r
       .table('blocks')
-      .get(r.args([new Buffer(hash)]))
+      .get(r.args([hash]))
       .do(block =>
         r
           .table('transactions')
@@ -170,7 +170,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .run(this.conn)
   }
 
-  public getBlock(hash: string): Promise<Block> {
+  public getBlock(hash: Buffer): Promise<Block> {
     return r
       .table('blocks')
       .get(r.args([new Buffer(hash)]))

@@ -7,13 +7,14 @@ const getBlockTxsEvent: SocketEvent = {
 
   onValidate: (server: EthVMServer, socket: SocketIO.Socket, payload: any): SocketEventValidationResult => {
     const valid = blockTxsPayloadValidator(payload) as boolean
+
     return {
       valid,
       errors: [] // TODO: Map properly the error
     }
   },
 
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: BlocksTxsPayload): Promise<Block> => server.rdb.getBlockTxs(payload.address)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: BlocksTxsPayload): Promise<Block> => server.rdb.getBlockTxs(payload.hash)
 }
 
 export default getBlockTxsEvent

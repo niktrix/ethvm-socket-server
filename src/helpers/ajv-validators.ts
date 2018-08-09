@@ -114,9 +114,9 @@ const BlockTxsPayloadSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
-    address: addressSchema
+    hash: hashBufferSchema
   },
-  required: ['address'],
+  required: ['hash'],
   additionalProperties: false
 }
 
@@ -125,9 +125,9 @@ const BlockPayloadSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
-    address: addressSchema
+    hash: hashBufferSchema
   },
-  required: ['address'],
+  required: ['hash'],
   additionalProperties: false
 }
 
