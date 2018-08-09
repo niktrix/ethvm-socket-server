@@ -90,7 +90,7 @@ describe('ajv-validators', () => {
   describe('blockTxsPayloadValidator', () => {
     it('should validate a correct block txs payload', () => {
       const payload = {
-        address: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D'
+        hash: hexToBuffer('0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238')
       }
       const isvalid = blockTxsPayloadValidator(payload)
       expect(isvalid).to.be.true
@@ -104,14 +104,14 @@ describe('ajv-validators', () => {
         10,
         {},
         {
-          address: '0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238'
+          hash: '0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238'
         },
         {
-          address: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D',
+          hash: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D',
           number: '1'
         },
         {
-          address: hexToBuffer('0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D'),
+          hash: hexToBuffer('0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D'),
           number: 1
         }
       ]
@@ -126,7 +126,7 @@ describe('ajv-validators', () => {
   describe('blockPayloadValidator', () => {
     it('should validate a correct block payload', () => {
       const payload = {
-        address: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D'
+        hash: hexToBuffer('0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238')
       }
       const isvalid = blockPayloadValidator(payload)
       expect(isvalid).to.be.true
@@ -140,14 +140,14 @@ describe('ajv-validators', () => {
         10,
         {},
         {
-          address: '0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238'
+          hash: '0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238'
         },
         {
-          address: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D',
+          hash: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D',
           number: '1'
         },
         {
-          address: hexToBuffer('0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D'),
+          hash: hexToBuffer('0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D'),
           number: 1
         }
       ]
