@@ -1,4 +1,4 @@
-import { BlockStats } from './BlockStats'
+import { BlockStats } from '@app/models'
 
 export interface SmallBlock {
   number: Buffer

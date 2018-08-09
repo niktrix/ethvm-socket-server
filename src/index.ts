@@ -73,7 +73,8 @@ async function bootstrapServer() {
 
   // Create server
   logger.debug('bootstrapper -> Initializing server')
-  const server = new EthVMServer(trieDb, vmr, vme, ds, rdb, emitter)
+  const blockTime: number = config.get('eth.block_time')
+  const server = new EthVMServer(trieDb, vmr, vme, ds, rdb, emitter, blockTime)
   await server.start()
 }
 

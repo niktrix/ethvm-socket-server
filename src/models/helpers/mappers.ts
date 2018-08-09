@@ -1,11 +1,6 @@
-import config from '@app/config'
 import { Block, BlockStats, SmallBlock, Tx } from '@app/models'
 import BigNumber from 'bignumber.js'
 import * as utils from 'web3-utils'
-
-// TODO: Remove this to be used directly or retrieved from memory or redis
-const BLOCK_TIME: number = config.get('eth.block_time')
-let previousBlockTime = new BigNumber(0)
 
 const toSmallBlock = (block: Block): SmallBlock => {
   return {
@@ -33,18 +28,8 @@ const toSmallBlock = (block: Block): SmallBlock => {
   }
 }
 
-const toBlockStats = (block: Block, txs?: Tx[]): BlockStats => {
-  const ts = new BigNumber(utils.toHex(block.timestamp))
-  if (!previousBlockTime) {
-    previousBlockTime = ts.minus(BLOCK_TIME)
-  }
-
-  const blockTime = ts.minus(previousBlockTime).abs()
-  if (!block.isUncle) {
-    previousBlockTime = new BigNumber(utils.toHex(block.timestamp))
-  }
-
-  if (!txs || txs.length === 0) {
+const toBlockStats = (txs: Tx[] = [], blockTime: BigNumber): BlockStats => {
+  if (txs.length === 0) {
     const zero = utils.toHex(0)
     return {
       blockTime: zero,
@@ -56,7 +41,6 @@ const toBlockStats = (block: Block, txs?: Tx[]): BlockStats => {
   }
 
   const txStatus = {
-    blockTime: new BigNumber(0),
     failed: new BigNumber(0),
     success: new BigNumber(0),
     totGasPrice: new BigNumber(0),

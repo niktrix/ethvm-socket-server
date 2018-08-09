@@ -10,20 +10,21 @@ import {
   ChartPayload,
   EthCallPayload,
   ExchangeRatePayload,
-  JoinPayload,
-  LeavePayload,
+  JoinLeavePayload,
   TokensBalancePayload,
   Tx,
   TxsPayload
 } from '@app/models'
 import { mappers } from '@app/models/helpers'
 import { TrieDB, VmEngine, VmRunner } from '@app/vm'
+import BigNumber from 'bignumber.js'
 import { bufferToHex } from 'ethereumjs-util'
 import * as EventEmitter from 'eventemitter3'
 import * as fs from 'fs'
 import * as http from 'http'
 import _ from 'lodash'
 import * as SocketIO from 'socket.io'
+import * as utils from 'web3-utils'
 
 export type SocketEventPayload =
   | AddressTxsPagesPayload
@@ -33,8 +34,7 @@ export type SocketEventPayload =
   | ChartPayload
   | EthCallPayload
   | ExchangeRatePayload
-  | JoinPayload
-  | LeavePayload
+  | JoinLeavePayload
   | TokensBalancePayload
   | TxsPayload
   | any
@@ -56,6 +56,7 @@ export class EthVMServer {
   public readonly io: SocketIO.Server
 
   private readonly events: Map<string, SocketEvent>
+  private previousBlockTime = new BigNumber(0)
 
   constructor(
     public readonly trieDB: TrieDB,
@@ -63,7 +64,8 @@ export class EthVMServer {
     public readonly vmEngine: VmEngine,
     public readonly ds: CacheDataStore,
     public readonly rdb: BlockchainDataStore,
-    public readonly emitter: EventEmitter
+    public readonly emitter: EventEmitter,
+    private readonly blockTime: number
   ) {
     this.io = this.createWSServer()
     this.events = new Map()
@@ -143,15 +145,30 @@ export class EthVMServer {
   private onNewBlockEvent = (block: Block): void => {
     logger.info(`EthVMServer - onNewBlockEvent / Block: ${bufferToHex(block.hash)}`)
 
+    // Save state root if defined
     if (block.stateRoot) {
       this.vmRunner.setStateRoot(block.stateRoot)
     }
-    const bstats = mappers.toBlockStats(block, block.transactions)
+
+    // Calculate previous block time
+    const ts = new BigNumber(utils.toHex(block.timestamp))
+    if (!this.previousBlockTime) {
+      this.previousBlockTime = ts.minus(this.blockTime)
+    }
+
+    const currentBlockTime = ts.minus(this.previousBlockTime).abs()
+    if (!block.isUncle) {
+      this.previousBlockTime = new BigNumber(utils.toHex(block.timestamp))
+    }
+
+    // Generate block stats
+    const bstats = mappers.toBlockStats(block.transactions, currentBlockTime)
     block.blockStats = { ...bstats, ...block.blockStats }
 
     const blockHash = bufferToHex(block.hash)
     const smallBlock = mappers.toSmallBlock(block)
 
+    // Send to client
     this.io.to(blockHash).emit(blockHash + '_update', smallBlock)
     this.io.to('blocks').emit('newBlock', smallBlock)
 
@@ -168,7 +185,7 @@ export class EthVMServer {
     }
   }
 
-  private onPendingTxsEvent = (tx: any): void => {
+  private onPendingTxsEvent = (tx: Tx): void => {
     logger.info(`EthVMServer - onPendingTxsEvent / Tx: ${tx}`)
 
     if (tx.pending) {
