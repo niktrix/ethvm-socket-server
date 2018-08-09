@@ -1,6 +1,5 @@
-import { chartPayloadValidator } from '@app/helpers'
+import { chartPayloadValidator, toDatePeriods } from '@app/helpers'
 import { ChartPayload } from '@app/models'
-import { toDatePeriods } from '@app/models/helpers'
 import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
 
 // TODO: Create helper function to request time
