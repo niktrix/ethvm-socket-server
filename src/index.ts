@@ -4,7 +4,6 @@ import { logger } from '@app/helpers'
 import { EthVMServer } from '@app/server'
 import { VmEngine, VmRunner } from '@app/vm'
 import { RedisTrieDb } from '@app/vm/trie/db'
-import { ZeroClientProviderFactory } from '@app/vm/zero-client-provider-factory'
 import * as EventEmitter from 'eventemitter3'
 
 async function bootstrapServer() {
@@ -27,7 +26,12 @@ async function bootstrapServer() {
     tokensAddress: config.get('eth.vm.engine.tokens_smart_contract'),
     account: config.get('eth.vm.engine.account')
   }
-   const vme = new VmEngine(vmeOpts)
+  const vme = new VmEngine(vmeOpts)
+
+  // Create VmRunner
+  logger.debug('bootstrapper -> Initializing VmRunner')
+  const gasLimit = config.get('eth.vm.engine.gas_limit')
+  const vmr = new VmRunner(trieDb, gasLimit)
 
   // Create Cache data store
   logger.info('bootstrapper -> Initializing redis cache data store')
@@ -38,10 +42,6 @@ async function bootstrapServer() {
   }
   const ds = new RedisDataStore(redisDsOpts)
   await ds.initialize().catch(() => process.exit(-1))
-
-  // Create VmRunner
-  logger.debug('bootstrapper -> Initializing VmRunner')
-  const vmr = new VmRunner(trieDb)
 
   // Set default state block to VmRunner
   const blocks = await ds.getBlocks()
@@ -73,7 +73,8 @@ async function bootstrapServer() {
 
   // Create server
   logger.debug('bootstrapper -> Initializing server')
-  const server = new EthVMServer(trieDb, vmr, vme, ds, rdb, emitter)
+  const blockTime: number = config.get('eth.block_time')
+  const server = new EthVMServer(trieDb, vmr, vme, ds, rdb, emitter, blockTime)
   await server.start()
 }
 

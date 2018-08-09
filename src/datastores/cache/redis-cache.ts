@@ -1,6 +1,7 @@
 import { CacheDataStore } from '@app/datastores'
-import { eth, logger } from '@app/helpers'
+import { b64Replacer, b64Reviver, logger } from '@app/helpers'
 import { Block, Tx } from '@app/models'
+import { bufferToHex } from 'ethereumjs-util'
 import * as Redis from 'ioredis'
 
 export interface RedisDataStoreOpts {
@@ -40,7 +41,7 @@ export class RedisDataStore implements CacheDataStore {
   }
 
   public putBlock(block: Block): Promise<boolean> {
-    logger.debug(`RedisDataStore - putBlock / Block: ${eth.toHex(block.hash)}`)
+    logger.debug(`RedisDataStore - putBlock / Block: ${bufferToHex(block.hash)}`)
 
     return this.getArray<Block>('blocks')
       .then((blocks: Block[]) => {
@@ -51,7 +52,7 @@ export class RedisDataStore implements CacheDataStore {
         }
 
         this.cache.set('blocks', blocks)
-        this.redis.set('blocks', JSON.stringify(blocks))
+        this.redis.set('blocks', JSON.stringify(blocks, b64Replacer))
 
         return Promise.resolve(true)
       })
@@ -83,7 +84,7 @@ export class RedisDataStore implements CacheDataStore {
         }
 
         this.cache.set('transactions', _txs)
-        this.redis.set('transactions', JSON.stringify(_txs))
+        this.redis.set('transactions', JSON.stringify(_txs, b64Replacer))
 
         return Promise.resolve(true)
       })
@@ -116,7 +117,7 @@ export class RedisDataStore implements CacheDataStore {
 
           logger.debug(`RedisDataStore - getArray() / Key: ${key} | Result: ${result.length}`)
 
-          const buffered = JSON.parse(result).map(item => eth.bufferify(item))
+          const buffered = JSON.parse(result, b64Reviver)
           this.cache.set(key, buffered)
 
           resolve(buffered)

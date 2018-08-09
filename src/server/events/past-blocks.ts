@@ -1,32 +1,28 @@
-import { errors, logger } from '@app/helpers'
-import { Callback } from '@app/interfaces'
 import { Block } from '@app/models'
-import { EthVMServer, SocketEvent } from '@app/server'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
 
 const pastBlocksEvent: SocketEvent = {
-  name: 'pastBlocks',
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
-    server.ds
-      .getBlocks()
-      .then(
-        (_blocks: Block[]): void => {
-          const blocks: Block[] = []
-          _blocks.forEach(
-            (block: Block): void => {
-              blocks.unshift(block)
-            }
-          )
+  id: 'pastBlocks', // new_name: past_blocks
 
-          cb(null, blocks)
-        }
-      )
-      .catch(
-        (error: Error): void => {
-          logger.error(`event -> pastBlockEvents / Error: ${error}`)
-          cb(errors.serverError, null)
-        }
-      )
-  }
+  onValidate: (server: EthVMServer, socket: SocketIO.Socket, payload: any): SocketEventValidationResult => {
+    return {
+      valid: true
+    }
+  },
+
+  // TODO: Remove fliping blocks from here (blocks should be ordered properly from db)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any): Promise<Block[]> =>
+    server.ds.getBlocks().then(
+      (_blocks: Block[]): Block[] => {
+        const blocks: Block[] = []
+        _blocks.forEach(
+          (block: Block): void => {
+            blocks.unshift(block)
+          }
+        )
+        return blocks
+      }
+    )
 }
 
 export default pastBlocksEvent

@@ -1,10 +1,8 @@
 import config from '@app/config'
 import { Callback } from '@app/interfaces'
 import { TrieDB, TrieDBOptions } from '@app/vm/trie/db/triedb-interface'
-import * as rpc from '@enkrypt.io/json-rpc2'
 import * as Redis from 'ioredis'
 import * as jayson from 'jayson/promise'
-
 
 export interface RedisTrieDbOpts {
   host: string,

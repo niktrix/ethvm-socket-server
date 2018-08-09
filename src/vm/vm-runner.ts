@@ -1,12 +1,9 @@
-import config from '@app/config'
-import { eth } from '@app/helpers'
+import { hexToBuffer } from '@app/helpers'
 import { TrieDB } from '@app/vm'
 import * as VM from '@enkrypt.io/ethereumjs-vm'
 import * as Account from 'ethereumjs-account'
 import * as LRU from 'lru-cache'
 import * as Trie from 'merkle-patricia-tree/secure'
-
-const GAS_LIMIT = config.get('eth.vm.engine.gas_limit')
 
 interface Tx {
   to: string
@@ -17,7 +14,7 @@ export class VmRunner {
   private readonly codeCache: LRU.Cache<string, any>
   private stateTrie: Trie
 
-  constructor(private readonly db: TrieDB) {
+  constructor(private readonly db: TrieDB, private readonly gasLimit: string) {
     this.codeCache = new LRU(2000)
   }
 
@@ -26,86 +23,95 @@ export class VmRunner {
   }
 
   public getCurrentStateRoot(): Promise<Buffer> {
+    return new Promise(resolve => resolve(this.stateTrie.root))
+  }
+
+  public call(txs: Tx[]): Promise<any> {
     return new Promise(resolve => {
-      resolve(this.stateTrie.root)
+      const runOnVM = (trie: Trie, to: Buffer, code: Buffer, gasLimit: string, data: Buffer): Promise<any> => {
+        return new Promise((res, rej) => {
+          const vm = new VM({
+            state: trie
+          })
+
+          vm.runCode(
+            {
+              address: to,
+              code,
+              gasLimit,
+              data
+            },
+            (err: Error, result: any) => {
+              if (err) {
+                rej(err)
+                return
+              }
+
+              res(result.return)
+            }
+          )
+        })
+      }
+
+      const getResult = (tx: Tx, trie: Trie): Promise<any> => {
+        if (this.codeCache.peek(tx.to)) {
+          const to = hexToBuffer(tx.to)
+          const code = this.codeCache.get(tx.to)
+          const data = hexToBuffer(tx.data)
+          return runOnVM(trie, to, code, this.gasLimit, data)
+        }
+
+        return new Promise((res, rej) => {
+          trie.get(hexToBuffer(tx.to), (err: Error, val: Buffer) => {
+            if (err) {
+              rej(err)
+              return
+            }
+
+            const account = new Account(val)
+            trie.getRaw(account.codeHash, (e: Error, code?: Buffer) => {
+              if (e) {
+                rej(e)
+                return
+              }
+
+              // Store code in memory to avoid heavy computations
+              this.codeCache.set(tx.to, code)
+
+              const to = hexToBuffer(tx.to)
+              code = code ? code : new Buffer('00', 'hex')
+              const data = hexToBuffer(tx.data)
+              runOnVM(trie, to, code, this.gasLimit, data)
+                .then(r => res(r))
+                .catch(er => rej(er))
+            })
+          })
+        })
+      }
+
+      const promises: Array<Promise<any>> = []
+      txs.forEach(tx => {
+        const trie = this.stateTrie.copy()
+        promises.push(getResult(tx, trie).catch(err => err))
+      })
+
+      Promise.all(promises).then(res => resolve(res))
     })
   }
 
-  public call(txs: Tx | Tx[], mCB: (err: any, result: any) => void) {
-    const trie = this.stateTrie.copy()
+  public getAccount(to: string, cb: (err: any, result?: Buffer) => void): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const trie = this.stateTrie.copy()
+      const buffer = hexToBuffer(to)
 
-    const runCode = (sTree: any, to: Buffer, code: Buffer, gasLimit: string, data: Buffer, _cb: (err: Error, result: any) => void) => {
-      const vm = new VM({
-        state: sTree
-      })
-
-      vm.runCode(
-        {
-          address: to,
-          code,
-          gasLimit,
-          data
-        },
-        (err: Error, result: any) => {
-          _cb(err, result ? result.return : null)
-        }
-      )
-    }
-
-    const getResult = (tx: Tx, treeClone: any, cb: (err: any, result: any) => void) => {
-      if (this.codeCache.peek(tx.to)) {
-        runCode(treeClone, eth.hexToBuffer(tx.to), this.codeCache.get(tx.to), GAS_LIMIT, eth.hexToBuffer(tx.data), cb)
-        return
-      }
-
-      treeClone.get(eth.hexToBuffer(tx.to), (err: Error, val: Buffer) => {
+      trie.get(buffer, (err: Error, b: Buffer) => {
         if (err) {
-          cb(err, null)
+          reject(err)
           return
         }
 
-        const account = new Account(val)
-        treeClone.getRaw(account.codeHash, (e: Error, code?: Buffer) => {
-          if (e) {
-            cb(e, null)
-            return
-          }
-
-          this.codeCache.set(tx.to, code)
-          runCode(treeClone, eth.hexToBuffer(tx.to), code ? code : new Buffer('00', 'hex'), GAS_LIMIT, eth.hexToBuffer(tx.data), cb)
-        })
+        resolve(b)
       })
-    }
-
-    if (Array.isArray(txs)) {
-      const returnArr: any[] = []
-      let counter = 0
-
-      txs.forEach((_tx, _idx) => {
-        getResult(_tx, trie.copy(), (err: Error, result: any) => {
-          counter++
-          returnArr[_idx] = { error: err, result }
-          if (counter === txs.length) {
-            mCB(null, returnArr)
-          }
-        })
-      })
-    } else {
-      getResult(txs, trie, mCB)
-    }
-  }
-
-  public getAccount(to: string, cb: (err: any, result?: Buffer) => void) {
-    const trie = this.stateTrie.copy()
-    const buffer = eth.hexToBuffer(to)
-
-    trie.get(buffer, (err: Error, b: Buffer) => {
-      if (err) {
-        cb(err)
-        return
-      }
-
-      cb(null, b)
     })
   }
 }

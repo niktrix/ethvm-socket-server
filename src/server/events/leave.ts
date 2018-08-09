@@ -1,17 +1,24 @@
-import { logger } from '@app/helpers'
-import { Callback } from '@app/interfaces'
-import { EthVMServer, SocketEvent } from '@app/server'
+import { joinLeavePayloadValidator, logger } from '@app/helpers'
+import { JoinLeavePayload } from '@app/models/payloads/JoinLeavePayload'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
 
 const leaveEvent: SocketEvent = {
-  name: 'leave',
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
-    if (!msg) {
-      logger.error(`event -> leave / ${socket.id} tried to leave invalid room with msg: ${msg}`)
-      return
-    }
+  id: 'leave',
 
-    logger.error(`event -> leave / Leaving room: ${msg}`)
-    socket.leave(msg)
+  onValidate: (server: EthVMServer, socket: SocketIO.Socket, payload: any): SocketEventValidationResult => {
+    const valid = joinLeavePayloadValidator(payload) as boolean
+    return {
+      valid,
+      errors: [] // TODO: Map properly the error
+    }
+  },
+
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: JoinLeavePayload): Promise<any> => {
+    payload.rooms.forEach(room => {
+      logger.debug(`event -> leave / Leaving room: ${payload}`)
+      socket.join(room)
+    })
+    return Promise.resolve(undefined)
   }
 }
 
