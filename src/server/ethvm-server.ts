@@ -1,21 +1,22 @@
 import config from '@app/config'
-import { BlockchainDataStore, CacheDataStore } from '@app/datastores'
-import { errors, logger, mappers } from '@app/helpers'
 import { Callback } from '@app/interfaces'
+import { errors } from '@app/server/core/exceptions'
+import { logger } from '@app/server/core/logger'
+import { BlockchainDataStore, CacheDataStore } from '@app/server/datastores'
+import { Block, mappers } from '@app/server/modules/blocks'
+import { Tx } from '@app/server/modules/txs'
+import { TrieDB, VmEngine, VmRunner } from '@app/server/modules/vm'
 import {
   AddressTxsPagesPayload,
   BalancePayload,
-  Block,
   BlocksTxsPayload,
   ChartPayload,
   EthCallPayload,
   ExchangeRatePayload,
   JoinLeavePayload,
   TokensBalancePayload,
-  Tx,
   TxsPayload
-} from '@app/models'
-import { TrieDB, VmEngine, VmRunner } from '@app/vm'
+} from '@app/server/payloads'
 import BigNumber from 'bignumber.js'
 import { bufferToHex } from 'ethereumjs-util'
 import * as EventEmitter from 'eventemitter3'
@@ -144,6 +145,8 @@ export class EthVMServer {
     return SocketIO(server)
   }
 
+  // TODO: This method should only receive the block and emit it directly
+  // This logic should not be here
   private onNewBlockEvent = (block: Block): void => {
     logger.info(`EthVMServer - onNewBlockEvent / Block: ${bufferToHex(block.hash)}`)
 
@@ -189,11 +192,8 @@ export class EthVMServer {
 
   private onPendingTxsEvent = (tx: Tx): void => {
     logger.info(`EthVMServer - onPendingTxsEvent / Tx: ${tx}`)
-
-    if (tx.pending) {
-      const txHash = bufferToHex(tx.hash)
-      this.io.to(txHash).emit(txHash + '_update', tx)
-      this.io.to('pendingTxs').emit('newPendingTx', tx)
-    }
+    const txHash = bufferToHex(tx.hash)
+    this.io.to(txHash).emit(txHash + '_update', tx)
+    this.io.to('pendingTxs').emit('newPendingTx', tx)
   }
 }

@@ -1,6 +1,6 @@
-import { ethCallPayloadValidator } from '@app/helpers';
-import { EthCallPayload } from '@app/models';
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server';
+import { ethCallPayloadValidator } from '@app/server/core/validation'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
+import { EthCallPayload } from '@app/server/payloads'
 
 const ethCallEvent: SocketEvent = {
   id: 'ethCall', // new_id: eth_call

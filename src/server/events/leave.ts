@@ -1,6 +1,7 @@
-import { joinLeavePayloadValidator, logger } from '@app/helpers'
-import { JoinLeavePayload } from '@app/models/payloads/JoinLeavePayload'
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { logger } from '@app/server/core/logger'
+import { joinLeavePayloadValidator } from '@app/server/core/validation'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
+import { JoinLeavePayload } from '@app/server/payloads'
 
 const leaveEvent: SocketEvent = {
   id: 'leave',

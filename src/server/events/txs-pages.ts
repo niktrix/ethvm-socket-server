@@ -1,6 +1,7 @@
-import { txsPagesPayloadValidator } from '@app/helpers'
-import { Tx, TxsPagesPayload } from '@app/models'
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { txsPagesPayloadValidator } from '@app/server/core/validation'
+import { TxsPagesPayload } from '@app/server/payloads'
+import { Tx } from '@app/server/modules/txs'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
 
 const getTxPagesEvent: SocketEvent = {
   id: 'getTransactionPages', // new_name: txs_pages

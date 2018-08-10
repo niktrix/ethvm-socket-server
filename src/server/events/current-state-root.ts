@@ -1,4 +1,4 @@
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
 
 const getCurrentStateRootEvent: SocketEvent = {
   id: 'getCurrentStateRoot', // new_name: current_state_root

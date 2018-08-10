@@ -1,5 +1,5 @@
-import { Tx } from '@app/models'
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
+import { Tx } from '@app/server/modules/txs'
 
 const pastTxsEvent: SocketEvent = {
   id: 'pastTxs', // new_name: past_txs

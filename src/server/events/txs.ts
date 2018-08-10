@@ -1,6 +1,7 @@
-import { txsPayloadValidator } from '@app/helpers'
-import { Tx, TxsPayload } from '@app/models'
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { txsPayloadValidator } from '@app/server/core/validation'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
+import { Tx } from '@app/server/modules/txs'
+import { TxsPayload } from '@app/server/payloads'
 
 const getTxsEvent: SocketEvent = {
   id: 'getTxs', // new_name: address_txs

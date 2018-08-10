@@ -1,9 +1,12 @@
 import config from '@app/config'
-import { RedisDataStore, RethinkDBDataStore, RethinkDBOpts } from '@app/datastores'
-import { logger } from '@app/helpers'
-import { EthVMServer } from '@app/server'
-import { VmEngine, VmRunner } from '@app/vm'
-import { RedisTrieDb } from '@app/vm/trie/db'
+import { logger } from '@app/server/core/logger'
+import { RedisDataStore, RethinkDBDataStore, RethinkDBOpts } from '@app/server/datastores'
+import { EthVMServer } from '@app/server/ethvm-server'
+import { BlocksServiceImpl } from '@app/server/modules/blocks'
+import { ChartsServiceImpl } from '@app/server/modules/charts'
+import { MockExchangeServiceImpl } from '@app/server/modules/exchanges'
+import { TxsServiceImpl } from '@app/server/modules/txs'
+import { RedisTrieDb, VmEngine, VmRunner, VmServiceImpl } from '@app/server/modules/vm'
 import * as EventEmitter from 'eventemitter3'
 
 async function bootstrapServer() {
@@ -70,6 +73,13 @@ async function bootstrapServer() {
     delete rethinkDbOpts.ssl
   }
   const rdb = new RethinkDBDataStore(emitter, rethinkDbOpts)
+
+  // Create services
+  const blockService = new BlocksServiceImpl()
+  const chartsService = new ChartsServiceImpl()
+  const exchangeService = new MockExchangeServiceImpl()
+  const txsService = new TxsServiceImpl()
+  const vmService = new VmServiceImpl(vme, vmr)
 
   // Create server
   logger.debug('bootstrapper -> Initializing server')
