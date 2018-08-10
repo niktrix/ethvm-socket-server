@@ -1,30 +1,27 @@
-import { errors, logger } from '@app/helpers'
-import { Callback } from '@app/interfaces'
 import { Tx } from '@app/models'
-import { EthVMServer, SocketEvent } from '@app/server'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
 
 const pastTxsEvent: SocketEvent = {
-  name: 'pastTxs',
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, msg: any, cb: Callback): void => {
-    server.ds
-      .getTransactions()
-      .then(
-        (_txs: Tx[]): void => {
-          const txs: Tx[] = []
-          _txs.forEach((t: Tx) => {
-            txs.unshift(t)
-          })
+  id: 'pastTxs', // new_name: past_txs
 
-          cb(null, txs)
-        }
-      )
-      .catch(
-        (error: Error): void => {
-          logger.error(`event -> pastTxs / Error: ${error}`)
-          cb(errors.serverError, null)
-        }
-      )
-  }
+  onValidate: (server: EthVMServer, socket: SocketIO.Socket, payload: any): SocketEventValidationResult => {
+    return {
+      valid: true
+    }
+  },
+
+  // TODO: Remove fliping txs from here (txs should be ordered properly from db)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket): Promise<Tx[]> =>
+    server.ds.getTransactions().then(
+      (_txs: Tx[]): Tx[] => {
+        const txs: Tx[] = []
+        _txs.forEach((t: Tx) => {
+          txs.unshift(t)
+        })
+
+        return txs
+      }
+    )
 }
 
 export default pastTxsEvent

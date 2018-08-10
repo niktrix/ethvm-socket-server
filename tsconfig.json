@@ -4,7 +4,7 @@
     "target": "es6",
     "module": "commonjs",
     "moduleResolution": "node",
-    "typeRoots": ["node_modules/@types", "typings"],
+    "typeRoots": ["node_modules/@types", "typings", "types"],
     "outDir": "dist",
     "baseUrl": "src",
     "strict": true,

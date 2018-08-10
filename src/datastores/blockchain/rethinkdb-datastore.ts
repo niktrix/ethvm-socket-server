@@ -36,7 +36,7 @@ export class RethinkDBDataStore implements BlockchainDataStore {
     }
   }
 
-  public getAddressTxPages(address: Buffer, hash: Buffer, bNumber: number): Promise<Tx[]> {
+  public getAddressTxPages(address: Buffer, bNumber: number, hash?: Buffer): Promise<Tx[]> {
     if (!hash) {
       return r
         .table('transactions')
@@ -83,10 +83,10 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .then((cursor: r.cursor) => cursor.toArray())
   }
 
-  public getBlockTxs(hash: string): Promise<Block> {
+  public getBlockTxs(hash: Buffer): Promise<Block> {
     return r
       .table('blocks')
-      .get(r.args([new Buffer(hash)]))
+      .get(r.args([hash]))
       .do(block =>
         r
           .table('transactions')
@@ -105,12 +105,14 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .run(this.conn)
   }
 
-  public getTxsOfAddress(hash: string): Promise<Tx[]> {
+  public getTxsOfAddress(hash: string, limit: number, page: number): Promise<Tx[]> {
+    const start = page * limit
+    const end = start + limit
     const bhash = Buffer.from(hash.toLowerCase().replace('0x', ''), 'hex')
     return r
       .table('transactions')
       .getAll(r.args([bhash]), { index: 'cofrom' })
-      .limit(PAGINATION_SIZE)
+      .slice(start, end)
       .run(this.conn)
       .then((cursor: r.cursor) => cursor.toArray())
   }
@@ -168,14 +170,14 @@ export class RethinkDBDataStore implements BlockchainDataStore {
       .run(this.conn)
   }
 
-  public getBlock(hash: string): Promise<Block> {
+  public getBlock(hash: Buffer): Promise<Block> {
     return r
       .table('blocks')
       .get(r.args([new Buffer(hash)]))
       .run(this.conn)
   }
 
-  public getTx(hash: string): Promise<Tx[]> {
+  public getTx(hash: string): Promise<Tx> {
     return r
       .table('transactions')
       .get(r.args([new Buffer(hash)]))
