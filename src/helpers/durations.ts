@@ -1,7 +1,7 @@
 export const toDatePeriods = (duration: string) => {
   const to = new Date()
   // Always at the end of the day
-  to.setHours(23,59,59,999)
+  to.setHours(23, 59, 59, 999)
 
   let from
   switch (duration) {
@@ -22,7 +22,7 @@ export const toDatePeriods = (duration: string) => {
   }
 
   // Always at the start of the day
-  from.setHours(0,0,0,0)
+  from.setHours(0, 0, 0, 0)
 
   return {
     from,

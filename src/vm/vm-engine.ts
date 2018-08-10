@@ -9,7 +9,7 @@ export interface VmEngineOptions {
   account: string
 }
 
-export interface Contract{
+export interface Contract {
   address: string
 }
 
