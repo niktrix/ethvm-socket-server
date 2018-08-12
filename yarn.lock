@@ -62,9 +62,9 @@
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@types/events/-/events-1.2.0.tgz#81a6731ce4df43619e5c8c945383b3e62a89ea86"
 
-"@types/ioredis@^3.2.4":
-  version "3.2.12"
-  resolved "https://registry.yarnpkg.com/@types/ioredis/-/ioredis-3.2.12.tgz#f5255be5b06e60d3ff0927abc1291884013b3c01"
+"@types/ioredis@^3.2.14":
+  version "3.2.14"
+  resolved "https://registry.yarnpkg.com/@types/ioredis/-/ioredis-3.2.14.tgz#c7594cedc2b3618bb1b1358e635c9271b8cb3666"
   dependencies:
     "@types/bluebird" "*"
     "@types/node" "*"

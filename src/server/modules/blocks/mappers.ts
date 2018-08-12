@@ -1,4 +1,5 @@
-import { Block, BlockStats, SmallBlock } from '@app/server/modules/blocks'
+import { Block, SmallBlock } from '@app/server/modules/blocks'
+import { BlockStats } from '@app/server/modules/stats'
 import { Tx } from '@app/server/modules/txs'
 import BigNumber from 'bignumber.js'
 import * as utils from 'web3-utils'

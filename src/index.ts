@@ -7,16 +7,17 @@ import { ChartsServiceImpl } from '@app/server/modules/charts'
 import { MockExchangeServiceImpl } from '@app/server/modules/exchanges'
 import { TxsServiceImpl } from '@app/server/modules/txs'
 import { RedisTrieDb, VmEngine, VmRunner, VmServiceImpl } from '@app/server/modules/vm'
-import * as EventEmitter from 'eventemitter3'
+import EventEmitter from 'eventemitter3'
 
 async function bootstrapServer() {
   logger.debug('bootstrapper -> Bootstraping ethvm-socket-server!')
 
   // Create TrieDB
   logger.debug('bootstrapper -> Initializing TrieDB')
-  const trieOpts: any = {
-    host: config.get('data_stores.redis.host'),
-    port: config.get('data_stores.redis.port'),
+  const trieOpts = {
+    host: config.get('eth.trie_db.redis.host'),
+    port: config.get('eth.trie_db.redis.port'),
+    db: config.get('eth.trie_db.redis.db'),
     rpcHost: config.get('eth.rpc.host'),
     rpcPort: config.get('eth.rpc.port')
   }
@@ -41,6 +42,7 @@ async function bootstrapServer() {
   const redisDsOpts = {
     host: config.get('data_stores.redis.host'),
     port: config.get('data_stores.redis.port'),
+    db: config.get('data_stores.redis.db'),
     socketRows: config.get('data_stores.redis.socket_rows')
   }
   const ds = new RedisDataStore(redisDsOpts)
@@ -75,16 +77,16 @@ async function bootstrapServer() {
   const rdb = new RethinkDBDataStore(emitter, rethinkDbOpts)
 
   // Create services
-  const blockService = new BlocksServiceImpl()
-  const chartsService = new ChartsServiceImpl()
+  const blockService = new BlocksServiceImpl(rdb)
+  const txsService = new TxsServiceImpl(rdb)
+  const chartsService = new ChartsServiceImpl(rdb)
   const exchangeService = new MockExchangeServiceImpl()
-  const txsService = new TxsServiceImpl()
   const vmService = new VmServiceImpl(vme, vmr)
 
   // Create server
   logger.debug('bootstrapper -> Initializing server')
   const blockTime: number = config.get('eth.block_time')
-  const server = new EthVMServer(trieDb, vmr, vme, ds, rdb, emitter, blockTime)
+  const server = new EthVMServer(blockService, txsService, chartsService, exchangeService, vmService, rdb, ds, emitter, blockTime)
   await server.start()
 }
 

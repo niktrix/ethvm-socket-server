@@ -1,18 +1,18 @@
+import { hexToBuffer } from '@app/server/core/utils'
+import { expect } from 'chai'
 import {
   addressTxsPagesPayloadValidator,
   balancePayloadValidator,
   blockPayloadValidator,
   blockTxsPayloadValidator,
   chartPayloadValidator,
-  hexToBuffer,
+  joinLeavePayloadValidator,
   tokensBalancePayloadValidator,
   totalTxsPayloadValidator,
   txPayloadValidator,
   txsPagesPayloadValidator,
   txsPayloadValidator
-} from '@app/helpers'
-import { expect } from 'chai'
-import { joinLeavePayloadValidator } from './ajv-validators'
+} from './ajv-validators'
 
 describe('ajv-validators', () => {
   describe('addressTxsPagesPayloadValidator', () => {

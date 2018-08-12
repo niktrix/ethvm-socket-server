@@ -3,9 +3,9 @@ import { Callback } from '@app/interfaces'
 import { errors } from '@app/server/core/exceptions'
 import { logger } from '@app/server/core/logger'
 import { BlockchainDataStore, CacheDataStore } from '@app/server/datastores'
-import { Block, mappers, BlocksService } from '@app/server/modules/blocks'
+import { Block, BlocksService, mappers } from '@app/server/modules/blocks'
 import { Tx, TxsService } from '@app/server/modules/txs'
-import { TrieDB, VmEngine, VmRunner, VmService } from '@app/server/modules/vm'
+import { VmService } from '@app/server/modules/vm'
 import {
   AddressTxsPagesPayload,
   BalancePayload,
@@ -19,13 +19,13 @@ import {
 } from '@app/server/payloads'
 import BigNumber from 'bignumber.js'
 import { bufferToHex } from 'ethereumjs-util'
-import * as EventEmitter from 'eventemitter3'
+import EventEmitter from 'eventemitter3'
 import * as fs from 'fs'
 import * as http from 'http'
 import SocketIO from 'socket.io'
 import * as utils from 'web3-utils'
-import { ChartService } from './modules/charts';
-import { ExchangeService } from './modules/exchanges';
+import { ChartService } from './modules/charts'
+import { ExchangeService } from './modules/exchanges'
 
 export type SocketEventPayload =
   | AddressTxsPagesPayload
@@ -65,8 +65,8 @@ export class EthVMServer {
     public readonly chartsService: ChartService,
     public readonly exchangesService: ExchangeService,
     public readonly vmService: VmService,
-
     private readonly rdb: BlockchainDataStore,
+    private readonly ds: CacheDataStore,
     private readonly emitter: EventEmitter,
     private readonly blockTime: number
   ) {
@@ -104,46 +104,49 @@ export class EthVMServer {
   }
 
   private registerEventsOnConnection(socket: SocketIO.Socket): void {
-    this.events.forEach((event: SocketEvent) => {
-      socket.on(
-        event.id,
-        (payload: any, cb: Callback): void => {
-          const validationResult = event.onValidate(this, socket, payload)
-          if (!validationResult.valid) {
-            logger.error(`event -> ${event.id} / Invalid payload: ${payload}`)
-            cb(validationResult.errors, null)
-            return
+    this.events.forEach(
+      (event: SocketEvent): void => {
+        socket.on(
+          event.id,
+          (payload: any, cb: Callback): void => {
+            const validationResult = event.onValidate(this, socket, payload)
+            if (!validationResult.valid) {
+              logger.error(`event -> ${event.id} / Invalid payload: ${payload}`)
+              cb(validationResult.errors, null)
+              return
+            }
+
+            event
+              .onEvent(this, socket, payload)
+              .then(res => {
+                // Some events like join, leave doesn't produce a concrete result, so better to not send anything back
+                if (typeof res === 'undefined') {
+                  return
+                }
+
+                cb(null, res)
+              })
+              .catch(err => {
+                logger.error(`event -> ${event.id} / Error: ${err}`)
+
+                // TODO: Until we have defined which errors are we going to return, we use a generic one
+                cb(errors.serverError, null)
+              })
           }
-
-          event
-            .onEvent(this, socket, payload)
-            .then(res => {
-              // Some events like join, leave doesn't produce a concrete result, so better to not send anything back
-              if (typeof res === 'undefined') {
-                return
-              }
-
-              cb(null, res)
-            })
-            .catch(err => {
-              logger.error(`event -> ${event.id} / Error: ${err}`)
-
-              // TODO: Until we have defined which errors are we going to return, we use a generic one
-              cb(errors.serverError, null)
-            })
-        }
-      )
-    })
+        )
+      }
+    )
   }
 
   private createWSServer(): SocketIO.Server {
     logger.debug('EthVMServer - createWSServer() / Creating SocketIO server')
     const server = http.createServer()
-    const host = config.get('server.host')
-    const port = config.get('server.port')
-
-    server.listen(port, host, () => {
-      logger.debug(`EthVMServer - createWSServer() / Web server listening on ${host}:${port}`)
+    const opts = {
+      host: config.get('server.host'),
+      port: config.get('server.port')
+    }
+    server.listen(opts, () => {
+      logger.debug(`EthVMServer - createWSServer() / Web server listening on ${opts.host}:${opts.port}`)
     })
 
     return SocketIO(server)

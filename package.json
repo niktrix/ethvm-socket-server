@@ -58,7 +58,7 @@
   },
   "devDependencies": {
     "@types/chai": "^4.1.4",
-    "@types/ioredis": "^3.2.4",
+    "@types/ioredis": "^3.2.14",
     "@types/json-schema": "^6.0.1",
     "@types/lodash": "^4.14.94",
     "@types/lru-cache": "^4.1.1",
