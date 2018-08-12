@@ -10,9 +10,7 @@ export interface TxsService {
 }
 
 export class TxsServiceImpl implements TxsService {
-
-  constructor(private readonly ds: BlockchainDataStore) {
-  }
+  constructor(private readonly ds: BlockchainDataStore) {}
 
   public getTx(hash: string): Promise<Tx> {
     return this.ds.getTx(hash)

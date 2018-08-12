@@ -5,7 +5,6 @@ export interface ExchangeService {
 }
 
 export class MockExchangeServiceImpl implements ExchangeService {
-
   public getExchangeRate(): Promise<ExchangeRate> {
     throw new Error('Method not implemented.')
   }

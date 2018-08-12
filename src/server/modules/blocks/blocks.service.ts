@@ -7,9 +7,7 @@ export interface BlocksService {
 }
 
 export class BlocksServiceImpl implements BlocksService {
-
-  constructor(private readonly ds: BlockchainDataStore) {
-  }
+  constructor(private readonly ds: BlockchainDataStore) {}
 
   public getBlock(hash: Buffer): Promise<Block> {
     return this.ds.getBlock(hash)

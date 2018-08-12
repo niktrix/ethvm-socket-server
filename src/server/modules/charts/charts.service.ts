@@ -8,9 +8,7 @@ export interface ChartService {
 }
 
 export class ChartsServiceImpl implements ChartService {
-
-  constructor(private readonly ds: BlockchainDataStore) {
-  }
+  constructor(private readonly ds: BlockchainDataStore) {}
 
   public getBlockSize(startDate: Date, endDate: Date, groupBy?: string): Promise<number> {
     return this.ds.getChartBlockSize(startDate, endDate, groupBy)

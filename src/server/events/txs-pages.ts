@@ -14,7 +14,8 @@ const getTxPagesEvent: SocketEvent = {
     }
   },
 
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: TxsPagesPayload): Promise<Tx[]> => server.txsService.getTxsPages(payload.number, payload.hash)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: TxsPagesPayload): Promise<Tx[]> =>
+    server.txsService.getTxsPages(payload.number, payload.hash)
 }
 
 export default getTxPagesEvent
