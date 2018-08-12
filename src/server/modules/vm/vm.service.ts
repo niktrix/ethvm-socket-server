@@ -1,38 +1,39 @@
 import { VmEngine, VmRunner } from '@app/server/modules/vm'
 
 export interface VmService {
-  setStateRoot(): Promise<boolean>
-  getAccount(): Promise<any>
+  setStateRoot(hash: Buffer): Promise<boolean>
   getCurrentStateRoot(): Promise<Buffer>
+  getAccount(): Promise<any>
   getBalance(address: string): Promise<any>
   getTokensBalance(address: string): Promise<any>
   call(args: any): Promise<any>
 }
 
 export class VmServiceImpl implements VmService {
-  constructor(private readonly engine: VmEngine, private readonly runner: VmRunner) {}
+  constructor(private readonly vme: VmEngine, private readonly vmr: VmRunner) {}
 
-  setStateRoot(): Promise<boolean> {
-    throw new Error('Method not implemented.')
-  }
-
-  public getAccount(): Promise<any> {
-    throw new Error('Method not implemented.')
+  public setStateRoot(hash: Buffer): Promise<boolean> {
+    this.vmr.setStateRoot(hash)
+    return Promise.resolve(true)
   }
 
   public getCurrentStateRoot(): Promise<Buffer> {
-    throw new Error('Method not implemented.')
+    return this.vmr.getCurrentStateRoot()
+  }
+
+  public getAccount(): Promise<any> {
+    return this.vme.getAccount()
   }
 
   public getBalance(address: string): Promise<any> {
-    throw new Error('Method not implemented.')
+    return this.vme.getBalance(address)
   }
 
   public getTokensBalance(address: string): Promise<any> {
-    throw new Error('Method not implemented.')
+    return this.vme.getTokensBalance(address).then(res => res.filter(token => token.balance > 0))
   }
 
   public call(args: any): Promise<any> {
-    throw new Error('Method not implemented.')
+    return this.vmr.call(args)
   }
 }

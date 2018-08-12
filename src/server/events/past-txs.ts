@@ -12,7 +12,7 @@ const pastTxsEvent: SocketEvent = {
 
   // TODO: Remove fliping txs from here (txs should be ordered properly from db)
   onEvent: (server: EthVMServer, socket: SocketIO.Socket): Promise<Tx[]> =>
-    server.ds.getTransactions().then(
+    server.blockService.getTransactions().then(
       (_txs: Tx[]): Tx[] => {
         const txs: Tx[] = []
         _txs.forEach((t: Tx) => {

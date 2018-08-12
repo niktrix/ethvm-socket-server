@@ -1,3 +1,5 @@
+import { BlockchainDataStore } from '@app/server/datastores'
+
 export interface ChartService {
   getBlockSize(startDate: Date, endDate: Date, groupBy?: string): Promise<number>
   getAccountsGrowth(startDate: Date, endDate: Date): Promise<any>
@@ -7,19 +9,22 @@ export interface ChartService {
 
 export class ChartsServiceImpl implements ChartService {
 
-  getBlockSize(startDate: Date, endDate: Date, groupBy?: string): Promise<number> {
-    throw new Error('Method not implemented.')
+  constructor(private readonly ds: BlockchainDataStore) {
   }
 
-  getAccountsGrowth(startDate: Date, endDate: Date): Promise<any> {
-    throw new Error('Method not implemented.')
+  public getBlockSize(startDate: Date, endDate: Date, groupBy?: string): Promise<number> {
+    return this.ds.getChartBlockSize(startDate, endDate, groupBy)
   }
 
-  getAvTxFee(startDate: Date, endDate: Date): Promise<any> {
-    throw new Error('Method not implemented.')
+  public getAccountsGrowth(startDate: Date, endDate: Date): Promise<any> {
+    return this.ds.getChartAccountsGrowth(startDate, endDate)
   }
 
-  getGasLimit(startDate: Date, endDate: Date): Promise<number> {
-    throw new Error('Method not implemented.')
+  public getAvTxFee(startDate: Date, endDate: Date): Promise<any> {
+    return this.ds.getChartAvTxFee(startDate, endDate)
+  }
+
+  public getGasLimit(startDate: Date, endDate: Date): Promise<number> {
+    return this.ds.getChartGasLimit(startDate, endDate)
   }
 }

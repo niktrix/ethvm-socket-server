@@ -3,9 +3,9 @@ import { Callback } from '@app/interfaces'
 import { errors } from '@app/server/core/exceptions'
 import { logger } from '@app/server/core/logger'
 import { BlockchainDataStore, CacheDataStore } from '@app/server/datastores'
-import { Block, mappers } from '@app/server/modules/blocks'
-import { Tx } from '@app/server/modules/txs'
-import { TrieDB, VmEngine, VmRunner } from '@app/server/modules/vm'
+import { Block, mappers, BlocksService } from '@app/server/modules/blocks'
+import { Tx, TxsService } from '@app/server/modules/txs'
+import { TrieDB, VmEngine, VmRunner, VmService } from '@app/server/modules/vm'
 import {
   AddressTxsPagesPayload,
   BalancePayload,
@@ -22,8 +22,10 @@ import { bufferToHex } from 'ethereumjs-util'
 import * as EventEmitter from 'eventemitter3'
 import * as fs from 'fs'
 import * as http from 'http'
-import * as SocketIO from 'socket.io'
+import SocketIO from 'socket.io'
 import * as utils from 'web3-utils'
+import { ChartService } from './modules/charts';
+import { ExchangeService } from './modules/exchanges';
 
 export type SocketEventPayload =
   | AddressTxsPagesPayload
@@ -58,12 +60,14 @@ export class EthVMServer {
   private previousBlockTime = new BigNumber(0)
 
   constructor(
-    public readonly trieDB: TrieDB,
-    public readonly vmRunner: VmRunner,
-    public readonly vmEngine: VmEngine,
-    public readonly ds: CacheDataStore,
-    public readonly rdb: BlockchainDataStore,
-    public readonly emitter: EventEmitter,
+    public readonly blockService: BlocksService,
+    public readonly txsService: TxsService,
+    public readonly chartsService: ChartService,
+    public readonly exchangesService: ExchangeService,
+    public readonly vmService: VmService,
+
+    private readonly rdb: BlockchainDataStore,
+    private readonly emitter: EventEmitter,
     private readonly blockTime: number
   ) {
     this.io = this.createWSServer()
@@ -152,9 +156,10 @@ export class EthVMServer {
 
     // Save state root if defined
     if (block.stateRoot) {
-      this.vmRunner.setStateRoot(block.stateRoot)
+      this.vmService.setStateRoot(block.stateRoot)
     }
 
+    // TODO: Remove this calculation from here, should be done while inserting the new block
     // Calculate previous block time
     const ts = new BigNumber(utils.toHex(block.timestamp))
     if (!this.previousBlockTime) {

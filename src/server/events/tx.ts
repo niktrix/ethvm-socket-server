@@ -14,7 +14,7 @@ const getTxEvent: SocketEvent = {
     }
   },
 
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: TxPayload): Promise<Tx> => server.rdb.getTx(payload.hash)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: TxPayload): Promise<Tx> => server.txsService.getTx(payload.hash)
 }
 
 export default getTxEvent

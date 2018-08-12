@@ -15,7 +15,7 @@ const getBlockTxsEvent: SocketEvent = {
     }
   },
 
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: BlocksTxsPayload): Promise<Block> => server.rdb.getBlockTxs(payload.hash)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: BlocksTxsPayload): Promise<Block> => server.blockService.getBlockTxs(payload.hash)
 }
 
 export default getBlockTxsEvent

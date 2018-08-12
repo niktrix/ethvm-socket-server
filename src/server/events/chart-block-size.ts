@@ -17,7 +17,7 @@ const getChartsDataEvent: SocketEvent = {
 
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: ChartPayload): Promise<any> => {
     const period = toDatePeriods(payload.duration)
-    return server.rdb.getChartBlockSize(period.from, period.to)
+    return server.chartsService.getBlockSize(period.from, period.to)
   }
 }
 

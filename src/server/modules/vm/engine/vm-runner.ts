@@ -1,5 +1,5 @@
-import { hexToBuffer } from '@app/helpers'
-import { TrieDB } from '@app/vm'
+import { hexToBuffer } from '@app/server/core/utils'
+import { TrieDB } from '@app/server/modules/vm'
 import * as VM from '@enkrypt.io/ethereumjs-vm'
 import * as Account from 'ethereumjs-account'
 import * as LRU from 'lru-cache'

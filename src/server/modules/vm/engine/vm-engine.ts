@@ -35,7 +35,7 @@ export class VmEngine {
       const encoded = this.encodeCall('getAllBalance', argss, vals)
       try {
         const response = await this.client.request('eth_call', [{ to: this.opts.tokensAddress.address, data: encoded }, 'pending'])
-        const tokens = this.decode(response.result || []).filter(token => token.balance > 0)
+        const tokens = this.decode(response.result || [])
         resolve(tokens)
       } catch (err) {
         reject(err)

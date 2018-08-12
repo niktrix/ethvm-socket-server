@@ -15,7 +15,7 @@ const ethCallEvent: SocketEvent = {
 
   // TODO: Restore proper behavior
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: EthCallPayload): Promise<boolean> => {
-    // server.vmRunner.call(payload.to, payload.data, cb)
+    // server.vmService.call(payload.to, payload.data, cb)
     return Promise.resolve(true)
   }
 }

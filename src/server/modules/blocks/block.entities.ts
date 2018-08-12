@@ -1,3 +1,5 @@
+import { Tx } from '@app/server/modules/txs'
+
 export interface BlockStats {
   blockTime: string
   failed: string

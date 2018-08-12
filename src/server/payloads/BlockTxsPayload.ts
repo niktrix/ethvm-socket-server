@@ -1,4 +1,4 @@
-import { Pagination } from '@app/models'
+import { Pagination } from '@app/server/payloads'
 
 export interface BlocksTxsPayload extends Pagination {
   hash: Buffer

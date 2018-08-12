@@ -1,6 +1,6 @@
-import { CacheDataStore } from '@app/server/datastores'
 import { b64Replacer, b64Reviver } from '@app/server/core/encoding'
 import { logger } from '@app/server/core/logger'
+import { CacheDataStore } from '@app/server/datastores'
 import { Block } from '@app/server/modules/blocks'
 import { Tx } from '@app/server/modules/txs'
 import { bufferToHex } from 'ethereumjs-util'

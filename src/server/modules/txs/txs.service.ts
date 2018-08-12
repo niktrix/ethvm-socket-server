@@ -1,3 +1,4 @@
+import { BlockchainDataStore } from '@app/server/datastores'
 import { Tx } from '@app/server/modules/txs'
 
 export interface TxsService {
@@ -9,23 +10,27 @@ export interface TxsService {
 }
 
 export class TxsServiceImpl implements TxsService {
-  getTx(hash: string): Promise<Tx> {
-    throw new Error('Method not implemented.')
+
+  constructor(private readonly ds: BlockchainDataStore) {
   }
 
-  public getTxsPages(bNumber: number, hash?: Buffer | undefined): Promise<Tx[]> {
-    throw new Error('Method not implemented.')
+  public getTx(hash: string): Promise<Tx> {
+    return this.ds.getTx(hash)
   }
 
-  getAddressTxPages(address: Buffer, bNumber: number, hash?: Buffer | undefined): Promise<Tx[]> {
-    throw new Error('Method not implemented.')
+  public getTxsPages(bNumber: number, hash?: Buffer): Promise<Tx[]> {
+    return this.getTxsPages(bNumber, hash)
+  }
+
+  public getAddressTxPages(address: Buffer, bNumber: number, hash?: Buffer): Promise<Tx[]> {
+    return this.getAddressTxPages(address, bNumber, hash)
   }
 
   public getTotalTxs(hash: string): Promise<number> {
-    throw new Error('Method not implemented.')
+    return this.getTotalTxs(hash)
   }
 
   public getTxsOfAddress(hash: string): Promise<Tx[]> {
-    throw new Error('Method not implemented.')
+    return this.getTxsOfAddress(hash)
   }
 }
