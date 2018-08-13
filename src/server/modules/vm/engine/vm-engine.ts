@@ -1,5 +1,5 @@
 import BigNumber from 'bignumber.js'
-import * as abi from 'ethereumjs-abi'
+import abi from 'ethereumjs-abi'
 import * as jayson from 'jayson/promise'
 import * as utils from 'web3-utils'
 

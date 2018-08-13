@@ -1,7 +1,7 @@
-import { logger } from '@app/server/core/logger'
+import { logger } from '@app/logger'
+import { JoinLeavePayload } from '@app/server/core/payloads'
 import { joinLeavePayloadValidator } from '@app/server/core/validation'
 import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
-import { JoinLeavePayload } from '@app/server/payloads'
 
 const joinEvent: SocketEvent = {
   id: 'join',

@@ -1,7 +1,7 @@
+import { ChartPayload } from '@app/server/core/payloads'
 import { toDatePeriods } from '@app/server/core/utils'
 import { chartPayloadValidator } from '@app/server/core/validation'
 import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
-import { ChartPayload } from '@app/server/payloads'
 
 const getChartsDataEvent: SocketEvent = {
   id: 'getChartAccountsGrowth', // new_name: chart_accounts_growth

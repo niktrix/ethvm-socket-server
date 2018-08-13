@@ -1,11 +1,7 @@
 import config from '@app/config'
 import { Callback } from '@app/interfaces'
+import { logger } from '@app/logger'
 import { errors } from '@app/server/core/exceptions'
-import { logger } from '@app/server/core/logger'
-import { BlockchainDataStore, CacheDataStore } from '@app/server/datastores'
-import { Block, BlocksService, mappers } from '@app/server/modules/blocks'
-import { Tx, TxsService } from '@app/server/modules/txs'
-import { VmService } from '@app/server/modules/vm'
 import {
   AddressTxsPagesPayload,
   BalancePayload,
@@ -16,14 +12,18 @@ import {
   JoinLeavePayload,
   TokensBalancePayload,
   TxsPayload
-} from '@app/server/payloads'
+} from '@app/server/core/payloads'
+import { CacheDataStore } from '@app/server/datastores'
+import { Block, BlocksService, mappers } from '@app/server/modules/blocks'
+import { Tx, TxsService } from '@app/server/modules/txs'
+import { VmService } from '@app/server/modules/vm'
 import BigNumber from 'bignumber.js'
 import { bufferToHex } from 'ethereumjs-util'
-import EventEmitter from 'eventemitter3'
-import * as fs from 'fs'
-import * as http from 'http'
+import fs from 'fs'
+import http from 'http'
 import SocketIO from 'socket.io'
 import * as utils from 'web3-utils'
+import { Streamer, StreamerEvents } from './core/streams'
 import { ChartService } from './modules/charts'
 import { ExchangeService } from './modules/exchanges'
 
@@ -65,9 +65,8 @@ export class EthVMServer {
     public readonly chartsService: ChartService,
     public readonly exchangesService: ExchangeService,
     public readonly vmService: VmService,
-    private readonly rdb: BlockchainDataStore,
+    private readonly streamer: Streamer,
     private readonly ds: CacheDataStore,
-    private readonly emitter: EventEmitter,
     private readonly blockTime: number
   ) {
     this.io = this.createWSServer()
@@ -75,9 +74,9 @@ export class EthVMServer {
   }
 
   public async start() {
-    logger.debug('EthVMServer - start() / Registering emitter callbacks')
-    this.emitter.on('onNewBlock', this.onNewBlockEvent)
-    this.emitter.on('onPendingTxs', this.onPendingTxsEvent)
+    logger.debug('EthVMServer - start() / Registering for streamer events')
+    this.streamer.addListener(StreamerEvents.newBlock, this.onNewBlockEvent)
+    this.streamer.addListener(StreamerEvents.pendingTx, this.onPendingTxsEvent)
 
     logger.debug('EthVMServer - start() / Loading socket evens...')
     const events = fs.readdirSync(`${__dirname}/events/`)
@@ -91,19 +90,16 @@ export class EthVMServer {
       this.events.set(event.default.id, event.default)
     })
 
-    logger.debug('EthVMServer - start() / Starting RethinkDB datastore')
-    await this.rdb.initialize().catch(() => process.exit(-1))
-
     logger.debug('EthVMServer - start() / Starting to listen socket events on SocketIO')
     this.io.on(
       'connection',
       (socket: SocketIO.Socket): void => {
-        this.registerEventsOnConnection(socket)
+        this.registerSocketEventsOnConnection(socket)
       }
     )
   }
 
-  private registerEventsOnConnection(socket: SocketIO.Socket): void {
+  private registerSocketEventsOnConnection(socket: SocketIO.Socket): void {
     this.events.forEach(
       (event: SocketEvent): void => {
         socket.on(
@@ -201,7 +197,7 @@ export class EthVMServer {
   private onPendingTxsEvent = (tx: Tx): void => {
     logger.info(`EthVMServer - onPendingTxsEvent / Tx: ${tx}`)
     const txHash = bufferToHex(tx.hash)
-    this.io.to(txHash).emit(txHash + '_update', tx)
+    this.io.to(txHash).emit(`${txHash}_update`, tx)
     this.io.to('pendingTxs').emit('newPendingTx', tx)
   }
 }

@@ -1,28 +1,28 @@
-import { BlockchainDataStore } from '@app/server/datastores'
+import { ChartsRepository } from '@app/server/modules/charts'
 
 export interface ChartService {
-  getBlockSize(startDate: Date, endDate: Date, groupBy?: string): Promise<number>
+  getBlockSize(startDate: Date, endDate: Date): Promise<number>
   getAccountsGrowth(startDate: Date, endDate: Date): Promise<any>
   getAvTxFee(startDate: Date, endDate: Date): Promise<any>
   getGasLimit(startDate: Date, endDate: Date): Promise<number>
 }
 
 export class ChartsServiceImpl implements ChartService {
-  constructor(private readonly ds: BlockchainDataStore) {}
+  constructor(private readonly chartsRepository: ChartsRepository) {}
 
-  public getBlockSize(startDate: Date, endDate: Date, groupBy?: string): Promise<number> {
-    return this.ds.getChartBlockSize(startDate, endDate, groupBy)
+  public getBlockSize(from: Date, to: Date): Promise<number> {
+    return this.chartsRepository.getBlockSize(from, to)
   }
 
-  public getAccountsGrowth(startDate: Date, endDate: Date): Promise<any> {
-    return this.ds.getChartAccountsGrowth(startDate, endDate)
+  public getAccountsGrowth(from: Date, to: Date): Promise<any> {
+    return this.chartsRepository.getAccountsGrowth(from, to)
   }
 
-  public getAvTxFee(startDate: Date, endDate: Date): Promise<any> {
-    return this.ds.getChartAvTxFee(startDate, endDate)
+  public getAvTxFee(from: Date, to: Date): Promise<any> {
+    return this.chartsRepository.getAvTxFee(from, to)
   }
 
-  public getGasLimit(startDate: Date, endDate: Date): Promise<number> {
-    return this.ds.getChartGasLimit(startDate, endDate)
+  public getGasLimit(from: Date, to: Date): Promise<number> {
+    return this.chartsRepository.getGasLimit(from, to)
   }
 }

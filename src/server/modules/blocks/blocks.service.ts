@@ -1,19 +1,24 @@
-import { BlockchainDataStore } from '@app/server/datastores'
-import { Block } from '@app/server/modules/blocks'
+import { CacheDataStore } from '@app/server/datastores'
+import { Block, BlockRepository } from '@app/server/modules/blocks'
 
 export interface BlocksService {
-  getBlock(hash: Buffer): Promise<Block>
-  getBlockTxs(hash: Buffer): Promise<Block>
+  getBlocks(): Promise<Block[]>
+  getBlock(hash: Buffer): Promise<Block | null>
+  getBlockTxs(hash: Buffer): Promise<Block | null>
 }
 
 export class BlocksServiceImpl implements BlocksService {
-  constructor(private readonly ds: BlockchainDataStore) {}
+  constructor(private readonly blocksRepository: BlockRepository, private readonly cs: CacheDataStore) {}
 
-  public getBlock(hash: Buffer): Promise<Block> {
-    return this.ds.getBlock(hash)
+  public getBlocks(): Promise<Block[]> {
+    return this.cs.getBlocks()
   }
 
-  public getBlockTxs(hash: Buffer): Promise<Block> {
-    return this.ds.getBlockTxs(hash)
+  public getBlock(hash: Buffer): Promise<Block | null> {
+    return this.blocksRepository.getBlock(hash)
+  }
+
+  public getBlockTxs(hash: Buffer): Promise<Block | null> {
+    return this.blocksRepository.getBlockTxs(hash)
   }
 }

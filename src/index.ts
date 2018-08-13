@@ -1,13 +1,15 @@
 import config from '@app/config'
-import { logger } from '@app/server/core/logger'
-import { RedisDataStore, RethinkDBDataStore, RethinkDBOpts } from '@app/server/datastores'
+import { logger } from '@app/logger'
+import { RethinkDbStreamer } from '@app/server/core/streams'
+import { RedisDataStore } from '@app/server/datastores'
 import { EthVMServer } from '@app/server/ethvm-server'
-import { BlocksServiceImpl } from '@app/server/modules/blocks'
-import { ChartsServiceImpl } from '@app/server/modules/charts'
+import { BlockRepository, BlocksServiceImpl } from '@app/server/modules/blocks'
+import { ChartsRepository, ChartsServiceImpl } from '@app/server/modules/charts'
 import { MockExchangeServiceImpl } from '@app/server/modules/exchanges'
-import { TxsServiceImpl } from '@app/server/modules/txs'
+import { TxsRepository, TxsServiceImpl } from '@app/server/modules/txs'
 import { RedisTrieDb, VmEngine, VmRunner, VmServiceImpl } from '@app/server/modules/vm'
 import EventEmitter from 'eventemitter3'
+import r, { ConnectOptions as RethinkConnectionOpts } from 'rethinkdb'
 
 async function bootstrapServer() {
   logger.debug('bootstrapper -> Bootstraping ethvm-socket-server!')
@@ -61,32 +63,52 @@ async function bootstrapServer() {
 
   // Create Blockchain data store
   logger.debug('bootstrapper -> Initializing RethinkDBDataStore')
-  const rethinkDbOpts: RethinkDBOpts = {
+  const rethinkOpts: RethinkConnectionOpts = {
     host: config.get('rethink_db.host'),
     port: config.get('rethink_db.port'),
     db: config.get('rethink_db.db_name'),
     user: config.get('rethink_db.user'),
-    password: config.get('rethink_db.password'),
-    ssl: {
+    password: config.get('rethink_db.password')
+  }
+
+  const certRaw = config.get('rethink_db.cert_raw')
+  if (certRaw) {
+    const ssl = {
       cert: config.get('rethink_db.cert_raw')
     }
+    rethinkOpts.ssl = ssl
   }
-  if (!rethinkDbOpts.ssl.cert) {
-    delete rethinkDbOpts.ssl
-  }
-  const rdb = new RethinkDBDataStore(emitter, rethinkDbOpts)
+  const rConn = await r.connect(rethinkOpts)
 
   // Create services
-  const blockService = new BlocksServiceImpl(rdb)
-  const txsService = new TxsServiceImpl(rdb)
-  const chartsService = new ChartsServiceImpl(rdb)
+  // ---------------
+
+  // Blocks
+  const blocksRepository = new BlockRepository(rConn, rethinkOpts)
+  const blockService = new BlocksServiceImpl(blocksRepository, ds)
+
+  // Txs
+  const txsRepository = new TxsRepository(rConn, rethinkOpts)
+  const txsService = new TxsServiceImpl(txsRepository, ds)
+
+  // Charts
+  const chartsRepository = new ChartsRepository(rConn, rethinkOpts)
+  const chartsService = new ChartsServiceImpl(chartsRepository)
+
+  // Exchanges
   const exchangeService = new MockExchangeServiceImpl()
+
+  // Vm
   const vmService = new VmServiceImpl(vme, vmr)
+
+  // Create streamer
+  // ---------------
+  const streamer = new RethinkDbStreamer(rConn, emitter)
 
   // Create server
   logger.debug('bootstrapper -> Initializing server')
   const blockTime: number = config.get('eth.block_time')
-  const server = new EthVMServer(blockService, txsService, chartsService, exchangeService, vmService, rdb, ds, emitter, blockTime)
+  const server = new EthVMServer(blockService, txsService, chartsService, exchangeService, vmService, streamer, ds, blockTime)
   await server.start()
 }
 

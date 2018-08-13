@@ -1,6 +1,6 @@
+import { BalancePayload } from '@app/server/core/payloads'
 import { balancePayloadValidator } from '@app/server/core/validation'
 import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
-import { BalancePayload } from '@app/server/payloads'
 
 const getBalanceEvent: SocketEvent = {
   id: 'getBalance', // new_name: balance

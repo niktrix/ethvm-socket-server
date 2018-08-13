@@ -1,6 +1,6 @@
+import { TokensBalancePayload } from '@app/server/core/payloads'
 import { tokensBalancePayloadValidator } from '@app/server/core/validation'
 import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
-import { TokensBalancePayload } from '@app/server/payloads'
 
 const getTokenBalanceEvent: SocketEvent = {
   id: 'getTokenBalance', // new_name: tokens_balance
