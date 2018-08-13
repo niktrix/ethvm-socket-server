@@ -15,7 +15,8 @@ export class BlockRepository extends BaseRethinkDbRepository {
       .table<Block>(RethinkEthVM.tables.blocks)
       .get<Block>(r.args<Buffer>([hash]))
       .do<Block>(block =>
-        r.table(RethinkEthVM.tables.txs)
+        r
+          .table(RethinkEthVM.tables.txs)
           .getAll(r.args(block('transactionHashes')))
           .coerceTo('array')
       )
