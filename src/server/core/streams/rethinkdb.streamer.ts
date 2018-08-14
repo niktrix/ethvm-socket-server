@@ -1,5 +1,5 @@
 import { logger } from '@app/logger'
-import { Streamer } from '@app/server/core/streams'
+import { Streamer, StreamerEvents } from '@app/server/core/streams'
 import { Block } from '@app/server/modules/blocks'
 import { Tx } from '@app/server/modules/txs'
 import { RethinkEthVM } from '@app/server/repositories'
@@ -30,7 +30,7 @@ export class RethinkDbStreamer implements Streamer {
   }
 
   public onNewBlock(block: Block) {
-    this.emitter.emit('onNewBlock', block)
+    this.emitter.emit(StreamerEvents.newBlock, block)
   }
 
   public onNewTx(tx: Tx) {
@@ -38,7 +38,7 @@ export class RethinkDbStreamer implements Streamer {
   }
 
   public onNewPendingTx(tx: Tx) {
-    this.emitter.emit('onPendingTxs', tx)
+    this.emitter.emit(StreamerEvents.pendingTx, tx)
   }
 
   private registerEventListener(): Promise<any[]> {
