@@ -13,9 +13,9 @@ export interface BlocksRepository {
 export class RethinkBlockRepository extends BaseRethinkDbRepository implements BlocksRepository {
   public getBlocks(): Promise<Block[]> {
     return r
-    .table(RethinkEthVM.tables.blocks)
-    .limit(PAGINATION_SIZE)
-    .run(this.conn)
+      .table(RethinkEthVM.tables.blocks)
+      .limit(PAGINATION_SIZE)
+      .run(this.conn)
   }
 
   public getBlock(hash: Buffer): Promise<Block | null> {
