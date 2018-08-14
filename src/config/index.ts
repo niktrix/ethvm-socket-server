@@ -62,6 +62,11 @@ const config = convict({
         format: 'port',
         env: 'ETHVM_DATA_STORE_REDIS_PORT'
       },
+      db: {
+        default: 0,
+        format: Number,
+        env: 'ETHVM_DATA_STORE_REDIS_DB'
+      },
       socket_rows: {
         default: 64,
         format: 'int',
@@ -151,6 +156,25 @@ const config = convict({
           default: '0x4c4b40', // 50000000
           format: String,
           env: 'ETHVM_ETH_VM_ENGINE_GAS_LIMIT'
+        }
+      }
+    },
+    trie_db: {
+      redis: {
+        host: {
+          default: 'localhost',
+          format: String,
+          env: 'ETHVM_ETH_TRIE_DB_REDIS_HOST'
+        },
+        port: {
+          default: 6379,
+          format: 'port',
+          env: 'ETHVM_ETH_TRIE_DB_REDIS_PORT'
+        },
+        db: {
+          default: 1,
+          format: Number,
+          env: 'ETHVM_ETH_TRIE_DB_REDIS_DB'
         }
       }
     }

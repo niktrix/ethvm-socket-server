@@ -1,6 +1,7 @@
-import { blockTxsPayloadValidator } from '@app/helpers'
-import { Block, BlocksTxsPayload } from '@app/models'
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { BlocksTxsPayload } from '@app/server/core/payloads'
+import { blockTxsPayloadValidator } from '@app/server/core/validation'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
+import { Block } from '@app/server/modules/blocks'
 
 const getBlockTxsEvent: SocketEvent = {
   id: 'getBlockTransactions', // new_name: block_txs
@@ -14,7 +15,7 @@ const getBlockTxsEvent: SocketEvent = {
     }
   },
 
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: BlocksTxsPayload): Promise<Block> => server.rdb.getBlockTxs(payload.hash)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: BlocksTxsPayload): Promise<Block | null> => server.blockService.getBlockTxs(payload.hash)
 }
 
 export default getBlockTxsEvent

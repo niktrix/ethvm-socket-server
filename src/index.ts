@@ -1,19 +1,25 @@
 import config from '@app/config'
-import { RedisDataStore, RethinkDBDataStore, RethinkDBOpts } from '@app/datastores'
-import { logger } from '@app/helpers'
-import { EthVMServer } from '@app/server'
-import { VmEngine, VmRunner } from '@app/vm'
-import { RedisTrieDb } from '@app/vm/trie/db'
+import { logger } from '@app/logger'
+import { RethinkDbStreamer } from '@app/server/core/streams'
+import { EthVMServer } from '@app/server/ethvm-server'
+import { BlocksServiceImpl, RethinkBlockRepository } from '@app/server/modules/blocks'
+import { ChartsServiceImpl, RethinkChartsRepository } from '@app/server/modules/charts'
+import { MockExchangeServiceImpl } from '@app/server/modules/exchanges'
+import { RethinkTxsRepository, TxsServiceImpl } from '@app/server/modules/txs'
+import { RedisTrieDb, VmEngine, VmRunner, VmServiceImpl } from '@app/server/modules/vm'
+import { RedisCacheRepository } from '@app/server/repositories'
 import * as EventEmitter from 'eventemitter3'
+import * as r from 'rethinkdb'
 
 async function bootstrapServer() {
   logger.debug('bootstrapper -> Bootstraping ethvm-socket-server!')
 
   // Create TrieDB
   logger.debug('bootstrapper -> Initializing TrieDB')
-  const trieOpts: any = {
-    host: config.get('data_stores.redis.host'),
-    port: config.get('data_stores.redis.port'),
+  const trieOpts = {
+    host: config.get('eth.trie_db.redis.host'),
+    port: config.get('eth.trie_db.redis.port'),
+    db: config.get('eth.trie_db.redis.db'),
     rpcHost: config.get('eth.rpc.host'),
     rpcPort: config.get('eth.rpc.port')
   }
@@ -38,9 +44,10 @@ async function bootstrapServer() {
   const redisDsOpts = {
     host: config.get('data_stores.redis.host'),
     port: config.get('data_stores.redis.port'),
+    db: config.get('data_stores.redis.db'),
     socketRows: config.get('data_stores.redis.socket_rows')
   }
-  const ds = new RedisDataStore(redisDsOpts)
+  const ds = new RedisCacheRepository(redisDsOpts)
   await ds.initialize().catch(() => process.exit(-1))
 
   // Set default state block to VmRunner
@@ -56,7 +63,7 @@ async function bootstrapServer() {
 
   // Create Blockchain data store
   logger.debug('bootstrapper -> Initializing RethinkDBDataStore')
-  const rethinkDbOpts: RethinkDBOpts = {
+  const rethinkOpts = {
     host: config.get('rethink_db.host'),
     port: config.get('rethink_db.port'),
     db: config.get('rethink_db.db_name'),
@@ -66,15 +73,43 @@ async function bootstrapServer() {
       cert: config.get('rethink_db.cert_raw')
     }
   }
-  if (!rethinkDbOpts.ssl.cert) {
-    delete rethinkDbOpts.ssl
+
+  if (!rethinkOpts.ssl.cert) {
+    delete rethinkOpts.ssl
   }
-  const rdb = new RethinkDBDataStore(emitter, rethinkDbOpts)
+  const rConn = await r.connect(rethinkOpts)
+
+  // Create services
+  // ---------------
+
+  // Blocks
+  const blocksRepository = new RethinkBlockRepository(rConn, rethinkOpts)
+  const blockService = new BlocksServiceImpl(blocksRepository, ds)
+
+  // Txs
+  const txsRepository = new RethinkTxsRepository(rConn, rethinkOpts)
+  const txsService = new TxsServiceImpl(txsRepository, ds)
+
+  // Charts
+  const chartsRepository = new RethinkChartsRepository(rConn, rethinkOpts)
+  const chartsService = new ChartsServiceImpl(chartsRepository)
+
+  // Exchanges
+  const exchangeService = new MockExchangeServiceImpl()
+
+  // Vm
+  const vmService = new VmServiceImpl(vme, vmr)
+
+  // Create streamer
+  // ---------------
+  logger.debug('bootstrapper -> Initializing streamer')
+  const streamer = new RethinkDbStreamer(rConn, emitter)
+  await streamer.initialize()
 
   // Create server
   logger.debug('bootstrapper -> Initializing server')
   const blockTime: number = config.get('eth.block_time')
-  const server = new EthVMServer(trieDb, vmr, vme, ds, rdb, emitter, blockTime)
+  const server = new EthVMServer(blockService, txsService, chartsService, exchangeService, vmService, streamer, ds, blockTime)
   await server.start()
 }
 

@@ -1,6 +1,7 @@
-import { txPayloadValidator } from '@app/helpers'
-import { Tx, TxPayload } from '@app/models'
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { TxPayload } from '@app/server/core/payloads'
+import { txPayloadValidator } from '@app/server/core/validation'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
+import { Tx } from '@app/server/modules/txs'
 
 const getTxEvent: SocketEvent = {
   id: 'getTx', // new_name: tx
@@ -13,7 +14,7 @@ const getTxEvent: SocketEvent = {
     }
   },
 
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: TxPayload): Promise<Tx> => server.rdb.getTx(payload.hash)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: TxPayload): Promise<Tx | null> => server.txsService.getTx(payload.hash)
 }
 
 export default getTxEvent

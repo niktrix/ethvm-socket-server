@@ -1,28 +1,31 @@
 import config from '@app/config'
-import { BlockchainDataStore, CacheDataStore } from '@app/datastores'
-import { errors, logger, mappers } from '@app/helpers'
 import { Callback } from '@app/interfaces'
+import { logger } from '@app/logger'
+import { errors } from '@app/server/core/exceptions'
 import {
   AddressTxsPagesPayload,
   BalancePayload,
-  Block,
   BlocksTxsPayload,
   ChartPayload,
   EthCallPayload,
   ExchangeRatePayload,
   JoinLeavePayload,
   TokensBalancePayload,
-  Tx,
   TxsPayload
-} from '@app/models'
-import { TrieDB, VmEngine, VmRunner } from '@app/vm'
+} from '@app/server/core/payloads'
+import { Block, BlocksService, mappers } from '@app/server/modules/blocks'
+import { Tx, TxsService } from '@app/server/modules/txs'
+import { VmService } from '@app/server/modules/vm'
+import { CacheRepository } from '@app/server/repositories'
 import BigNumber from 'bignumber.js'
 import { bufferToHex } from 'ethereumjs-util'
-import * as EventEmitter from 'eventemitter3'
 import * as fs from 'fs'
 import * as http from 'http'
 import * as SocketIO from 'socket.io'
 import * as utils from 'web3-utils'
+import { Streamer, StreamerEvents } from './core/streams'
+import { ChartService } from './modules/charts'
+import { ExchangeService } from './modules/exchanges'
 
 export type SocketEventPayload =
   | AddressTxsPagesPayload
@@ -57,12 +60,13 @@ export class EthVMServer {
   private previousBlockTime = new BigNumber(0)
 
   constructor(
-    public readonly trieDB: TrieDB,
-    public readonly vmRunner: VmRunner,
-    public readonly vmEngine: VmEngine,
-    public readonly ds: CacheDataStore,
-    public readonly rdb: BlockchainDataStore,
-    public readonly emitter: EventEmitter,
+    public readonly blockService: BlocksService,
+    public readonly txsService: TxsService,
+    public readonly chartsService: ChartService,
+    public readonly exchangesService: ExchangeService,
+    public readonly vmService: VmService,
+    private readonly streamer: Streamer,
+    private readonly ds: CacheRepository,
     private readonly blockTime: number
   ) {
     this.io = this.createWSServer()
@@ -70,9 +74,9 @@ export class EthVMServer {
   }
 
   public async start() {
-    logger.debug('EthVMServer - start() / Registering emitter callbacks')
-    this.emitter.on('onNewBlock', this.onNewBlockEvent)
-    this.emitter.on('onPendingTxs', this.onPendingTxsEvent)
+    logger.debug('EthVMServer - start() / Registering for streamer events')
+    this.streamer.addListener(StreamerEvents.newBlock, this.onNewBlockEvent)
+    this.streamer.addListener(StreamerEvents.pendingTx, this.onNewPendingTxsEvent)
 
     logger.debug('EthVMServer - start() / Loading socket evens...')
     const events = fs.readdirSync(`${__dirname}/events/`)
@@ -86,72 +90,81 @@ export class EthVMServer {
       this.events.set(event.default.id, event.default)
     })
 
-    logger.debug('EthVMServer - start() / Starting RethinkDB datastore')
-    await this.rdb.initialize().catch(() => process.exit(-1))
-
     logger.debug('EthVMServer - start() / Starting to listen socket events on SocketIO')
     this.io.on(
       'connection',
       (socket: SocketIO.Socket): void => {
-        this.registerEventsOnConnection(socket)
+        this.registerSocketEventsOnConnection(socket)
       }
     )
   }
 
-  private registerEventsOnConnection(socket: SocketIO.Socket): void {
-    this.events.forEach((event: SocketEvent) => {
-      socket.on(
-        event.id,
-        (payload: any, cb: Callback): void => {
-          const validationResult = event.onValidate(this, socket, payload)
-          if (!validationResult.valid) {
-            logger.error(`event -> ${event.id} / Invalid payload: ${payload}`)
-            cb(validationResult.errors, null)
-            return
-          }
-
-          event
-            .onEvent(this, socket, payload)
-            .then(res => {
-              // Some events like join, leave doesn't produce a concrete result, so better to not send anything back
-              if (typeof res === 'undefined') {
-                return
+  private registerSocketEventsOnConnection(socket: SocketIO.Socket): void {
+    this.events.forEach(
+      (event: SocketEvent): void => {
+        socket.on(
+          event.id,
+          (payload: any, cb?: Callback): void => {
+            const validationResult = event.onValidate(this, socket, payload)
+            if (!validationResult.valid) {
+              logger.error(`event -> ${event.id} / Invalid payload: ${JSON.stringify(payload)}`)
+              if (cb) {
+                cb(validationResult.errors, null)
               }
+              return
+            }
 
-              cb(null, res)
-            })
-            .catch(err => {
-              logger.error(`event -> ${event.id} / Error: ${err}`)
+            event
+              .onEvent(this, socket, payload)
+              .then(res => {
+                // Some events like join, leave doesn't produce a concrete result, so better to not send anything back
+                if (typeof res === 'undefined') {
+                  return
+                }
 
-              // TODO: Until we have defined which errors are we going to return, we use a generic one
-              cb(errors.serverError, null)
-            })
-        }
-      )
-    })
+                if (cb) {
+                  cb(null, res)
+                }
+              })
+              .catch(err => {
+                logger.error(`event -> ${event.id} / Error: ${err}`)
+
+                // TODO: Until we have defined which errors are we going to return, we use a generic one
+                if (cb) {
+                  cb(errors.serverError, null)
+                }
+              })
+          }
+        )
+      }
+    )
   }
 
   private createWSServer(): SocketIO.Server {
     logger.debug('EthVMServer - createWSServer() / Creating SocketIO server')
     const server = http.createServer()
-    const host = config.get('server.host')
-    const port = config.get('server.port')
-
-    server.listen(port, host, () => {
-      logger.debug(`EthVMServer - createWSServer() / Web server listening on ${host}:${port}`)
+    const opts = {
+      host: config.get('server.host'),
+      port: config.get('server.port')
+    }
+    server.listen(opts, () => {
+      logger.debug(`EthVMServer - createWSServer() / Web server listening on ${opts.host}:${opts.port}`)
     })
 
     return SocketIO(server)
   }
 
+  // TODO: This method should only receive the block and emit it directly
+  // This logic should not be here
   private onNewBlockEvent = (block: Block): void => {
     logger.info(`EthVMServer - onNewBlockEvent / Block: ${bufferToHex(block.hash)}`)
 
     // Save state root if defined
     if (block.stateRoot) {
-      this.vmRunner.setStateRoot(block.stateRoot)
+      this.vmService.setStateRoot(block.stateRoot)
     }
 
+    // TODO: Remove this calculation from here, should be done while inserting the new block
     // Calculate previous block time
     const ts = new BigNumber(utils.toHex(block.timestamp))
     if (!this.previousBlockTime) {
@@ -187,13 +200,10 @@ export class EthVMServer {
     }
   }
 
-  private onPendingTxsEvent = (tx: Tx): void => {
-    logger.info(`EthVMServer - onPendingTxsEvent / Tx: ${tx}`)
-
-    if (tx.pending) {
-      const txHash = bufferToHex(tx.hash)
-      this.io.to(txHash).emit(txHash + '_update', tx)
-      this.io.to('pendingTxs').emit('newPendingTx', tx)
-    }
+  private onNewPendingTxsEvent = (tx: Tx): void => {
+    logger.info(`EthVMServer - onNewPendingTxsEvent / Tx: ${tx}`)
+    const txHash = bufferToHex(tx.hash)
+    this.io.to(txHash).emit(`${txHash}_update`, tx)
+    this.io.to('pendingTxs').emit('newPendingTx', tx)
   }
 }

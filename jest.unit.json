@@ -9,7 +9,7 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "coverageDirectory": "coverage",
+  "coverageDirectory": "../coverage",
   "coverageThreshold": {
     "global": {
       "branches": 80,

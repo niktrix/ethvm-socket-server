@@ -1,6 +1,6 @@
-import { ethCallPayloadValidator } from '@app/helpers';
-import { EthCallPayload } from '@app/models';
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server';
+import { EthCallPayload } from '@app/server/core/payloads'
+import { ethCallPayloadValidator } from '@app/server/core/validation'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
 
 const ethCallEvent: SocketEvent = {
   id: 'ethCall', // new_id: eth_call
@@ -15,7 +15,7 @@ const ethCallEvent: SocketEvent = {
 
   // TODO: Restore proper behavior
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: EthCallPayload): Promise<boolean> => {
-    // server.vmRunner.call(payload.to, payload.data, cb)
+    // server.vmService.call(payload.to, payload.data, cb)
     return Promise.resolve(true)
   }
 }

@@ -1,5 +1,5 @@
-import { ExchangeRatePayload } from '@app/models/payloads/ExchangeRatePayload'
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { ExchangeRatePayload } from '@app/server/core/payloads/ExchangeRatePayload'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
 import fetch from 'node-fetch'
 
 // TODO: Refactor this code to use Cryptocompare API

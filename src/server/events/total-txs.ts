@@ -1,6 +1,6 @@
-import { totalTxsPayloadValidator } from '@app/helpers'
-import { TotalTxsPayload } from '@app/models'
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { TotalTxsPayload } from '@app/server/core/payloads'
+import { totalTxsPayloadValidator } from '@app/server/core/validation'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
 
 const getTotalTxsEvent: SocketEvent = {
   id: 'getTotalTxs', // new_name: total_txs
@@ -13,7 +13,7 @@ const getTotalTxsEvent: SocketEvent = {
     }
   },
 
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: TotalTxsPayload): Promise<number> => server.rdb.getTotalTxs(payload.address)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: TotalTxsPayload): Promise<number> => server.txsService.getTotalTxs(payload.address)
 }
 
 export default getTotalTxsEvent

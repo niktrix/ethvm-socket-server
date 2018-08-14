@@ -1,4 +1,4 @@
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
 
 const getCurrentStateRootEvent: SocketEvent = {
   id: 'getCurrentStateRoot', // new_name: current_state_root
@@ -10,7 +10,7 @@ const getCurrentStateRootEvent: SocketEvent = {
     }
   },
 
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket): Promise<Buffer> => server.vmRunner.getCurrentStateRoot()
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket): Promise<Buffer> => server.vmService.getCurrentStateRoot()
 }
 
 export default getCurrentStateRootEvent

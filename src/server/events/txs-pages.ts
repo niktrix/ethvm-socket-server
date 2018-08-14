@@ -1,6 +1,7 @@
-import { txsPagesPayloadValidator } from '@app/helpers'
-import { Tx, TxsPagesPayload } from '@app/models'
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { TxsPagesPayload } from '@app/server/core/payloads'
+import { txsPagesPayloadValidator } from '@app/server/core/validation'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
+import { Tx } from '@app/server/modules/txs'
 
 const getTxPagesEvent: SocketEvent = {
   id: 'getTransactionPages', // new_name: txs_pages
@@ -13,7 +14,8 @@ const getTxPagesEvent: SocketEvent = {
     }
   },
 
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: TxsPagesPayload): Promise<Tx[]> => server.rdb.getTxsPages(payload.number, payload.hash)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: TxsPagesPayload): Promise<Tx[]> =>
+    server.txsService.getTxsPages(payload.number, payload.hash)
 }
 
 export default getTxPagesEvent

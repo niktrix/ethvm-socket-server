@@ -1,5 +1,5 @@
-import { Block } from '@app/models'
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
+import { Block } from '@app/server/modules/blocks'
 
 const pastBlocksEvent: SocketEvent = {
   id: 'pastBlocks', // new_name: past_blocks
@@ -12,7 +12,7 @@ const pastBlocksEvent: SocketEvent = {
 
   // TODO: Remove fliping blocks from here (blocks should be ordered properly from db)
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any): Promise<Block[]> =>
-    server.ds.getBlocks().then(
+    server.blockService.getBlocks().then(
       (_blocks: Block[]): Block[] => {
         const blocks: Block[] = []
         _blocks.forEach(

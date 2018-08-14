@@ -1,6 +1,7 @@
-import { addressTxsPagesPayloadValidator } from '@app/helpers'
-import { AddressTxsPagesPayload, Tx } from '@app/models'
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { AddressTxsPagesPayload } from '@app/server/core/payloads'
+import { addressTxsPagesPayloadValidator } from '@app/server/core/validation'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
+import { Tx } from '@app/server/modules/txs'
 
 const getAddressTxPagesEvent: SocketEvent = {
   id: 'getAddressTransactionPages', // new_name: address_txs_pages
@@ -14,7 +15,7 @@ const getAddressTxPagesEvent: SocketEvent = {
   },
 
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: AddressTxsPagesPayload): Promise<Tx[]> =>
-    server.rdb.getAddressTxPages(payload.address, payload.number, payload.hash)
+    server.txsService.getAddressTxPages(payload.address, payload.number, payload.hash)
 }
 
 export default getAddressTxPagesEvent

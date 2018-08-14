@@ -1,6 +1,6 @@
-import { blockPayloadValidator } from '@app/helpers'
-import { Block } from '@app/models'
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { blockPayloadValidator } from '@app/server/core/validation'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
+import { Block } from '@app/server/modules/blocks'
 
 const getBlockEvent: SocketEvent = {
   id: 'getBlock', // new_name: block
@@ -13,7 +13,7 @@ const getBlockEvent: SocketEvent = {
     }
   },
 
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any): Promise<Block> => server.rdb.getBlock(payload.hash)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any): Promise<Block | null> => server.blockService.getBlock(payload.hash)
 }
 
 export default getBlockEvent

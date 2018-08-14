@@ -1,6 +1,7 @@
-import { chartPayloadValidator, toDatePeriods } from '@app/helpers'
-import { ChartPayload } from '@app/models'
-import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server'
+import { ChartPayload } from '@app/server/core/payloads'
+import { toDatePeriods } from '@app/server/core/utils'
+import { chartPayloadValidator } from '@app/server/core/validation'
+import { EthVMServer, SocketEvent, SocketEventValidationResult } from '@app/server/ethvm-server'
 
 const getChartsDataEvent: SocketEvent = {
   id: 'getChartGasLimit', // new_name: chart_gas_limit
@@ -15,7 +16,7 @@ const getChartsDataEvent: SocketEvent = {
 
   onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: ChartPayload): Promise<any> => {
     const period = toDatePeriods(payload.duration)
-    return server.rdb.getChartGasLimit(period.from, period.to)
+    return server.chartsService.getGasLimit(period.from, period.to)
   }
 }
 
