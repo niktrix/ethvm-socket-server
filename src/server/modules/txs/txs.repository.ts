@@ -8,6 +8,7 @@ const PAGINATION_SIZE = 25
 export interface TxsRepository {
   getTx(hash: string): Promise<Tx | null>
   getTxs(): Promise<Tx[]>
+  getBlockTxs(hash: Buffer): Promise<Tx[]>
   getTxsPages(bNumber: number, hash?: Buffer): Promise<Tx[]>
   getAddressTxPages(address: Buffer, bNumber: number, hash?: Buffer): Promise<Tx[]>
   getTxsOfAddress(hash: string, limit: number, page: number): Promise<Tx[]>
@@ -19,6 +20,19 @@ export class RethinkTxsRepository extends BaseRethinkDbRepository implements Txs
     return r
       .table(RethinkEthVM.tables.txs)
       .limit(PAGINATION_SIZE)
+      .run(this.conn)
+  }
+
+  public getBlockTxs(hash: Buffer): Promise<Tx[]> {
+    return r
+      .table(RethinkEthVM.tables.blocks)
+      .get(r.args([hash]))
+      .do(block =>
+        r
+          .table(RethinkEthVM.tables.txs)
+          .getAll(r.args(block('transactionHashes')))
+          .coerceTo('array')
+      )
       .run(this.conn)
   }
 

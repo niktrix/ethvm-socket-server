@@ -4,6 +4,7 @@ import { CacheRepository } from '@app/server/repositories'
 export interface TxsService {
   getTxs(): Promise<Tx[]>
   getTx(hash: string): Promise<Tx | null>
+  getBlockTxs(hash: Buffer): Promise<Tx[]>
   getTxsPages(bNumber: number, hash?: Buffer): Promise<Tx[]>
   getAddressTxPages(address: Buffer, bNumber: number, hash?: Buffer): Promise<Tx[]>
   getTxsOfAddress(hash: string, limit: number, page: number): Promise<Tx[]>
@@ -19,6 +20,10 @@ export class TxsServiceImpl implements TxsService {
 
   public getTx(hash: string): Promise<Tx | null> {
     return this.txsRepository.getTx(hash)
+  }
+
+  public getBlockTxs(hash: Buffer): Promise<Tx[]> {
+    return this.txsRepository.getBlockTxs(hash)
   }
 
   public getTxsPages(bNumber: number, hash?: Buffer): Promise<Tx[]> {
