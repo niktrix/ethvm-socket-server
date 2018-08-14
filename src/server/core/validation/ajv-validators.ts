@@ -4,7 +4,7 @@ import { isValidAddress } from 'ethereumjs-util'
 
 // Define some constants
 const PAGINATION_SIZE = 25
-const ROOMS = ['blocks', 'txs', 'uncles']
+const ROOMS = ['blocks', 'txs', 'pendingTxs', 'uncles']
 const PERIODS = ['ALL', 'YEAR', 'MONTH', 'DAY']
 
 // Create Ajv

@@ -104,11 +104,13 @@ export class EthVMServer {
       (event: SocketEvent): void => {
         socket.on(
           event.id,
-          (payload: any, cb: Callback): void => {
+          (payload: any, cb?: Callback): void => {
             const validationResult = event.onValidate(this, socket, payload)
             if (!validationResult.valid) {
-              logger.error(`event -> ${event.id} / Invalid payload: ${payload}`)
-              cb(validationResult.errors, null)
+              logger.error(`event -> ${event.id} / Invalid payload: ${JSON.stringify(payload)}`)
+              if (cb) {
+                cb(validationResult.errors, null)
+              }
               return
             }
 
@@ -120,13 +122,17 @@ export class EthVMServer {
                   return
                 }
 
-                cb(null, res)
+                if (cb) {
+                  cb(null, res)
+                }
               })
               .catch(err => {
                 logger.error(`event -> ${event.id} / Error: ${err}`)
 
                 // TODO: Until we have defined which errors are we going to return, we use a generic one
-                cb(errors.serverError, null)
+                if (cb) {
+                  cb(errors.serverError, null)
+                }
               })
           }
         )
