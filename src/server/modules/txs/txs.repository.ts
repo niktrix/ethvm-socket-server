@@ -1,25 +1,35 @@
 import { hexToBuffer } from '@app/server/core/utils'
-import { BaseRethinkDbRepository, RethinkEthVM } from '@app/server/datastores'
 import { Tx } from '@app/server/modules/txs'
-import r from 'rethinkdb'
+import { BaseRethinkDbRepository, RethinkEthVM } from '@app/server/repositories'
+import * as r from 'rethinkdb'
 
 const PAGINATION_SIZE = 25
 
-export class TxsRepository extends BaseRethinkDbRepository {
+export interface TxsRepository {
+  getTx(hash: string): Promise<Tx | null>
+  getTxs(): Promise<Tx[]>
+  getTxsPages(bNumber: number, hash?: Buffer): Promise<Tx[]>
+  getAddressTxPages(address: Buffer, bNumber: number, hash?: Buffer): Promise<Tx[]>
+  getTxsOfAddress(hash: string, limit: number, page: number): Promise<Tx[]>
+  getTotalTxs(hash: string): Promise<number>
+}
+
+export class RethinkTxsRepository extends BaseRethinkDbRepository implements TxsRepository {
+  public getTxs(): Promise<Tx[]> {
+    return r
+      .table(RethinkEthVM.tables.txs)
+      .limit(PAGINATION_SIZE)
+      .run(this.conn)
+  }
+
   public getTx(hash: string): Promise<Tx | null> {
     return r
-      .table<Tx>(RethinkEthVM.tables.txs)
+      .table(RethinkEthVM.tables.txs)
       .get(r.args([new Buffer(hash)]))
       .merge(tx => {
         return {
-          trace: r
-            .db(this.opts.db)
-            .table('traces')
-            .get(tx('hash')),
-          logs: r
-            .db(this.opts.db)
-            .table('logs')
-            .get(tx('hash'))
+          trace: r.table('traces').get(tx('hash')),
+          logs: r.table('logs').get(tx('hash'))
         }
       })
       .run(this.conn)
@@ -28,12 +38,12 @@ export class TxsRepository extends BaseRethinkDbRepository {
   public getTxsPages(bNumber: number, hash?: Buffer): Promise<Tx[]> {
     if (!hash) {
       return r
-        .table<Tx[]>(RethinkEthVM.tables.txs)
+        .table(RethinkEthVM.tables.txs)
         .orderBy({ index: r.desc('numberAndHash') })
         .filter({ pending: false })
         .limit(PAGINATION_SIZE)
         .run(this.conn)
-        .then((cursor: r.CursorResult<Tx[]>) => cursor.toArray())
+        .then(cursor => cursor.toArray())
     }
 
     return r
@@ -43,7 +53,7 @@ export class TxsRepository extends BaseRethinkDbRepository {
       .filter({ pending: false })
       .limit(PAGINATION_SIZE)
       .run(this.conn)
-      .then((cursor: r.CursorResult<Tx[]>) => cursor.toArray())
+      .then(cursor => cursor.toArray())
   }
 
   public getAddressTxPages(address: Buffer, bNumber: number, hash?: Buffer): Promise<Tx[]> {
@@ -59,7 +69,7 @@ export class TxsRepository extends BaseRethinkDbRepository {
         )
         .limit(PAGINATION_SIZE)
         .run(this.conn)
-        .then((cursor: r.CursorResult<Tx[]>) => cursor.toArray())
+        .then(cursor => cursor.toArray())
     }
 
     return r
@@ -69,7 +79,7 @@ export class TxsRepository extends BaseRethinkDbRepository {
       .filter(r.or(r.row('from').eq(r.args([new Buffer(address)])), r.row('to').eq(r.args([new Buffer(address)]))))
       .limit(PAGINATION_SIZE)
       .run(this.conn)
-      .then((cursor: r.CursorResult<Tx[]>) => cursor.toArray())
+      .then(cursor => cursor.toArray())
   }
 
   public getTxsOfAddress(hash: string, limit: number, page: number): Promise<Tx[]> {
@@ -82,7 +92,7 @@ export class TxsRepository extends BaseRethinkDbRepository {
       .getAll(r.args([bhash]), { index: 'cofrom' })
       .slice(start, end)
       .run(this.conn)
-      .then((cursor: r.CursorResult<Tx[]>) => cursor.toArray())
+      .then(cursor => cursor.toArray())
   }
 
   public getTotalTxs(hash: string): Promise<number> {

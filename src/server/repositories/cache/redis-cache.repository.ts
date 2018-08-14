@@ -1,23 +1,24 @@
 import { logger } from '@app/logger'
 import { b64Replacer, b64Reviver } from '@app/server/core/encoding'
-import { CacheDataStore } from '@app/server/datastores'
 import { Block } from '@app/server/modules/blocks'
 import { Tx } from '@app/server/modules/txs'
+import { CacheRepository } from '@app/server/repositories'
 import { bufferToHex } from 'ethereumjs-util'
 import * as Redis from 'ioredis'
 
-export interface RedisDataStoreOpts {
+export interface RedisCacheRepositoryOpts {
   host: string
   port: number
   socketRows: number
 }
 
-export class RedisDataStore implements CacheDataStore {
+// TODO: Separate memory cache to its own class
+export class RedisCacheRepository implements CacheRepository {
   private readonly redis: Redis.Redis
   private readonly socketRows: number
   private readonly cache: Map<string, Block[] | Tx[]> = new Map()
 
-  constructor(private readonly opts: RedisDataStoreOpts) {
+  constructor(private readonly opts: RedisCacheRepositoryOpts) {
     this.redis = new Redis({
       host: this.opts.host,
       port: this.opts.port

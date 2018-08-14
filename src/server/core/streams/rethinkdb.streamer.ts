@@ -1,13 +1,13 @@
 import { logger } from '@app/logger'
 import { Streamer } from '@app/server/core/streams'
-import { RethinkEthVM } from '@app/server/datastores'
 import { Block } from '@app/server/modules/blocks'
 import { Tx } from '@app/server/modules/txs'
+import { RethinkEthVM } from '@app/server/repositories'
 import EventEmitter, { ListenerFn } from 'eventemitter3'
-import r from 'rethinkdb'
+import * as r from 'rethinkdb'
 
 export class RethinkDbStreamer implements Streamer {
-  constructor(private readonly conn: r.Connection, private readonly emitter: EventEmitter) {}
+  constructor(private readonly conn: any, private readonly emitter: EventEmitter) {}
 
   public async initialize(): Promise<boolean> {
     try {
@@ -93,13 +93,13 @@ export class RethinkDbStreamer implements Streamer {
           .eq(true)
       )
       .run(this.conn)
-      .then((cursor: r.CursorResult<any>) => {
+      .then(cursor => {
         if (!cursor) {
           return
         }
 
         cursor.each(
-          (e: Error | null | undefined, cs: r.ChangeSet<any, any>): void => {
+          (e: Error | null | undefined, cs: any): void => {
             if (e) {
               logger.error(`RethinkDbStreamer - onPendingTxs / Error: ${e}`)
               return

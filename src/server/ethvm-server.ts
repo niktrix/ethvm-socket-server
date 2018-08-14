@@ -13,15 +13,15 @@ import {
   TokensBalancePayload,
   TxsPayload
 } from '@app/server/core/payloads'
-import { CacheDataStore } from '@app/server/datastores'
 import { Block, BlocksService, mappers } from '@app/server/modules/blocks'
 import { Tx, TxsService } from '@app/server/modules/txs'
 import { VmService } from '@app/server/modules/vm'
+import { CacheRepository } from '@app/server/repositories'
 import BigNumber from 'bignumber.js'
 import { bufferToHex } from 'ethereumjs-util'
-import fs from 'fs'
-import http from 'http'
-import SocketIO from 'socket.io'
+import * as fs from 'fs'
+import * as http from 'http'
+import * as SocketIO from 'socket.io'
 import * as utils from 'web3-utils'
 import { Streamer, StreamerEvents } from './core/streams'
 import { ChartService } from './modules/charts'
@@ -66,7 +66,7 @@ export class EthVMServer {
     public readonly exchangesService: ExchangeService,
     public readonly vmService: VmService,
     private readonly streamer: Streamer,
-    private readonly ds: CacheDataStore,
+    private readonly ds: CacheRepository,
     private readonly blockTime: number
   ) {
     this.io = this.createWSServer()
@@ -76,7 +76,7 @@ export class EthVMServer {
   public async start() {
     logger.debug('EthVMServer - start() / Registering for streamer events')
     this.streamer.addListener(StreamerEvents.newBlock, this.onNewBlockEvent)
-    this.streamer.addListener(StreamerEvents.pendingTx, this.onPendingTxsEvent)
+    this.streamer.addListener(StreamerEvents.pendingTx, this.onNewPendingTxsEvent)
 
     logger.debug('EthVMServer - start() / Loading socket evens...')
     const events = fs.readdirSync(`${__dirname}/events/`)
@@ -194,8 +194,8 @@ export class EthVMServer {
     }
   }
 
-  private onPendingTxsEvent = (tx: Tx): void => {
-    logger.info(`EthVMServer - onPendingTxsEvent / Tx: ${tx}`)
+  private onNewPendingTxsEvent = (tx: Tx): void => {
+    logger.info(`EthVMServer - onNewPendingTxsEvent / Tx: ${tx}`)
     const txHash = bufferToHex(tx.hash)
     this.io.to(txHash).emit(`${txHash}_update`, tx)
     this.io.to('pendingTxs').emit('newPendingTx', tx)

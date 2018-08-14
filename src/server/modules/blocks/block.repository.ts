@@ -1,20 +1,35 @@
-import { BaseRethinkDbRepository, RethinkEthVM } from '@app/server/datastores'
 import { Block } from '@app/server/modules/blocks'
-import r from 'rethinkdb'
+import { BaseRethinkDbRepository, RethinkEthVM } from '@app/server/repositories'
+import * as r from 'rethinkdb'
 
-export class BlockRepository extends BaseRethinkDbRepository {
+const PAGINATION_SIZE = 25
+
+export interface BlocksRepository {
+  getBlocks(): Promise<Block[]>
+  getBlock(hash: Buffer): Promise<Block | null>
+  getBlockTxs(hash: Buffer): Promise<Block | null>
+}
+
+export class RethinkBlockRepository extends BaseRethinkDbRepository implements BlocksRepository {
+  public getBlocks(): Promise<Block[]> {
+    return r
+    .table(RethinkEthVM.tables.blocks)
+    .limit(PAGINATION_SIZE)
+    .run(this.conn)
+  }
+
   public getBlock(hash: Buffer): Promise<Block | null> {
     return r
-      .table<Block>(RethinkEthVM.tables.blocks)
-      .get<Block>(r.args([hash]))
+      .table(RethinkEthVM.tables.blocks)
+      .get(r.args([hash]))
       .run(this.conn)
   }
 
   public getBlockTxs(hash: Buffer): Promise<Block | null> {
     return r
-      .table<Block>(RethinkEthVM.tables.blocks)
-      .get<Block>(r.args<Buffer>([hash]))
-      .do<Block>(block =>
+      .table(RethinkEthVM.tables.blocks)
+      .get(r.args([hash]))
+      .do(block =>
         r
           .table(RethinkEthVM.tables.txs)
           .getAll(r.args(block('transactionHashes')))

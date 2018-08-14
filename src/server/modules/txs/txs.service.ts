@@ -1,9 +1,9 @@
-import { CacheDataStore } from '@app/server/datastores'
 import { Tx, TxsRepository } from '@app/server/modules/txs'
+import { CacheRepository } from '@app/server/repositories'
 
 export interface TxsService {
   getTxs(): Promise<Tx[]>
-  getTx(hash: string): Promise<Tx>
+  getTx(hash: string): Promise<Tx | null>
   getTxsPages(bNumber: number, hash?: Buffer): Promise<Tx[]>
   getAddressTxPages(address: Buffer, bNumber: number, hash?: Buffer): Promise<Tx[]>
   getTxsOfAddress(hash: string, limit: number, page: number): Promise<Tx[]>
@@ -11,13 +11,13 @@ export interface TxsService {
 }
 
 export class TxsServiceImpl implements TxsService {
-  constructor(private readonly txsRepository: TxsRepository, private readonly cs: CacheDataStore) {}
+  constructor(private readonly txsRepository: TxsRepository, private readonly cacheRepository: CacheRepository) {}
 
   public getTxs(): Promise<Tx[]> {
-    return this.cs.getTransactions()
+    return this.cacheRepository.getTransactions()
   }
 
-  public getTx(hash: string): Promise<Tx> {
+  public getTx(hash: string): Promise<Tx | null> {
     return this.txsRepository.getTx(hash)
   }
 

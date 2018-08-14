@@ -1,4 +1,5 @@
-declare module 'rethinkdb' {
+// TODO: Types are not complete, so it can be used properly in the project
+declare module 'rethinkdb2' {
   import { EventEmitter } from 'events'
 
   export interface RArray<T>

@@ -13,7 +13,7 @@ const getBlockEvent: SocketEvent = {
     }
   },
 
-  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any): Promise<Block> => server.blockService.getBlock(payload.hash)
+  onEvent: (server: EthVMServer, socket: SocketIO.Socket, payload: any): Promise<Block | null> => server.blockService.getBlock(payload.hash)
 }
 
 export default getBlockEvent

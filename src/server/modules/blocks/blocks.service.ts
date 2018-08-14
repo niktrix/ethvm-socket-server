@@ -1,5 +1,5 @@
-import { CacheDataStore } from '@app/server/datastores'
-import { Block, BlockRepository } from '@app/server/modules/blocks'
+import { Block, BlocksRepository } from '@app/server/modules/blocks'
+import { CacheRepository } from '@app/server/repositories'
 
 export interface BlocksService {
   getBlocks(): Promise<Block[]>
@@ -8,10 +8,10 @@ export interface BlocksService {
 }
 
 export class BlocksServiceImpl implements BlocksService {
-  constructor(private readonly blocksRepository: BlockRepository, private readonly cs: CacheDataStore) {}
+  constructor(private readonly blocksRepository: BlocksRepository, private readonly cacheRepository: CacheRepository) {}
 
   public getBlocks(): Promise<Block[]> {
-    return this.cs.getBlocks()
+    return this.cacheRepository.getBlocks()
   }
 
   public getBlock(hash: Buffer): Promise<Block | null> {

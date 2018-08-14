@@ -1,7 +1,14 @@
-import { BaseRethinkDbRepository, RethinkEthVM } from '@app/server/datastores'
-import r from 'rethinkdb'
+import { BaseRethinkDbRepository, RethinkEthVM } from '@app/server/repositories'
+import * as r from 'rethinkdb'
 
-export class ChartsRepository extends BaseRethinkDbRepository {
+export interface ChartsRepository {
+  getBlockSize(startDate: Date, endDate: Date): Promise<number>
+  getAccountsGrowth(startDate: Date, endDate: Date): Promise<any>
+  getAvTxFee(startDate: Date, endDate: Date): Promise<any>
+  getGasLimit(startDate: Date, endDate: Date): Promise<number>
+}
+
+export class RethinkChartsRepository extends BaseRethinkDbRepository implements ChartsRepository {
   public getBlockSize(start: Date, end: Date): Promise<number> {
     return r
       .table(RethinkEthVM.tables.blocks_metrics)
@@ -12,7 +19,7 @@ export class ChartsRepository extends BaseRethinkDbRepository {
       .group(r.row('timestamp').date())
       .avg(r.row('size'))
       .run(this.conn)
-      .then((cursor: r.CursorResult<number>) => cursor.toArray())
+      .then(cursor => cursor.toArray())
   }
 
   public getAccountsGrowth(start: Date, end: Date): Promise<any> {
@@ -27,7 +34,7 @@ export class ChartsRepository extends BaseRethinkDbRepository {
       .reduce((lf, rt) => lf.add(rt))
       .default(0)
       .run(this.conn)
-      .then((cursor: r.cursor) => cursor.toArray())
+      .then(cursor => cursor.toArray())
   }
 
   public getAvTxFee(start: Date, end: Date): Promise<any> {
@@ -40,7 +47,7 @@ export class ChartsRepository extends BaseRethinkDbRepository {
       .group(r.row('timestamp').date())
       .avg(r.row('txFees'))
       .run(this.conn)
-      .then((cursor: r.cursor) => cursor.toArray())
+      .then(cursor => cursor.toArray())
   }
 
   public getGasLimit(start: Date, end: Date): Promise<number> {
