@@ -68,15 +68,14 @@ async function bootstrapServer() {
     port: config.get('rethink_db.port'),
     db: config.get('rethink_db.db_name'),
     user: config.get('rethink_db.user'),
-    password: config.get('rethink_db.password')
-  }
-
-  const certRaw = config.get('rethink_db.cert_raw')
-  if (certRaw) {
-    const ssl = {
+    password: config.get('rethink_db.password'),
+    ssl: {
       cert: config.get('rethink_db.cert_raw')
     }
-    rethinkOpts.ssl = ssl
+  }
+
+  if (!rethinkOpts.ssl.cert) {
+    delete rethinkOpts.ssl
   }
   const rConn = await r.connect(rethinkOpts)
 
