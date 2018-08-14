@@ -4,7 +4,6 @@ import { CacheRepository } from '@app/server/repositories'
 export interface BlocksService {
   getBlocks(): Promise<Block[]>
   getBlock(hash: Buffer): Promise<Block | null>
-  getBlockTxs(hash: Buffer): Promise<Block | null>
 }
 
 export class BlocksServiceImpl implements BlocksService {
@@ -16,9 +15,5 @@ export class BlocksServiceImpl implements BlocksService {
 
   public getBlock(hash: Buffer): Promise<Block | null> {
     return this.blocksRepository.getBlock(hash)
-  }
-
-  public getBlockTxs(hash: Buffer): Promise<Block | null> {
-    return this.blocksRepository.getBlockTxs(hash)
   }
 }
