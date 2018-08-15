@@ -412,6 +412,16 @@ describe('ajv-validators', () => {
         },
         {
           address: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D',
+          limit: 101,
+          page: 1
+        },
+        {
+          address: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D',
+          limit: 0,
+          page: -1
+        },
+        {
+          address: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D',
           number: '1'
         },
         {

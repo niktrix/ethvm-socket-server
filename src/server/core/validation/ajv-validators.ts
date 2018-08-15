@@ -54,13 +54,16 @@ const hashBufferSchema = {
 const limitSchema = {
   $id: '/properties/limit',
   type: 'number',
-  default: PAGINATION_SIZE
+  default: PAGINATION_SIZE,
+  maximum: 100,
+  minimun: 0
 }
 
 const pageSchema = {
   $id: '/properties/limit',
   type: 'number',
-  default: 0
+  default: 0,
+  minimum: 0
 }
 
 // Schemas definitions
