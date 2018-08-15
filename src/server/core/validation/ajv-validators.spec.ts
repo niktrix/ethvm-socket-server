@@ -1,7 +1,6 @@
 import { hexToBuffer } from '@app/server/core/utils'
 import { expect } from 'chai'
 import {
-  addressTxsPagesPayloadValidator,
   balancePayloadValidator,
   blockPayloadValidator,
   blockTxsPayloadValidator,
@@ -15,42 +14,6 @@ import {
 } from './ajv-validators'
 
 describe('ajv-validators', () => {
-  describe('addressTxsPagesPayloadValidator', () => {
-    it('should validate a correct address txs pages payload', () => {
-      const payload = {
-        address: hexToBuffer('0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D'),
-        number: 1,
-        hash: hexToBuffer('0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238')
-      }
-      const isvalid = addressTxsPagesPayloadValidator(payload)
-      expect(isvalid).to.be.true
-    })
-
-    it('should not validate an incorrect address txs pages payloads', () => {
-      const inputs = [
-        '',
-        '0x',
-        '0x0',
-        10,
-        {},
-        {
-          address: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D',
-          number: '1',
-          hash: hexToBuffer('')
-        },
-        {
-          address: hexToBuffer('0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D434p[ '),
-          number: 1
-        }
-      ]
-      inputs.forEach(input => {
-        const payload = input
-        const isvalid = addressTxsPagesPayloadValidator(payload)
-        expect(isvalid).to.be.false
-      })
-    })
-  })
-
   describe('balancePayloadValidator', () => {
     it('should validate a correct balance payload', () => {
       const payload = {

@@ -64,21 +64,6 @@ const pageSchema = {
 }
 
 // Schemas definitions
-const AddressTxsPagesPayloadSchema = {
-  $id: 'https://ethvm.com/address.txs.pages.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {
-    address: addressBufferSchema,
-    hash: hashBufferSchema,
-    number: {
-      $id: '/properties/number',
-      type: 'number'
-    }
-  },
-  required: ['address', 'number'],
-  additionalProperties: false
-}
 
 const JoinLeavePayloadSchema = {
   $id: 'https://ethvm.com/join.leave.payload.schema.json',
@@ -231,7 +216,6 @@ const TxsPagesPayloadSchema = {
 }
 
 // Compile schemas
-const addressTxsPagesPayloadValidator = ajv.compile(AddressTxsPagesPayloadSchema)
 const balancePayloadValidator = ajv.compile(BalancePayloadSchema)
 const blockTxsPayloadValidator = ajv.compile(BlockTxsPayloadSchema)
 const blockPayloadValidator = ajv.compile(BlockPayloadSchema)
@@ -246,7 +230,6 @@ const txsPagesPayloadValidator = ajv.compile(TxsPagesPayloadSchema)
 const totalTxsPayloadValidator = ajv.compile(TotalTxsPayloadSchema)
 
 export {
-  addressTxsPagesPayloadValidator,
   balancePayloadValidator,
   blockTxsPayloadValidator,
   blockPayloadValidator,
