@@ -9,7 +9,6 @@ import {
   tokensBalancePayloadValidator,
   totalTxsPayloadValidator,
   txPayloadValidator,
-  txsPagesPayloadValidator,
   txsPayloadValidator
 } from './ajv-validators'
 
@@ -289,53 +288,6 @@ describe('ajv-validators', () => {
       inputs.forEach(input => {
         const payload = input
         const isvalid = txPayloadValidator(payload)
-        expect(isvalid).to.be.false
-      })
-    })
-  })
-
-  describe('txsPagesPayloadValidator', () => {
-    it('should validate a correct txs pages payload', () => {
-      const inputs = [
-        {
-          number: 1,
-          hash: hexToBuffer('0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238')
-        },
-        {
-          number: 1
-        }
-      ]
-      inputs.forEach(input => {
-        const isvalid = txsPagesPayloadValidator(input)
-        expect(isvalid).to.be.true
-      })
-    })
-
-    it('should not validate an incorrect txs pages payloads', () => {
-      const inputs = [
-        '',
-        '0x',
-        '0x0',
-        10,
-        {},
-        {
-          hash: '0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238'
-        },
-        {
-          hash: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D',
-          number: '1'
-        },
-        {
-          hash: hexToBuffer('0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D'),
-          number: 1
-        },
-        {
-          hash: hexToBuffer('0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D')
-        }
-      ]
-      inputs.forEach(input => {
-        const payload = input
-        const isvalid = txsPagesPayloadValidator(payload)
         expect(isvalid).to.be.false
       })
     })

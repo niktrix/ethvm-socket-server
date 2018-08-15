@@ -9,7 +9,6 @@ export interface TxsRepository {
   getTx(hash: string): Promise<Tx | null>
   getTxs(): Promise<Tx[]>
   getBlockTxs(hash: Buffer): Promise<Tx[]>
-  getTxsPages(bNumber: number, hash?: Buffer): Promise<Tx[]>
   getTxsOfAddress(hash: string, limit: number, page: number): Promise<Tx[]>
   getTotalTxs(hash: string): Promise<number>
 }
@@ -46,27 +45,6 @@ export class RethinkTxsRepository extends BaseRethinkDbRepository implements Txs
         }
       })
       .run(this.conn)
-  }
-
-  public getTxsPages(bNumber: number, hash?: Buffer): Promise<Tx[]> {
-    if (!hash) {
-      return r
-        .table(RethinkEthVM.tables.txs)
-        .orderBy({ index: r.desc('numberAndHash') })
-        .filter({ pending: false })
-        .limit(PAGINATION_SIZE)
-        .run(this.conn)
-        .then(cursor => cursor.toArray())
-    }
-
-    return r
-      .table(RethinkEthVM.tables.txs)
-      .orderBy({ index: r.desc('numberAndHash') })
-      .between(r.args([[r.minval, r.minval]]), r.args([[bNumber, new Buffer(hash)]]), { leftBound: 'open', index: 'numberAndHash' })
-      .filter({ pending: false })
-      .limit(PAGINATION_SIZE)
-      .run(this.conn)
-      .then(cursor => cursor.toArray())
   }
 
   public getTxsOfAddress(hash: string, limit: number, page: number): Promise<Tx[]> {

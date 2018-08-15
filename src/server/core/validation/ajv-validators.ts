@@ -200,21 +200,6 @@ const TxsPayloadSchema = {
   additionalProperties: false
 }
 
-const TxsPagesPayloadSchema = {
-  $id: 'https://ethvm.com/txs.pages.payload.schema.json',
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {
-    hash: hashBufferSchema,
-    number: {
-      $id: '/properties/number',
-      type: 'number'
-    }
-  },
-  required: ['number'],
-  additionalProperties: false
-}
-
 // Compile schemas
 const balancePayloadValidator = ajv.compile(BalancePayloadSchema)
 const blockTxsPayloadValidator = ajv.compile(BlockTxsPayloadSchema)
@@ -226,7 +211,6 @@ const tokensPayloadValidator = ajv.compile(TokensPayloadSchema)
 const tokensBalancePayloadValidator = ajv.compile(TokensBalancePayloadSchema)
 const txPayloadValidator = ajv.compile(TxPayloadSchema)
 const txsPayloadValidator = ajv.compile(TxsPayloadSchema)
-const txsPagesPayloadValidator = ajv.compile(TxsPagesPayloadSchema)
 const totalTxsPayloadValidator = ajv.compile(TotalTxsPayloadSchema)
 
 export {
@@ -240,6 +224,5 @@ export {
   tokensBalancePayloadValidator,
   txPayloadValidator,
   txsPayloadValidator,
-  txsPagesPayloadValidator,
   totalTxsPayloadValidator
 }
