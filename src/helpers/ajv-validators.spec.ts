@@ -414,6 +414,19 @@ describe('ajv-validators', () => {
           address: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D',
           number: '1'
         },
+        // limit should not exceed 100
+        {
+          address: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D',
+          limit: 101,
+          page: 1
+        },
+        // page should not be less than 0
+        {
+          address: '0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D',
+          limit: 0,
+          page: -1
+        },
+
         {
           address: hexToBuffer('0xDECAF9CD2367cdbb726E904cD6397eDFcAe6068D')
         }
