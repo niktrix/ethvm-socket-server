@@ -60,7 +60,7 @@ const limitSchema = {
 }
 
 const pageSchema = {
-  $id: '/properties/limit',
+  $id: '/properties/page',
   type: 'number',
   default: 0,
   minimum: 0
